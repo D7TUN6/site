@@ -1,2 +1,2 @@
-# d7tun6.site
-Source code of my personal website on HTML + CSS.
+# d7tun6.ru
+Source code of my own website on HTML + CSS.

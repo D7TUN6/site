@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    @font-face {
+      font-family: "century-gothic";
+      font-style: normal;
+      font-weight: 800;
+      src: url("../media/fonts/century-gothic.ttf")
+    }
+    body {
+      font-family: "century-gothic";
+      background-color: #000;
+      color: #fff;
+      margin-left: 50px;
+      padding: 10px;
+      font-size: 1.5em;
+    }
+    nav {
+        margin: 30px 0;
+    }
+    nav ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+    nav a {
+        color: #fff;
+        text-decoration: none;
+          font-size: 1.1em;
+          transition: opacity 0.3s;
+    }
+    nav a:hover {
+        opacity: 0.7;
+    }
+  </style>
+</head>
+<body>
+  <div class="content">
+    <header>
+      <h1>D7TUN6.ru<h1>
+    </header>
+  <nav>
+    <ul>
+      <li><a href="../index.html">Main</a></li>
+      <li><a href="../bio/index.html">Bio</a></li>
+      <li><a href="../git/index.html">Git</a></li>
+      <li><a href="">Music</a></li>
+      <li><a href="../news/index.html">News</a></li>
+      <li><a href="../blog/index.html">Blog</a></li>
+      <li><a href="../links/index.html">Links</a></li>
+    </ul>
+  </nav>
+  <h1>Music<h1>
+  <h2>Demo EP</h2>
+          <div class="music-track">
+            <h3>Acid Tears</h3>
+            <audio controls>
+                <source src="../media/music/AcidTears.mp3" type="audio/mpeg">
+                Ваш браузер не поддерживает аудио элемент.
+            </audio>
+        </div>
+
+        <div class="music-track">
+            <h3>ambisynth</h3>
+            <audio controls>
+                <source src="../media/music/ambisynth.mp3" type="audio/mpeg">
+                Ваш браузер не поддерживает аудио элемент.
+            </audio>
+        </div>
+
+        <div class="music-track">
+            <h3>chaos</h3>
+            <audio controls>
+                <source src="../media/music/chaos.mp3" type="audio/mpeg">
+                Ваш браузер не поддерживает аудио элемент.
+            </audio>
+        </div>
+
+        <div class="music-track">
+            <h3>analog garden</h3>
+            <audio controls>
+                <source src="../media/music/analoggarden.mp3" type="audio/mpeg">
+                Ваш браузер не поддерживает аудио элемент.
+            </audio>
+        </div>
+
+        <div class="music-track">
+            <h3>disosynth</h3>
+            <audio controls>
+                <source src="../media/music/disosynth.mp3" type="audio/mpeg">
+                Ваш браузер не поддерживает аудио элемент.
+            </audio>
+        </div>
+
+          <div class="music-track">
+            <h3>mushroom</h3>
+            <audio controls>
+                <source src="../media/music/mushroom.mp3" type="audio/mpeg">
+                Ваш браузер не поддерживает аудио элемент.
+            </audio>
+        </div>
+
+  <h2>Detune.</h2>
+
+        <div class="music-track">
+            <h3>Crying Witches</h3>
+            <audio controls>
+                <source src="../media/music/CryingWitches.mp3" type="audio/wav">
+                Ваш браузер не поддерживает аудио элемент.
+            </audio>
+        </div>
+
+
+        <div class="music-track">
+            <h3>Drag Den</h3>
+            <audio controls>
+                <source src="../media/music/DragDen.wav" type="audio/wav">
+                Ваш браузер не поддерживает аудио элемент.
+            </audio>
+        </div>
+
+        <div class="music-track">
+            <h3>Starry Dreams</h3>
+            <audio controls>
+                <source src="../media/music/StarryDreams.flac" type="audio/flac">
+                Ваш браузер не поддерживает аудио элемент.
+            </audio>
+        </div>
+
+  <h2>DESTROY_ME</h2>
+
+        <div class="music-track">
+            <h3>Smert'_v_Unifaze'</h3>
+            <audio controls>
+                <source src="../media/music/sekta_v_unitaze_demo.mp3" type="audio/mpeg">
+                Ваш браузер не поддерживает аудио элемент.
+            </audio>
+        </div>
+
+
+        <div class="music-track">
+            <h3>Maniac</h3>
+            <audio controls>
+                <source src="../media/music/maniac.flac" type="audio/flac">
+                Ваш браузер не поддерживает аудио элемент.
+            </audio>
+        </div>
+
+</body>
+</html>
