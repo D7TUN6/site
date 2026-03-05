@@ -1,0 +1,20 @@
+<locale>
+  <site>
+    <title>D7TUN6.site</title>
+  </site>
+  <nav>
+    <main>Main</main>
+    <bio>Bio</bio>
+    <git>Git</git>
+    <music>Music</music>
+    <news>News</news>
+    <blog>Blog</blog>
+    <links>Links</links>
+  </nav>
+  <loader>
+    <detecting>detecting language...</detecting>
+    <fallback>if redirection does not work, please visit:</fallback>
+    <english>english version</english>
+    <russian>русская версия</russian>
+  </loader>
+</locale>

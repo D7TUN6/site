@@ -1,72 +1,14 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="./media/image/favicon.png" type="image/png">
-    <title>D7TUN6.site</title>
-    <script>
-        function getPreferredLanguage() {
-            const savedLang = localStorage.getItem('preferred-language');
-            if (savedLang) {
-                return savedLang;
-            }
-            
-            const browserLang = navigator.language || navigator.userLanguage;
-            
-            if (browserLang.startsWith('ru')) {
-                return 'ru';
-            }
-            
-            return 'en';
-        }
-        
-        window.addEventListener('load', function() {
-            const lang = getPreferredLanguage();
-            window.location.href = `/${lang}/index.html`;
-        });
-    </script>
-    <style>
-        body {
-            font-family: sans-serif;
-            background-color: #000;
-            color: #fff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-        
-        .loader {
-            text-align: center;
-        }
-        
-        .spinner {
-            border: 4px solid rgba(255, 255, 255, 0.3);
-            border-top: 4px solid #fff;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-    </style>
-</head>
-<body>
-    <div class="loader">
-        <div class="spinner"></div>
-        <p>detecting language...</p>
-        <p>if redirection doesn't work, please visit:</p>
-        <p>
-            <a href="/en/" style="color: #6d28d9; margin-right: 20px;">english version</a>
-            <a href="/ru/" style="color: #6d28d9;">русская версия</a>
-        </p>
-    </div>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="d7tun6 official website" />
+    <link rel="icon" type="image/png" href="/media/image/favicon.png" />
+    <title>d7tun6.site</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>
