@@ -279,6 +279,7 @@ async function readAlbums() {
         safeStem,
         title: playlistTrack.title || normalizeTrackTitle(fileName),
         url: playlistTrack.url,
+        sourceUrl: toPublicUrl(abs),
         sourceFilePath,
         sizeBytes: stat.size,
         previewUrl
@@ -366,6 +367,7 @@ function buildClientReleaseManifest(albums) {
         index: index + 1,
         title: track.title,
         url: track.url,
+        sourceUrl: track.sourceUrl,
         previewUrl: track.previewUrl
       }))
     }))

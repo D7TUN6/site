@@ -29,6 +29,7 @@ export type ReleaseTrack = {
   index: number;
   title: string;
   url: string;
+  sourceUrl: string | null;
   previewUrl: string | null;
 };
 

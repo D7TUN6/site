@@ -3,6 +3,7 @@ import { computed, reactive, readonly, watch } from "vue";
 export type GlobalPlayerTrack = {
   title: string;
   url: string;
+  fallbackUrl?: string | null;
 };
 
 export type GlobalPlayerQueue = {
@@ -42,6 +43,7 @@ const state = reactive({
 
 const audio = new Audio();
 audio.preload = "metadata";
+const supportsOggOpus = audio.canPlayType('audio/ogg; codecs="opus"') !== "";
 
 let listenersAttached = false;
 let durationProbeToken = 0;
@@ -101,16 +103,25 @@ function syncOrderPosition(index: number): void {
   state.orderPos = 0;
 }
 
+function getTrackPlaybackUrl(track: GlobalPlayerTrack): string {
+  if (!supportsOggOpus && /\.ogg(?:$|[?#])/i.test(track.url) && track.fallbackUrl) {
+    return track.fallbackUrl;
+  }
+
+  return track.url;
+}
+
 function loadTrack(index: number, autoplay: boolean): void {
   const activeQueue = state.queue;
   const track = activeQueue?.tracks[index];
   if (!activeQueue || !track) return;
 
-  const targetUrl = new URL(track.url, window.location.origin).toString();
+  const playbackUrl = getTrackPlaybackUrl(track);
+  const targetUrl = new URL(playbackUrl, window.location.origin).toString();
   state.currentIndex = index;
 
   if (audio.src !== targetUrl) {
-    audio.src = track.url;
+    audio.src = playbackUrl;
     audio.load();
   }
 
@@ -237,7 +248,8 @@ async function probeTrackDurations(queueKey: string): Promise<void> {
 
   try {
     for (const track of activeQueue.tracks) {
-      const duration = await probeSingleTrackDuration(track.url);
+      const playbackUrl = getTrackPlaybackUrl(track);
+      const duration = await probeSingleTrackDuration(playbackUrl);
       if (token !== durationProbeToken) {
         return;
       }
@@ -245,7 +257,7 @@ async function probeTrackDurations(queueKey: string): Promise<void> {
       if (typeof duration === "number") {
         state.trackDurations = {
           ...state.trackDurations,
-          [track.url]: duration
+          [playbackUrl]: duration
         };
       }
     }
@@ -459,11 +471,16 @@ const upcomingTracks = computed<UpcomingTrack[]>(() => {
   const tail = state.playOrder.slice(state.orderPos + 1);
   const indices = state.repeatMode === "all" ? [...tail, ...state.playOrder.slice(0, state.orderPos)] : tail;
 
-  return indices.slice(0, 24).map((index) => ({
-    index,
-    track: activeQueue.tracks[index],
-    duration: typeof state.trackDurations[activeQueue.tracks[index].url] === "number" ? state.trackDurations[activeQueue.tracks[index].url] : null
-  }));
+  return indices.slice(0, 24).map((index) => {
+    const track = activeQueue.tracks[index];
+    const playbackUrl = getTrackPlaybackUrl(track);
+
+    return {
+      index,
+      track,
+      duration: typeof state.trackDurations[playbackUrl] === "number" ? state.trackDurations[playbackUrl] : null
+    };
+  });
 });
 
 export function usePlayer() {

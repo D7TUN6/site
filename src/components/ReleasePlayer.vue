@@ -36,7 +36,8 @@ const queuePayload = computed<GlobalPlayerQueue>(() => ({
   genre: props.lang === "ru" ? props.release.genre.ru : props.release.genre.en,
   tracks: props.release.tracks.map((track) => ({
     title: track.title,
-    url: track.url
+    url: track.url,
+    fallbackUrl: track.sourceUrl
   }))
 }));
 
@@ -93,6 +94,11 @@ function getApiError(payload: { error?: string; message?: string } | null, fallb
   if (payload?.error && payload.error.trim().length > 0) return payload.error;
   if (payload?.message && payload.message.trim().length > 0) return payload.message;
   return fallback;
+}
+
+function isLikelyIOSDevice(): boolean {
+  const ua = navigator.userAgent || "";
+  return /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 }
 
 function toggleMainPlayPause() {
@@ -184,7 +190,14 @@ async function handleDownload() {
         const message = getApiError(jobPayload, "Queue temporary error");
 
         if (jobRes.status === 429 || jobRes.status >= 500) {
-          downloadMessage.value = isRu.value ? "Очередь занята, повтор..." : "Queue busy, retrying...";
+          downloadMessage.value =
+            jobRes.status === 429
+              ? isRu.value
+                ? "Идёт обработка, повтор..."
+                : "Still processing, retrying..."
+              : isRu.value
+                ? "Сервер временно занят, повтор..."
+                : "Server temporary issue, retrying...";
           await wait(2200);
           continue;
         }
@@ -207,17 +220,24 @@ async function handleDownload() {
         break;
       }
 
-      await wait(1200);
+      await wait(1800);
     }
 
     if (downloadAbort) return;
 
     downloadProgress.value = 100;
     downloadMessage.value = "Downloading ZIP";
+    const directDownloadUrl = `/api/releases/download?jobId=${encodeURIComponent(jobId)}&download=1`;
+
+    if (isLikelyIOSDevice()) {
+      downloadMessage.value = isRu.value ? "Открываем загрузку..." : "Opening download...";
+      window.location.assign(directDownloadUrl);
+      return;
+    }
 
     let downloadRes: Response | null = null;
     for (let attempt = 0; attempt < 8; attempt += 1) {
-      downloadRes = await fetch(`/api/releases/download?jobId=${encodeURIComponent(jobId)}&download=1`, {
+      downloadRes = await fetch(directDownloadUrl, {
         method: "GET",
         cache: "no-store"
       });

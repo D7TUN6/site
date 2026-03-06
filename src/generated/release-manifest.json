@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-06T00:47:01.633Z",
+  "generatedAt": "2026-03-06T10:48:18.033Z",
   "releases": [
     {
       "slug": "a-path-of-static-snow",
@@ -22,36 +22,42 @@
           "index": 1,
           "title": "Acid Tears",
           "url": "/media/music/A Path of Static Snow/tracks/stream/acid-tears.ogg",
+          "sourceUrl": "/media/music/A Path of Static Snow/tracks/wav/Acid Tears.wav",
           "previewUrl": "/media/music/A Path of Static Snow/tracks/preview/acid-tears.ogg"
         },
         {
           "index": 2,
           "title": "Crying Witches",
           "url": "/media/music/A Path of Static Snow/tracks/stream/crying-witches.ogg",
+          "sourceUrl": "/media/music/A Path of Static Snow/tracks/wav/Crying Witches.wav",
           "previewUrl": "/media/music/A Path of Static Snow/tracks/preview/crying-witches.ogg"
         },
         {
           "index": 3,
           "title": "Dr. Star",
           "url": "/media/music/A Path of Static Snow/tracks/stream/dr-star.ogg",
+          "sourceUrl": "/media/music/A Path of Static Snow/tracks/wav/Dr. Star.wav",
           "previewUrl": "/media/music/A Path of Static Snow/tracks/preview/dr-star.ogg"
         },
         {
           "index": 4,
           "title": "Drag Den",
           "url": "/media/music/A Path of Static Snow/tracks/stream/drag-den.ogg",
+          "sourceUrl": "/media/music/A Path of Static Snow/tracks/wav/Drag Den.wav",
           "previewUrl": "/media/music/A Path of Static Snow/tracks/preview/drag-den.ogg"
         },
         {
           "index": 5,
           "title": "unnamed012",
           "url": "/media/music/A Path of Static Snow/tracks/stream/unnamed012.ogg",
+          "sourceUrl": "/media/music/A Path of Static Snow/tracks/wav/unnamed012.wav",
           "previewUrl": "/media/music/A Path of Static Snow/tracks/preview/unnamed012.ogg"
         },
         {
           "index": 6,
           "title": "Winter Walk",
           "url": "/media/music/A Path of Static Snow/tracks/stream/winter-walk.ogg",
+          "sourceUrl": "/media/music/A Path of Static Snow/tracks/wav/Winter Walk.wav",
           "previewUrl": "/media/music/A Path of Static Snow/tracks/preview/winter-walk.ogg"
         }
       ]
@@ -77,42 +83,49 @@
           "index": 1,
           "title": "Acid Tears",
           "url": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/tracks/stream/1-acid-tears.ogg",
+          "sourceUrl": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/tracks/wav/1 - Acid Tears.wav",
           "previewUrl": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/tracks/preview/1-acid-tears.ogg"
         },
         {
           "index": 2,
           "title": "Dr.Star",
           "url": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/tracks/stream/2-dr-star.ogg",
+          "sourceUrl": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/tracks/wav/2 - Dr.Star.wav",
           "previewUrl": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/tracks/preview/2-dr-star.ogg"
         },
         {
           "index": 3,
           "title": "Drag Den",
           "url": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/tracks/stream/3-drag-den.ogg",
+          "sourceUrl": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/tracks/wav/3 - Drag Den.wav",
           "previewUrl": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/tracks/preview/3-drag-den.ogg"
         },
         {
           "index": 4,
           "title": "unnamed012",
           "url": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/tracks/stream/4-unnamed012.ogg",
+          "sourceUrl": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/tracks/wav/4 - unnamed012.wav",
           "previewUrl": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/tracks/preview/4-unnamed012.ogg"
         },
         {
           "index": 5,
           "title": "Crying Witches",
           "url": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/tracks/stream/5-crying-witches.ogg",
+          "sourceUrl": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/tracks/wav/5 - Crying Witches.wav",
           "previewUrl": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/tracks/preview/5-crying-witches.ogg"
         },
         {
           "index": 6,
           "title": "Winter Walk",
           "url": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/tracks/stream/6-winter-walk.ogg",
+          "sourceUrl": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/tracks/wav/6 - Winter Walk.wav",
           "previewUrl": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/tracks/preview/6-winter-walk.ogg"
         },
         {
           "index": 7,
           "title": "master",
           "url": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/tracks/stream/master.ogg",
+          "sourceUrl": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/tracks/wav/master.wav",
           "previewUrl": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/tracks/preview/master.ogg"
         }
       ]
@@ -138,78 +151,91 @@
           "index": 1,
           "title": "Static N0is3 Tvrn3d int0 Static Pain (intro)",
           "url": "/media/music/Wh1te Hous3/tracks/stream/1-static-n0is3-tvrn3d-int0-static-pain-intro.ogg",
+          "sourceUrl": "/media/music/Wh1te Hous3/tracks/wav/1 - Static N0is3 Tvrn3d int0 Static Pain (intro).wav",
           "previewUrl": "/media/music/Wh1te Hous3/tracks/preview/1-static-n0is3-tvrn3d-int0-static-pain-intro.ogg"
         },
         {
           "index": 2,
           "title": "Lucifer",
           "url": "/media/music/Wh1te Hous3/tracks/stream/2-lucifer.ogg",
+          "sourceUrl": "/media/music/Wh1te Hous3/tracks/wav/2 - Lucifer.wav",
           "previewUrl": "/media/music/Wh1te Hous3/tracks/preview/2-lucifer.ogg"
         },
         {
           "index": 3,
           "title": "Starfighter",
           "url": "/media/music/Wh1te Hous3/tracks/stream/3-starfighter.ogg",
+          "sourceUrl": "/media/music/Wh1te Hous3/tracks/wav/3 - Starfighter.wav",
           "previewUrl": "/media/music/Wh1te Hous3/tracks/preview/3-starfighter.ogg"
         },
         {
           "index": 4,
           "title": "Acid Tears (t2)",
           "url": "/media/music/Wh1te Hous3/tracks/stream/4-acid-tears-t2.ogg",
+          "sourceUrl": "/media/music/Wh1te Hous3/tracks/wav/4 - Acid Tears (t2).wav",
           "previewUrl": "/media/music/Wh1te Hous3/tracks/preview/4-acid-tears-t2.ogg"
         },
         {
           "index": 5,
           "title": "Dope",
           "url": "/media/music/Wh1te Hous3/tracks/stream/5-dope.ogg",
+          "sourceUrl": "/media/music/Wh1te Hous3/tracks/wav/5 - Dope.wav",
           "previewUrl": "/media/music/Wh1te Hous3/tracks/preview/5-dope.ogg"
         },
         {
           "index": 6,
           "title": "Thai",
           "url": "/media/music/Wh1te Hous3/tracks/stream/6-thai.ogg",
+          "sourceUrl": "/media/music/Wh1te Hous3/tracks/wav/6 - Thai.wav",
           "previewUrl": "/media/music/Wh1te Hous3/tracks/preview/6-thai.ogg"
         },
         {
           "index": 7,
           "title": "Understation",
           "url": "/media/music/Wh1te Hous3/tracks/stream/7-understation.ogg",
+          "sourceUrl": "/media/music/Wh1te Hous3/tracks/wav/7 - Understation.wav",
           "previewUrl": "/media/music/Wh1te Hous3/tracks/preview/7-understation.ogg"
         },
         {
           "index": 8,
           "title": "unnrR35sT",
           "url": "/media/music/Wh1te Hous3/tracks/stream/8-unnrr35st.ogg",
+          "sourceUrl": "/media/music/Wh1te Hous3/tracks/wav/8 - unnrR35sT.wav",
           "previewUrl": "/media/music/Wh1te Hous3/tracks/preview/8-unnrr35st.ogg"
         },
         {
           "index": 9,
           "title": "hd1ep2amb.mmpz",
           "url": "/media/music/Wh1te Hous3/tracks/stream/9-hd1ep2amb-mmpz.ogg",
+          "sourceUrl": "/media/music/Wh1te Hous3/tracks/wav/9 - hd1ep2amb.mmpz.wav",
           "previewUrl": "/media/music/Wh1te Hous3/tracks/preview/9-hd1ep2amb-mmpz.ogg"
         },
         {
           "index": 10,
           "title": "D0nor",
           "url": "/media/music/Wh1te Hous3/tracks/stream/10-d0nor.ogg",
+          "sourceUrl": "/media/music/Wh1te Hous3/tracks/wav/10 - D0nor.wav",
           "previewUrl": "/media/music/Wh1te Hous3/tracks/preview/10-d0nor.ogg"
         },
         {
           "index": 11,
           "title": "Poignant",
           "url": "/media/music/Wh1te Hous3/tracks/stream/11-poignant.ogg",
+          "sourceUrl": "/media/music/Wh1te Hous3/tracks/wav/11 - Poignant.wav",
           "previewUrl": "/media/music/Wh1te Hous3/tracks/preview/11-poignant.ogg"
         },
         {
           "index": 12,
           "title": "Snowgazer",
           "url": "/media/music/Wh1te Hous3/tracks/stream/12-snowgazer.ogg",
+          "sourceUrl": "/media/music/Wh1te Hous3/tracks/wav/12 - Snowgazer.wav",
           "previewUrl": "/media/music/Wh1te Hous3/tracks/preview/12-snowgazer.ogg"
         },
         {
           "index": 13,
           "title": "K1ndn3ss",
           "url": "/media/music/Wh1te Hous3/tracks/stream/13-k1ndn3ss.ogg",
+          "sourceUrl": "/media/music/Wh1te Hous3/tracks/wav/13 - K1ndn3ss.wav",
           "previewUrl": "/media/music/Wh1te Hous3/tracks/preview/13-k1ndn3ss.ogg"
         }
       ]
@@ -235,78 +261,91 @@
           "index": 1,
           "title": "Static N0is3 Tvrn3d int0 Static Pain",
           "url": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/stream/1-static-n0is3-tvrn3d-int0-static-pain.ogg",
+          "sourceUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/wav/1 - Static N0is3 Tvrn3d int0 Static Pain.wav",
           "previewUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/preview/1-static-n0is3-tvrn3d-int0-static-pain.ogg"
         },
         {
           "index": 2,
           "title": "Lucifer",
           "url": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/stream/2-lucifer.ogg",
+          "sourceUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/wav/2 - Lucifer.wav",
           "previewUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/preview/2-lucifer.ogg"
         },
         {
           "index": 3,
           "title": "Starfighter",
           "url": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/stream/3-starfighter.ogg",
+          "sourceUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/wav/3 - Starfighter.wav",
           "previewUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/preview/3-starfighter.ogg"
         },
         {
           "index": 4,
           "title": "Acid Tears (t2)",
           "url": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/stream/4-acid-tears-t2.ogg",
+          "sourceUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/wav/4 - Acid Tears (t2).wav",
           "previewUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/preview/4-acid-tears-t2.ogg"
         },
         {
           "index": 5,
           "title": "Dope",
           "url": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/stream/5-dope.ogg",
+          "sourceUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/wav/5 - Dope.wav",
           "previewUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/preview/5-dope.ogg"
         },
         {
           "index": 6,
           "title": "Thai",
           "url": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/stream/6-thai.ogg",
+          "sourceUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/wav/6 - Thai.wav",
           "previewUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/preview/6-thai.ogg"
         },
         {
           "index": 7,
           "title": "Understation",
           "url": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/stream/7-understation.ogg",
+          "sourceUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/wav/7 - Understation.wav",
           "previewUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/preview/7-understation.ogg"
         },
         {
           "index": 8,
           "title": "unnrR35sT",
           "url": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/stream/8-unnrr35st.ogg",
+          "sourceUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/wav/8 - unnrR35sT.wav",
           "previewUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/preview/8-unnrr35st.ogg"
         },
         {
           "index": 9,
           "title": "hd1ep2amb.mmpz",
           "url": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/stream/9-hd1ep2amb-mmpz.ogg",
+          "sourceUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/wav/9 - hd1ep2amb.mmpz.wav",
           "previewUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/preview/9-hd1ep2amb-mmpz.ogg"
         },
         {
           "index": 10,
           "title": "D0nor",
           "url": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/stream/10-d0nor.ogg",
+          "sourceUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/wav/10 - D0nor.wav",
           "previewUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/preview/10-d0nor.ogg"
         },
         {
           "index": 11,
           "title": "Poignant",
           "url": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/stream/11-poignant.ogg",
+          "sourceUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/wav/11 - Poignant.wav",
           "previewUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/preview/11-poignant.ogg"
         },
         {
           "index": 12,
           "title": "Snowgazer",
           "url": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/stream/12-snowgazer.ogg",
+          "sourceUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/wav/12 - Snowgazer.wav",
           "previewUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/preview/12-snowgazer.ogg"
         },
         {
           "index": 13,
           "title": "K1ndn3ss",
           "url": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/stream/13-k1ndn3ss.ogg",
+          "sourceUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/wav/13 - K1ndn3ss.wav",
           "previewUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/preview/13-k1ndn3ss.ogg"
         }
       ]

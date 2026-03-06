@@ -408,7 +408,7 @@ app.use(
   "/api",
   rateLimit({
     windowMs: 60 * 1000,
-    max: 45,
+    max: 240,
     standardHeaders: true,
     legacyHeaders: false
   })

@@ -34,6 +34,14 @@ const progress = computed(() => {
   return Math.max(0, Math.min(100, (state.currentTime / state.duration) * 100));
 });
 
+const volumeSlider = computed({
+  get: () => (state.muted ? 0 : state.volume),
+  set: (value: number) => {
+    if (!Number.isFinite(value)) return;
+    setVolume(value);
+  }
+});
+
 function fmtTime(seconds: number | null): string {
   if (typeof seconds !== "number" || !Number.isFinite(seconds) || seconds < 0) return "--:--";
   const m = Math.floor(seconds / 60);
@@ -209,9 +217,8 @@ onBeforeUnmount(() => {
               min="0"
               max="1"
               step="0.01"
-              :value="state.muted ? 0 : state.volume"
+              v-model.number="volumeSlider"
               aria-label="Volume"
-              @input="setVolume(Number(($event.target as HTMLInputElement).value))"
             />
           </div>
         </div>
