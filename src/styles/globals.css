@@ -381,7 +381,7 @@ a:not(.main-nav a):not(.control-btn):not(.site-title-link):hover {
 .release-player {
   background: rgba(33, 49, 86, 0.74);
   border: 1px solid rgba(194, 209, 245, 0.28);
-  backdrop-filter: blur(2px);
+  backdrop-filter: none;
   padding: 12px;
   width: min(860px, 100%);
 }
@@ -393,6 +393,7 @@ a:not(.main-nav a):not(.control-btn):not(.site-title-link):hover {
 }
 
 .release-player-cover-large {
+  background: rgba(32, 47, 80, 0.74);
   border: 1px solid rgba(194, 209, 245, 0.34);
   display: block;
   height: 154px;
@@ -526,6 +527,7 @@ a:not(.main-nav a):not(.control-btn):not(.site-title-link):hover {
   color: #eef3ff;
   cursor: pointer;
   display: grid;
+  font-family: inherit;
   gap: 8px;
   grid-template-columns: 28px 1fr;
   min-height: 36px;
@@ -697,6 +699,11 @@ a:not(.main-nav a):not(.control-btn):not(.site-title-link):hover {
   line-height: 1.4;
 }
 
+.release-notes {
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 900px;
+}
+
 .release-notes code {
   font-family: "century-gothic", sans-serif;
   font-style: normal;
@@ -764,7 +771,7 @@ body.has-now-playing-bar {
 
 .now-playing-bar {
   align-items: center;
-  backdrop-filter: blur(2px);
+  backdrop-filter: none;
   background: rgba(22, 30, 50, 0.96);
   border-top: 1px solid rgba(170, 185, 222, 0.3);
   bottom: 0;
@@ -800,13 +807,47 @@ body.has-now-playing-bar {
   transition: opacity var(--transition-speed), color var(--transition-speed);
 }
 
+.now-playing-icon {
+  display: block;
+  fill: currentColor;
+  height: 18px;
+  width: 18px;
+}
+
+.now-playing-icon-stroke {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.now-playing-icon-wrap {
+  display: inline-flex;
+  position: relative;
+}
+
+.now-playing-repeat-one {
+  bottom: -1px;
+  color: currentColor;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1;
+  position: absolute;
+  right: -3px;
+}
+
 .now-playing-btn-main {
   background: #f2f6ff;
   border-radius: 999px;
   color: #243860;
-  font-size: 1.8rem;
   height: 34px;
   width: 34px;
+}
+
+.now-playing-btn-main .now-playing-icon {
+  height: 16px;
+  width: 16px;
 }
 
 .now-playing-btn-small {
@@ -944,7 +985,7 @@ body.has-now-playing-bar {
 }
 
 .now-playing-nextup {
-  backdrop-filter: blur(2px);
+  backdrop-filter: none;
   background: rgba(8, 12, 22, 0.96);
   border: 1px solid rgba(188, 202, 236, 0.34);
   bottom: 66px;

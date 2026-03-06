@@ -1,11 +1,10 @@
 { pkgs ? import <nixpkgs> {} }:
 
 pkgs.mkShell {
-  # NOTE: suffix changed to force a new derivation path if an old .drv in /nix/store is corrupted.
-  name = "d7tun6-site-vite-shell-v2";
+  name = "d7tun6-site-vue-shell-v3";
 
   buildInputs = with pkgs; [
-    nodejs_22
+    nodejs_24
     nodePackages.npm
     nodePackages.pnpm
     git

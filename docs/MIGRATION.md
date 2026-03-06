@@ -3,39 +3,35 @@
 This project has gone through two major migrations:
 
 1. static HTML -> Next.js
-2. Next.js -> Vite + React + Node API server
+2. Next.js -> Vite + Vue + Node API server
 
-## Current Stack (Final)
+## Current Stack
 
-- frontend: Vite + React + React Router + MDX
-- backend: Node + Express (queue download API + static serving)
-- content: MDX per language (`en`, `ru`)
-- i18n dictionaries: XML in `public/locales`
+- frontend: Vite + Vue + Vue Router
+- backend: Node + Express (download queue API + static serving)
+- content: raw MDX-like files in `content/mdx/<lang>/base`
+- i18n: XML dictionaries in `public/locales`
+- release metadata: generated JSON manifests from `public/media/music`
 
 ## Why Next.js Was Replaced
 
-- simplify runtime model for this project
-- keep full control of API queue process and static serving
-- reduce framework-specific coupling in content/rendering layer
+- simpler deployment/runtime model for this site
+- explicit control over queue-based conversion API
+- no framework-coupled SSR/runtime requirements
 
 ## Stable Routing Model
 
 - `/` redirects to `/en`
-- localized routes are client-side under `/:lang/*`
-- languages: `en`, `ru`
+- localized routes live under `/:lang/*`
+- supported languages: `en`, `ru`
 
 ## Release Model
 
-Release pages and API metadata are generated from `public/media/music` by:
+Release data is generated from `public/media/music/*`:
 
-- `scripts/generate-releases.mjs`
+- `scripts/optimize-media.mjs` builds preview/stream tracks + playlists
+- `scripts/generate-releases.mjs` builds:
+  - `src/generated/release-manifest.json` (frontend)
+  - `server/generated/release-download-data.json` (API)
 
-Generated outputs now target:
-
-- `content/mdx/<lang>/releases/*.mdx`
-- `src/lib/generated-release-routes.ts`
-- `server/generated/release-download-data.json`
-
-## Legacy Artifacts
-
-Next.js runtime artifacts were removed from the repository during migration cleanup.
+Player track URLs are sourced from generated `full.m3u8` playlists.

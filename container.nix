@@ -133,7 +133,7 @@ in {
         wants = ["network-online.target"];
 
         path = [
-          pkgs.nodejs_22
+          pkgs.nodejs_24
           pkgs.nodePackages.npm
           pkgs.coreutils
           pkgs.bash
@@ -160,10 +160,10 @@ in {
             "${pkgs.coreutils}/bin/mkdir -p /var/www/d7tun6.site/node_modules /var/www/d7tun6.site/dist /var/lib/d7tun6/.npm"
             "-${pkgs.psmisc}/bin/fuser -k 3001/tcp"
             "-${pkgs.procps}/bin/pkill -f 'node server/index.mjs'"
-            "${pkgs.nodejs_22}/bin/npm ci --include=dev --no-audit --no-fund"
-            "${pkgs.nodejs_22}/bin/npm run build"
+            "${pkgs.nodejs_24}/bin/npm ci --include=dev --no-audit --no-fund"
+            "${pkgs.nodejs_24}/bin/npm run build"
           ];
-          ExecStart = "${pkgs.nodejs_22}/bin/node /var/www/d7tun6.site/server/index.mjs";
+          ExecStart = "${pkgs.nodejs_24}/bin/node /var/www/d7tun6.site/server/index.mjs";
 
           Restart = "on-failure";
           RestartSec = 5;

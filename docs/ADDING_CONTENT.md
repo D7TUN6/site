@@ -7,9 +7,9 @@ This document covers:
 
 ## 1. Add a New Base Section
 
-Example target route: `/en/projects` and `/ru/projects`.
+Example route: `/en/projects` and `/ru/projects`.
 
-### Step 1: Create MDX files
+### Step 1: Create content files
 
 Create:
 
@@ -18,15 +18,15 @@ Create:
 
 ### Step 2: Register route loading
 
-Edit `src/lib/content.tsx`:
+Edit `src/lib/content.ts`:
 
 - add `"projects"` to `BaseRoute`
 - add dynamic imports for both languages in `baseContentModuleMap`
-- add `"projects"` into `baseRoutes`
+- add `"projects"` to `baseRoutes`
 
-### Step 3: Add navigation labels
+### Step 3: Add dictionary labels
 
-Edit XML dictionaries:
+Edit:
 
 - `public/locales/en.xml`
 - `public/locales/ru.xml`
@@ -35,9 +35,9 @@ Add `<projects>` labels under `<nav>`.
 
 ### Step 4: Add section to navigation
 
-Edit `src/components/SiteFrame.tsx`:
+Edit `src/components/SiteFrame.vue`:
 
-- add `{ id: "projects", key: "projects" }` to `navItems`.
+- add `{ id: "projects", key: "projects" }` to `navItems`
 
 ### Step 5: Validate
 
@@ -68,23 +68,22 @@ public/media/music/<Album Name>/
 
 Notes:
 
-- If numbered tracks exist, generator prioritizes numbered tracks (plus optional `master.*`).
-- Release date is parsed from notes (e.g. `released 05.03.26`) with fallback to timestamps.
+- if numbered tracks exist, generator prioritizes numbered tracks (plus optional `master.*`)
+- release date is parsed from notes (e.g. `released 05.03.26`) with fallback to timestamps
+- player URLs are generated from `playlists/full.m3u8`
 
-### Regenerate pages and generated metadata
+### Regenerate media + manifests
 
 ```bash
+npm run optimize:media
 npm run generate:releases
 ```
 
 This updates:
 
-- `content/mdx/en/releases/*.mdx`
-- `content/mdx/ru/releases/*.mdx`
-- `content/mdx/en/base/music.mdx`
-- `content/mdx/ru/base/music.mdx`
-- `src/lib/generated-release-routes.ts`
+- `src/generated/release-manifest.json`
 - `server/generated/release-download-data.json`
+- `content/mdx/<lang>/releases/*.mdx` track URL blocks (synced to M3U8-derived stream URLs)
 
 ### Validate
 
@@ -103,4 +102,4 @@ npm run build
 - `mp3` - 320 kbps / 44.1kHz
 - `ogg` - Opus VBR / 48kHz
 
-`ffmpeg` must be available on the runtime host.
+`ffmpeg` must be available on runtime host.

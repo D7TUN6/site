@@ -1,26 +1,5 @@
 import { XMLParser } from "fast-xml-parser";
-import type { Lang } from "@/lib/content";
-
-export type LocaleDictionary = {
-  site: {
-    title: string;
-  };
-  nav: {
-    main: string;
-    bio: string;
-    git: string;
-    music: string;
-    news: string;
-    blog: string;
-    links: string;
-  };
-  loader: {
-    detecting: string;
-    fallback: string;
-    english: string;
-    russian: string;
-  };
-};
+import type { Lang, LocaleDictionary } from "@/types/content";
 
 const parser = new XMLParser({
   ignoreAttributes: false,
@@ -73,9 +52,7 @@ async function loadLocale(lang: Lang): Promise<LocaleDictionary> {
 
 export function getLocaleDictionary(lang: Lang): Promise<LocaleDictionary> {
   const cached = localeCache.get(lang);
-  if (cached) {
-    return cached;
-  }
+  if (cached) return cached;
 
   const promise = loadLocale(lang);
   localeCache.set(lang, promise);

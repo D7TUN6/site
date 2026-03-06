@@ -1,11 +1,15 @@
 import { randomUUID } from "node:crypto";
 import { spawn } from "node:child_process";
+import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import compression from "compression";
 import express from "express";
+import rateLimit from "express-rate-limit";
+import helmet from "helmet";
 import JSZip from "jszip";
+import mime from "mime-types";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -18,6 +22,9 @@ const MAX_TRACKS_PER_ARCHIVE = 64;
 const FFMPEG_TIMEOUT_MS = 8 * 60 * 1000;
 const MAX_ACTIVE_JOBS = 12;
 const JOB_TTL_MS = 20 * 60 * 1000;
+const SLUG_RE = /^[a-z0-9-]{1,128}$/;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const STATIC_PRECOMPRESSED_EXT_RE = /\.(?:js|css|html|json|svg|txt|xml|map|woff2?|ico)$/i;
 
 const isDev = process.argv.includes("--dev");
 const defaultPort = isDev ? 3002 : 3001;
@@ -90,12 +97,18 @@ function cleanupQueue() {
 function resolveTrackSourcePath(release, track) {
   const sourcePath = typeof track.sourceFilePath === "string" ? track.sourceFilePath : null;
   const relative = sourcePath || path.posix.join("tracks", "wav", track.fileName);
-
-  if (relative.includes("..")) {
+  const normalized = path.posix.normalize(relative);
+  if (!normalized || normalized === "." || normalized.startsWith("../") || path.posix.isAbsolute(normalized)) {
     throw new Error("Invalid track source path");
   }
 
-  return path.join(ROOT, "public", "media", "music", release.sourceDirName, ...relative.split("/"));
+  const releaseRoot = path.resolve(ROOT, "public", "media", "music", release.sourceDirName);
+  const resolvedPath = path.resolve(releaseRoot, normalized.split("/").join(path.sep));
+  if (resolvedPath !== releaseRoot && !resolvedPath.startsWith(`${releaseRoot}${path.sep}`)) {
+    throw new Error("Invalid track source path");
+  }
+
+  return resolvedPath;
 }
 
 async function transcodeTrack(params) {
@@ -290,6 +303,65 @@ function findRelease(slug) {
   return releaseDownloadData.find((entry) => entry.slug === slug);
 }
 
+function isSameOriginRequest(req) {
+  const origin = req.get("origin");
+  if (!origin) return true;
+  try {
+    const host = req.get("host");
+    if (!host) return false;
+    return new URL(origin).host === host;
+  } catch {
+    return false;
+  }
+}
+
+function precompressedStaticMiddleware(req, res, next) {
+  if (req.method !== "GET" && req.method !== "HEAD") {
+    return next();
+  }
+
+  let requestPath = req.path;
+  try {
+    requestPath = decodeURIComponent(req.path);
+  } catch {
+    return next();
+  }
+
+  if (!STATIC_PRECOMPRESSED_EXT_RE.test(requestPath)) {
+    return next();
+  }
+
+  const relativePath = requestPath.startsWith("/") ? requestPath.slice(1) : requestPath;
+  const absolutePath = path.resolve(DIST_DIR, relativePath);
+  if (!absolutePath.startsWith(DIST_DIR)) {
+    return next();
+  }
+
+  const acceptedEncodings = String(req.headers["accept-encoding"] || "");
+  let encodedSuffix = "";
+
+  if (acceptedEncodings.includes("br") && existsSync(`${absolutePath}.br`)) {
+    encodedSuffix = ".br";
+    res.setHeader("Content-Encoding", "br");
+  } else if (acceptedEncodings.includes("gzip") && existsSync(`${absolutePath}.gz`)) {
+    encodedSuffix = ".gz";
+    res.setHeader("Content-Encoding", "gzip");
+  }
+
+  if (!encodedSuffix) {
+    return next();
+  }
+
+  const contentType = mime.lookup(requestPath);
+  if (contentType) {
+    res.setHeader("Content-Type", contentType);
+  }
+
+  res.setHeader("Vary", "Accept-Encoding");
+  req.url = `${req.url}${encodedSuffix}`;
+  return next();
+}
+
 async function bootstrapReleaseData() {
   const raw = await readFile(RELEASE_DATA_PATH, "utf8");
   const parsed = JSON.parse(raw);
@@ -303,15 +375,55 @@ await bootstrapReleaseData();
 
 const app = express();
 app.disable("x-powered-by");
+app.set("trust proxy", 1);
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      useDefaults: true,
+      directives: {
+        "default-src": ["'self'"],
+        "img-src": ["'self'", "data:", "blob:"],
+        "media-src": ["'self'", "blob:"],
+        "connect-src": ["'self'"],
+        "font-src": ["'self'", "data:"],
+        "style-src": ["'self'", "'unsafe-inline'"],
+        "script-src": ["'self'"],
+        "object-src": ["'none'"],
+        "base-uri": ["'self'"],
+        "frame-ancestors": ["'none'"]
+      }
+    }
+  })
+);
+app.use(
+  compression({
+    filter: (req, res) => {
+      if (req.path.endsWith(".zip")) return false;
+      return compression.filter(req, res);
+    }
+  })
+);
 app.use(express.json({ limit: "64kb" }));
+app.use(
+  "/api",
+  rateLimit({
+    windowMs: 60 * 1000,
+    max: 45,
+    standardHeaders: true,
+    legacyHeaders: false
+  })
+);
 
 app.post("/api/releases/download", (req, res) => {
   cleanupQueue();
+  if (!isSameOriginRequest(req)) {
+    return res.status(403).json({ error: "Origin check failed" });
+  }
 
   const slug = typeof req.body?.slug === "string" ? req.body.slug : null;
   const format = typeof req.body?.format === "string" ? req.body.format : null;
 
-  if (!slug || slug.length > 128 || !isOutputFormat(format)) {
+  if (!slug || !SLUG_RE.test(slug) || !isOutputFormat(format)) {
     return res.status(400).json({ error: "Invalid slug or format" });
   }
 
@@ -362,7 +474,7 @@ app.get("/api/releases/download", (req, res) => {
   const jobId = typeof req.query.jobId === "string" ? req.query.jobId : null;
   const wantsDownload = req.query.download === "1";
 
-  if (!jobId) {
+  if (!jobId || !UUID_RE.test(jobId)) {
     return res.status(400).json({ error: "Missing jobId" });
   }
 
@@ -396,8 +508,26 @@ app.get("/api/health", (_req, res) => {
 });
 
 if (!isDev) {
-  app.use(compression());
-  app.use(express.static(DIST_DIR, { index: false, maxAge: "1h" }));
+  app.use(precompressedStaticMiddleware);
+  app.use(
+    express.static(DIST_DIR, {
+      index: false,
+      setHeaders: (res, filePath) => {
+        const relative = path.relative(DIST_DIR, filePath).split(path.sep).join("/");
+        if (relative.endsWith(".html")) {
+          res.setHeader("Cache-Control", "no-cache");
+          return;
+        }
+
+        if (relative.startsWith("assets/") && /-[A-Za-z0-9_-]{8,}\./.test(path.basename(relative))) {
+          res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+          return;
+        }
+
+        res.setHeader("Cache-Control", "public, max-age=86400");
+      }
+    })
+  );
 
   app.get(/^(?!\/api\/).*/, (_req, res) => {
     res.sendFile(path.join(DIST_DIR, "index.html"));

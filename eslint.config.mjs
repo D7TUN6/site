@@ -1,6 +1,8 @@
 import js from "@eslint/js";
 import globals from "globals";
 import tseslint from "typescript-eslint";
+import vue from "eslint-plugin-vue";
+import vueParser from "vue-eslint-parser";
 
 export default tseslint.config(
   {
@@ -8,7 +10,6 @@ export default tseslint.config(
       "example/**",
       "OLD/**",
       "node_modules/**",
-      ".next/**",
       "dist/**",
       "coverage/**",
       "public/media/**",
@@ -18,10 +19,24 @@ export default tseslint.config(
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
+  ...vue.configs["flat/recommended"],
   {
-    files: ["src/**/*.{ts,tsx}", "vite.config.ts"],
+    files: ["src/**/*.{ts,vue}", "vite.config.ts"],
     languageOptions: {
+      parser: vueParser,
+      parserOptions: {
+        parser: tseslint.parser,
+        ecmaVersion: "latest",
+        sourceType: "module"
+      },
       globals: globals.browser
+    },
+    rules: {
+      "vue/max-attributes-per-line": "off",
+      "vue/singleline-html-element-content-newline": "off",
+      "vue/html-self-closing": "off",
+      "vue/attributes-order": "off",
+      "vue/no-v-html": "off"
     }
   },
   {

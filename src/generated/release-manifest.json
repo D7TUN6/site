@@ -1,0 +1,315 @@
+{
+  "generatedAt": "2026-03-06T00:47:01.633Z",
+  "releases": [
+    {
+      "slug": "a-path-of-static-snow",
+      "albumName": "A Path of Static Snow",
+      "sourceDirName": "A Path of Static Snow",
+      "coverUrl": "/media/music/A Path of Static Snow/cover/cover.jpg",
+      "coverPreviewUrl": "/media/music/A Path of Static Snow/cover/cover-preview.webp",
+      "releaseDate": "17/12/2025",
+      "notes": "D7TUN6 :: A Path of Static Snow\n////////////////////////////////////////////////////////////////////////////////////////////////////////////////\n\n1. Acid Tears 01:45\n2. Dr. Star 02:52\n3. Drag Den 01:47\n4. unnamed012 05:05\n5. Crying Witches 04:41\n6. Winter Walk 05:21\n\n### about\n\nfirst release by D7TUN6.\n\n////////////////////////////////////////////////////////////////////////////////////////////////////////////////\n\nwho:\n\nall - written and produced by D7TUN6 between 2024-2025.\n\ncover art: snowy path captured on Philips Xenium X500's crappy digital camera, 07:00 AM.\n\n////////////////////////////////////////////////////////////////////////////////////////////////////////////////\n\nsoftware and hardware used:\n\nreaper audacity lmms\nzynaddsubfx tripleoscillator twin2 vital serum reasynth odin2\nvalhalla fabfilter\nnixos\n\nphilips_xenium_x500\nugreen_usb_dac kz_edc_pro sennheiser_hd206\n\n### credits\n\nwill be released on 20.12.25 (streamings)\nreleased 17.12.25 (bandcamp)\n\n### license\n\nall rights reserved",
+      "genre": {
+        "en": "Electronic",
+        "ru": "Электроника"
+      },
+      "playlistM3uUrl": "/media/music/A Path of Static Snow/playlists/full.m3u",
+      "playlistM3u8Url": "/media/music/A Path of Static Snow/playlists/full.m3u8",
+      "previewPlaylistM3uUrl": "/media/music/A Path of Static Snow/playlists/preview.m3u",
+      "previewPlaylistM3u8Url": "/media/music/A Path of Static Snow/playlists/preview.m3u8",
+      "tracks": [
+        {
+          "index": 1,
+          "title": "Acid Tears",
+          "url": "/media/music/A Path of Static Snow/tracks/stream/acid-tears.ogg",
+          "previewUrl": "/media/music/A Path of Static Snow/tracks/preview/acid-tears.ogg"
+        },
+        {
+          "index": 2,
+          "title": "Crying Witches",
+          "url": "/media/music/A Path of Static Snow/tracks/stream/crying-witches.ogg",
+          "previewUrl": "/media/music/A Path of Static Snow/tracks/preview/crying-witches.ogg"
+        },
+        {
+          "index": 3,
+          "title": "Dr. Star",
+          "url": "/media/music/A Path of Static Snow/tracks/stream/dr-star.ogg",
+          "previewUrl": "/media/music/A Path of Static Snow/tracks/preview/dr-star.ogg"
+        },
+        {
+          "index": 4,
+          "title": "Drag Den",
+          "url": "/media/music/A Path of Static Snow/tracks/stream/drag-den.ogg",
+          "previewUrl": "/media/music/A Path of Static Snow/tracks/preview/drag-den.ogg"
+        },
+        {
+          "index": 5,
+          "title": "unnamed012",
+          "url": "/media/music/A Path of Static Snow/tracks/stream/unnamed012.ogg",
+          "previewUrl": "/media/music/A Path of Static Snow/tracks/preview/unnamed012.ogg"
+        },
+        {
+          "index": 6,
+          "title": "Winter Walk",
+          "url": "/media/music/A Path of Static Snow/tracks/stream/winter-walk.ogg",
+          "previewUrl": "/media/music/A Path of Static Snow/tracks/preview/winter-walk.ogg"
+        }
+      ]
+    },
+    {
+      "slug": "a-path-of-static-snow-deluxe-analog-edition",
+      "albumName": "A Path of Static Snow (Deluxe Analog Edition)",
+      "sourceDirName": "A Path of Static Snow (Deluxe Analog Edition)",
+      "coverUrl": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/cover/cover.jpg",
+      "coverPreviewUrl": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/cover/cover-preview.webp",
+      "releaseDate": "05/03/2026",
+      "notes": "D7TUN6 :: Wh1te Hous3 (Deluxe Analog Edition)\n////////////////////////////////////////////////////////////////////////////////////////////////////////////////  \n  \n1. Static N0is3 Tvrn3d int0 Static Pain 06:00\n2. Lucifer 07:14\n3. Starfighter 04:20\n4. Acid Tears (t2) 01:45\n5. Dope 06:24\n6. Thai 02:08\n7. Understation 04:41\n8. unnrR35sT 04:04\n9. hd1ep2amb.mmpz 01:22\n10. D0nor 03:12\n11. Poignant 03:36\n12. Snowgazer 03:40\n13. K1ndn3ss 08:00\n### about  \n  \nsecond release by D7TUN6. recorded from Technics CA10's amplifier. Improved by applying compression, equalisation and normalization.\n  \n////////////////////////////////////////////////////////////////////////////////////////////////////////////////  \n  \nwho:  \n  \ntracks - written and produced by D7TUN6 between 2024-2026.  \nrecord - matbeq332\n\ncover art: a low-rise Stalinka apartment building captured on iPhone 6s, corrected in Krita. 19:36 PM.\n\nyears:\n2024: 4, 8, 9\n2025: 2, 3, 5, 6, 7, 10\n2026: 1, 11, 12, 13\n  \n////////////////////////////////////////////////////////////////////////////////////////////////////////////////  \n  \nsoftware and hardware used:  \n  \nreaper renoise lmms audacity\nzynaddsubfx tripleoscillator vital lb302 xpressive  \nlsp calf\nkrita\nnixos \n  \ntechnics_ca10\nphilips_xenium_x500  canon_digital_ixus_970_is\nfiio_jd10\n\n### credits  \n  \nwill NOT be released on streamings  \nreleased 05.03.26 (bandcamp)  \n  \n### license  \n  \nall rights reserved",
+      "genre": {
+        "en": "Electronic",
+        "ru": "Электроника"
+      },
+      "playlistM3uUrl": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/playlists/full.m3u",
+      "playlistM3u8Url": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/playlists/full.m3u8",
+      "previewPlaylistM3uUrl": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/playlists/preview.m3u",
+      "previewPlaylistM3u8Url": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/playlists/preview.m3u8",
+      "tracks": [
+        {
+          "index": 1,
+          "title": "Acid Tears",
+          "url": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/tracks/stream/1-acid-tears.ogg",
+          "previewUrl": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/tracks/preview/1-acid-tears.ogg"
+        },
+        {
+          "index": 2,
+          "title": "Dr.Star",
+          "url": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/tracks/stream/2-dr-star.ogg",
+          "previewUrl": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/tracks/preview/2-dr-star.ogg"
+        },
+        {
+          "index": 3,
+          "title": "Drag Den",
+          "url": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/tracks/stream/3-drag-den.ogg",
+          "previewUrl": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/tracks/preview/3-drag-den.ogg"
+        },
+        {
+          "index": 4,
+          "title": "unnamed012",
+          "url": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/tracks/stream/4-unnamed012.ogg",
+          "previewUrl": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/tracks/preview/4-unnamed012.ogg"
+        },
+        {
+          "index": 5,
+          "title": "Crying Witches",
+          "url": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/tracks/stream/5-crying-witches.ogg",
+          "previewUrl": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/tracks/preview/5-crying-witches.ogg"
+        },
+        {
+          "index": 6,
+          "title": "Winter Walk",
+          "url": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/tracks/stream/6-winter-walk.ogg",
+          "previewUrl": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/tracks/preview/6-winter-walk.ogg"
+        },
+        {
+          "index": 7,
+          "title": "master",
+          "url": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/tracks/stream/master.ogg",
+          "previewUrl": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/tracks/preview/master.ogg"
+        }
+      ]
+    },
+    {
+      "slug": "wh1te-hous3",
+      "albumName": "Wh1te Hous3",
+      "sourceDirName": "Wh1te Hous3",
+      "coverUrl": "/media/music/Wh1te Hous3/cover/cover.jpg",
+      "coverPreviewUrl": "/media/music/Wh1te Hous3/cover/cover-preview.webp",
+      "releaseDate": "04/03/2026",
+      "notes": "D7TUN6 :: Wh1te Hous3\n////////////////////////////////////////////////////////////////////////////////////////////////////////////////  \n  \n1. Static N0is3 Tvrn3d int0 Static Pain 06:04\n2. Lucifer 07:16\n3. Starfighter 04:19\n4. Acid Tears (t2) 01:45\n5. Dope 06:15\n6. Thai 02:11\n7. Understation 04:41\n8. unnrR35sT 04:04\n9. hd1ep2amb.mmpz 01:23\n10. D0nor 03:11\n11. Poignant 03:39\n12. Snowgazer 03:44\n13. K1ndn3ss 08:00\n### about  \n  \nsecond release by D7TUN6.  \n  \n////////////////////////////////////////////////////////////////////////////////////////////////////////////////  \n  \nwho:  \n  \nall - written and produced by D7TUN6 between 2024-2026.  \n  \ncover art: a low-rise Stalinka apartment building captured on Canon Digital IXUS 970 IS, tinted deep blue, 18:55 PM.\n\nyears:\n2024: 4, 8, 9\n2025: 2, 3, 5, 6, 7, 10\n2026: 1, 11, 12, 13\n  \n////////////////////////////////////////////////////////////////////////////////////////////////////////////////  \n  \nsoftware and hardware used:  \n  \nreaper renoise lmms audacity  \nzynaddsubfx tripleoscillator vital lb302 xpressive  \nlsp calf \nnixos  \n  \nphilips_xenium_x500  canon_digital_ixus_970_is\nfiio_jd10\n  \n### credits  \n  \nwill be released on 11.03.26 (streamings)  \nreleased 04.03.26 (bandcamp)  \n  \n### license  \n  \nall rights reserved",
+      "genre": {
+        "en": "Electronic",
+        "ru": "Электроника"
+      },
+      "playlistM3uUrl": "/media/music/Wh1te Hous3/playlists/full.m3u",
+      "playlistM3u8Url": "/media/music/Wh1te Hous3/playlists/full.m3u8",
+      "previewPlaylistM3uUrl": "/media/music/Wh1te Hous3/playlists/preview.m3u",
+      "previewPlaylistM3u8Url": "/media/music/Wh1te Hous3/playlists/preview.m3u8",
+      "tracks": [
+        {
+          "index": 1,
+          "title": "Static N0is3 Tvrn3d int0 Static Pain (intro)",
+          "url": "/media/music/Wh1te Hous3/tracks/stream/1-static-n0is3-tvrn3d-int0-static-pain-intro.ogg",
+          "previewUrl": "/media/music/Wh1te Hous3/tracks/preview/1-static-n0is3-tvrn3d-int0-static-pain-intro.ogg"
+        },
+        {
+          "index": 2,
+          "title": "Lucifer",
+          "url": "/media/music/Wh1te Hous3/tracks/stream/2-lucifer.ogg",
+          "previewUrl": "/media/music/Wh1te Hous3/tracks/preview/2-lucifer.ogg"
+        },
+        {
+          "index": 3,
+          "title": "Starfighter",
+          "url": "/media/music/Wh1te Hous3/tracks/stream/3-starfighter.ogg",
+          "previewUrl": "/media/music/Wh1te Hous3/tracks/preview/3-starfighter.ogg"
+        },
+        {
+          "index": 4,
+          "title": "Acid Tears (t2)",
+          "url": "/media/music/Wh1te Hous3/tracks/stream/4-acid-tears-t2.ogg",
+          "previewUrl": "/media/music/Wh1te Hous3/tracks/preview/4-acid-tears-t2.ogg"
+        },
+        {
+          "index": 5,
+          "title": "Dope",
+          "url": "/media/music/Wh1te Hous3/tracks/stream/5-dope.ogg",
+          "previewUrl": "/media/music/Wh1te Hous3/tracks/preview/5-dope.ogg"
+        },
+        {
+          "index": 6,
+          "title": "Thai",
+          "url": "/media/music/Wh1te Hous3/tracks/stream/6-thai.ogg",
+          "previewUrl": "/media/music/Wh1te Hous3/tracks/preview/6-thai.ogg"
+        },
+        {
+          "index": 7,
+          "title": "Understation",
+          "url": "/media/music/Wh1te Hous3/tracks/stream/7-understation.ogg",
+          "previewUrl": "/media/music/Wh1te Hous3/tracks/preview/7-understation.ogg"
+        },
+        {
+          "index": 8,
+          "title": "unnrR35sT",
+          "url": "/media/music/Wh1te Hous3/tracks/stream/8-unnrr35st.ogg",
+          "previewUrl": "/media/music/Wh1te Hous3/tracks/preview/8-unnrr35st.ogg"
+        },
+        {
+          "index": 9,
+          "title": "hd1ep2amb.mmpz",
+          "url": "/media/music/Wh1te Hous3/tracks/stream/9-hd1ep2amb-mmpz.ogg",
+          "previewUrl": "/media/music/Wh1te Hous3/tracks/preview/9-hd1ep2amb-mmpz.ogg"
+        },
+        {
+          "index": 10,
+          "title": "D0nor",
+          "url": "/media/music/Wh1te Hous3/tracks/stream/10-d0nor.ogg",
+          "previewUrl": "/media/music/Wh1te Hous3/tracks/preview/10-d0nor.ogg"
+        },
+        {
+          "index": 11,
+          "title": "Poignant",
+          "url": "/media/music/Wh1te Hous3/tracks/stream/11-poignant.ogg",
+          "previewUrl": "/media/music/Wh1te Hous3/tracks/preview/11-poignant.ogg"
+        },
+        {
+          "index": 12,
+          "title": "Snowgazer",
+          "url": "/media/music/Wh1te Hous3/tracks/stream/12-snowgazer.ogg",
+          "previewUrl": "/media/music/Wh1te Hous3/tracks/preview/12-snowgazer.ogg"
+        },
+        {
+          "index": 13,
+          "title": "K1ndn3ss",
+          "url": "/media/music/Wh1te Hous3/tracks/stream/13-k1ndn3ss.ogg",
+          "previewUrl": "/media/music/Wh1te Hous3/tracks/preview/13-k1ndn3ss.ogg"
+        }
+      ]
+    },
+    {
+      "slug": "wh1te-hous3-deluxe-analog-edition",
+      "albumName": "Wh1te Hous3 (Deluxe Analog Edition)",
+      "sourceDirName": "Wh1te Hous3 (Deluxe Analog Edition)",
+      "coverUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/cover/cover.jpg",
+      "coverPreviewUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/cover/cover-preview.webp",
+      "releaseDate": "05/03/2026",
+      "notes": "D7TUN6 :: Wh1te Hous3 (Deluxe Analog Edition)\n////////////////////////////////////////////////////////////////////////////////////////////////////////////////  \n  \n1. Static N0is3 Tvrn3d int0 Static Pain 06:00\n2. Lucifer 07:14\n3. Starfighter 04:20\n4. Acid Tears (t2) 01:45\n5. Dope 06:24\n6. Thai 02:08\n7. Understation 04:41\n8. unnrR35sT 04:04\n9. hd1ep2amb.mmpz 01:22\n10. D0nor 03:12\n11. Poignant 03:36\n12. Snowgazer 03:40\n13. K1ndn3ss 08:00\n### about  \n  \nsecond release by D7TUN6. recorded from Technics CA10's amplifier. Improved by applying compression, equalisation and normalization.\n  \n////////////////////////////////////////////////////////////////////////////////////////////////////////////////  \n  \nwho:  \n  \ntracks - written and produced by D7TUN6 between 2024-2026.  \nrecord - matbeq332\n\ncover art: a low-rise Stalinka apartment building captured on iPhone 6s, corrected in Krita. 19:36 PM.\n\nyears:\n2024: 4, 8, 9\n2025: 2, 3, 5, 6, 7, 10\n2026: 1, 11, 12, 13\n  \n////////////////////////////////////////////////////////////////////////////////////////////////////////////////  \n  \nsoftware and hardware used:  \n  \nreaper renoise lmms audacity\nzynaddsubfx tripleoscillator vital lb302 xpressive  \nlsp calf\nkrita\nnixos \n  \ntechnics_ca10\nphilips_xenium_x500  canon_digital_ixus_970_is\nfiio_jd10\n\n### credits  \n  \nwill NOT be released on streamings  \nreleased 05.03.26 (bandcamp)  \n  \n### license  \n  \nall rights reserved",
+      "genre": {
+        "en": "Electronic",
+        "ru": "Электроника"
+      },
+      "playlistM3uUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/playlists/full.m3u",
+      "playlistM3u8Url": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/playlists/full.m3u8",
+      "previewPlaylistM3uUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/playlists/preview.m3u",
+      "previewPlaylistM3u8Url": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/playlists/preview.m3u8",
+      "tracks": [
+        {
+          "index": 1,
+          "title": "Static N0is3 Tvrn3d int0 Static Pain",
+          "url": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/stream/1-static-n0is3-tvrn3d-int0-static-pain.ogg",
+          "previewUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/preview/1-static-n0is3-tvrn3d-int0-static-pain.ogg"
+        },
+        {
+          "index": 2,
+          "title": "Lucifer",
+          "url": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/stream/2-lucifer.ogg",
+          "previewUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/preview/2-lucifer.ogg"
+        },
+        {
+          "index": 3,
+          "title": "Starfighter",
+          "url": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/stream/3-starfighter.ogg",
+          "previewUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/preview/3-starfighter.ogg"
+        },
+        {
+          "index": 4,
+          "title": "Acid Tears (t2)",
+          "url": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/stream/4-acid-tears-t2.ogg",
+          "previewUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/preview/4-acid-tears-t2.ogg"
+        },
+        {
+          "index": 5,
+          "title": "Dope",
+          "url": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/stream/5-dope.ogg",
+          "previewUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/preview/5-dope.ogg"
+        },
+        {
+          "index": 6,
+          "title": "Thai",
+          "url": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/stream/6-thai.ogg",
+          "previewUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/preview/6-thai.ogg"
+        },
+        {
+          "index": 7,
+          "title": "Understation",
+          "url": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/stream/7-understation.ogg",
+          "previewUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/preview/7-understation.ogg"
+        },
+        {
+          "index": 8,
+          "title": "unnrR35sT",
+          "url": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/stream/8-unnrr35st.ogg",
+          "previewUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/preview/8-unnrr35st.ogg"
+        },
+        {
+          "index": 9,
+          "title": "hd1ep2amb.mmpz",
+          "url": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/stream/9-hd1ep2amb-mmpz.ogg",
+          "previewUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/preview/9-hd1ep2amb-mmpz.ogg"
+        },
+        {
+          "index": 10,
+          "title": "D0nor",
+          "url": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/stream/10-d0nor.ogg",
+          "previewUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/preview/10-d0nor.ogg"
+        },
+        {
+          "index": 11,
+          "title": "Poignant",
+          "url": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/stream/11-poignant.ogg",
+          "previewUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/preview/11-poignant.ogg"
+        },
+        {
+          "index": 12,
+          "title": "Snowgazer",
+          "url": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/stream/12-snowgazer.ogg",
+          "previewUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/preview/12-snowgazer.ogg"
+        },
+        {
+          "index": 13,
+          "title": "K1ndn3ss",
+          "url": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/stream/13-k1ndn3ss.ogg",
+          "previewUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/tracks/preview/13-k1ndn3ss.ogg"
+        }
+      ]
+    }
+  ]
+}

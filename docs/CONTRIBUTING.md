@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- Node.js 22+
+- Node.js 24+
 - npm 10+
 - `ffmpeg`
 
@@ -10,6 +10,7 @@
 
 ```bash
 npm install
+npm run optimize:media
 npm run generate:releases
 npm run dev
 ```

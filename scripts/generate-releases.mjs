@@ -3,23 +3,25 @@ import path from "node:path";
 
 const ROOT = process.cwd();
 const MUSIC_ROOT = path.join(ROOT, "public", "media", "music");
-const EN_BASE_MUSIC = path.join(ROOT, "content", "mdx", "en", "base", "music.mdx");
-const RU_BASE_MUSIC = path.join(ROOT, "content", "mdx", "ru", "base", "music.mdx");
-const EN_RELEASES_DIR = path.join(ROOT, "content", "mdx", "en", "releases");
-const RU_RELEASES_DIR = path.join(ROOT, "content", "mdx", "ru", "releases");
-const GENERATED_ROUTES = path.join(ROOT, "src", "lib", "generated-release-routes.ts");
 const GENERATED_RELEASE_DATA = path.join(ROOT, "server", "generated", "release-download-data.json");
+const GENERATED_RELEASE_MANIFEST = path.join(ROOT, "src", "generated", "release-manifest.json");
+const RELEASE_MDX_ROOT = path.join(ROOT, "content", "mdx");
 
 const TRACK_EXT = new Set([".wav", ".mp3", ".flac", ".ogg", ".m4a", ".aac"]);
 const COVER_EXT = new Set([".jpg", ".jpeg", ".png", ".webp", ".avif"]);
+const URL_PROTOCOL_RE = /^[a-zA-Z][a-zA-Z\d+\-.]*:/;
 
-function slugify(name) {
-  return name
+function slugify(value) {
+  return value
     .toLowerCase()
     .replace(/\([^)]*\)/g, (m) => ` ${m.slice(1, -1)} `)
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .replace(/--+/g, "-");
+}
+
+function toSafeTrackStem(fileName) {
+  return slugify(fileName.replace(/\.[^.]+$/, ""));
 }
 
 function toPublicUrl(absPath) {
@@ -74,15 +76,108 @@ function parseReleaseDateFromNotes(notes) {
   for (const re of candidates) {
     const match = notes.match(re);
     if (!match) continue;
+
     const day = Number(match[1]);
     const month = Number(match[2]);
     const year = normalizeYear(match[3]);
+
     if (!year) continue;
     if (day < 1 || day > 31 || month < 1 || month > 12) continue;
+
     return `${pad2(day)}/${pad2(month)}/${year}`;
   }
 
   return null;
+}
+
+function decodeMaybe(value) {
+  try {
+    return decodeURI(value);
+  } catch {
+    return value;
+  }
+}
+
+function fallbackTrackTitleFromPlaylistUrl(rawUrl) {
+  const stripped = rawUrl.split("#")[0].split("?")[0];
+
+  try {
+    if (URL_PROTOCOL_RE.test(stripped)) {
+      const url = new URL(stripped);
+      const fileName = decodeMaybe(path.basename(url.pathname));
+      return normalizeTrackTitle(fileName);
+    }
+  } catch {
+    // Keep fallback below.
+  }
+
+  return normalizeTrackTitle(path.basename(decodeMaybe(stripped)));
+}
+
+function normalizePlaylistUrl(rawUrl, playlistPath) {
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return null;
+
+  if (URL_PROTOCOL_RE.test(trimmed) || trimmed.startsWith("//")) {
+    return trimmed;
+  }
+
+  if (trimmed.startsWith("/")) {
+    return decodeMaybe(trimmed);
+  }
+
+  const resolvedAbs = path.resolve(path.dirname(playlistPath), decodeMaybe(trimmed));
+  return toPublicUrl(resolvedAbs);
+}
+
+function parsePlaylistEntries(source, playlistPath) {
+  const lines = source.split(/\r?\n/);
+  const entries = [];
+  let pendingTitle = "";
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line) continue;
+
+    if (line.startsWith("#EXTINF")) {
+      const titleStart = line.indexOf(",");
+      pendingTitle = titleStart >= 0 ? line.slice(titleStart + 1).trim() : "";
+      continue;
+    }
+
+    if (line.startsWith("#")) {
+      continue;
+    }
+
+    const url = normalizePlaylistUrl(line, playlistPath);
+    if (!url) continue;
+
+    entries.push({
+      title: pendingTitle || fallbackTrackTitleFromPlaylistUrl(line),
+      url
+    });
+    pendingTitle = "";
+  }
+
+  return entries;
+}
+
+async function exists(pathToCheck) {
+  try {
+    await fs.access(pathToCheck);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function readPlaylistEntries(playlistPath) {
+  if (!(await exists(playlistPath))) {
+    return [];
+  }
+
+  const source = await fs.readFile(playlistPath, "utf8");
+  return parsePlaylistEntries(source, playlistPath);
 }
 
 async function readAlbums() {
@@ -91,76 +186,110 @@ async function readAlbums() {
 
   for (const d of dirents) {
     if (!d.isDirectory()) continue;
+
     const albumDir = path.join(MUSIC_ROOT, d.name);
     const coverDir = path.join(albumDir, "cover");
     const tracksDir = path.join(albumDir, "tracks");
     const tracksWavDir = path.join(tracksDir, "wav");
     const notesFile = path.join(albumDir, "notes", "notes");
+    const playlistsDir = path.join(albumDir, "playlists");
+    const playlistM3uPath = path.join(playlistsDir, "full.m3u");
+    const playlistM3u8Path = path.join(playlistsDir, "full.m3u8");
+    const previewM3uPath = path.join(playlistsDir, "preview.m3u");
+    const previewM3u8Path = path.join(playlistsDir, "preview.m3u8");
+
+    const fullPlaylistEntries = await readPlaylistEntries(playlistM3u8Path);
+    const previewPlaylistEntries = await readPlaylistEntries(previewM3u8Path);
 
     let coverPath = null;
     try {
       const covers = (await fs.readdir(coverDir))
-        .filter((f) => COVER_EXT.has(path.extname(f).toLowerCase()))
+        .filter((f) => COVER_EXT.has(path.extname(f).toLowerCase()) && !/^cover-preview\./i.test(f))
         .sort(sortTracksNatural);
-      if (covers.length > 0) coverPath = path.join(coverDir, covers[0]);
-    } catch (error) {
-      void error;
+      if (covers.length > 0) {
+        coverPath = path.join(coverDir, covers[0]);
+      }
+    } catch {
+      coverPath = null;
     }
 
-    let tracks = [];
+    let tracksSourceDir = tracksDir;
     try {
-      let tracksSourceDir = tracksDir;
-      try {
-        const wavStat = await fs.stat(tracksWavDir);
-        if (wavStat.isDirectory()) {
-          tracksSourceDir = tracksWavDir;
-        }
-      } catch (error) {
-        void error;
+      const wavStat = await fs.stat(tracksWavDir);
+      if (wavStat.isDirectory()) {
+        tracksSourceDir = tracksWavDir;
       }
+    } catch {
+      tracksSourceDir = tracksDir;
+    }
 
-      const trackFiles = (await fs.readdir(tracksSourceDir))
+    const tracks = [];
+    let trackFiles = [];
+
+    try {
+      trackFiles = (await fs.readdir(tracksSourceDir))
         .filter((f) => TRACK_EXT.has(path.extname(f).toLowerCase()))
         .sort(sortTracksNatural);
-      const numberedTracks = trackFiles.filter((name) => /^\s*\d+\s*-\s*/.test(name));
-      const selectedTracks =
-        numberedTracks.length > 0
-          ? trackFiles.filter((name) => /^\s*\d+\s*-\s*/.test(name) || /^master\./i.test(name))
-          : trackFiles;
+    } catch {
+      trackFiles = [];
+    }
 
-      for (const fileName of selectedTracks) {
-        const abs = path.join(tracksSourceDir, fileName);
-        const stat = await fs.stat(abs);
-        const sourceFilePath = path
-          .relative(albumDir, abs)
-          .split(path.sep)
-          .join("/");
-        const ext = path.extname(fileName).toLowerCase();
-        let mime = "audio/wav";
-        if (ext === ".mp3") mime = "audio/mpeg";
-        else if (ext === ".flac") mime = "audio/flac";
-        else if (ext === ".ogg") mime = "audio/ogg";
-        else if (ext === ".m4a") mime = "audio/mp4";
-        else if (ext === ".aac") mime = "audio/aac";
+    const numberedTracks = trackFiles.filter((name) => /^\s*\d+\s*-\s*/.test(name));
+    const selectedTracks =
+      numberedTracks.length > 0
+        ? trackFiles.filter((name) => /^\s*\d+\s*-\s*/.test(name) || /^master\./i.test(name))
+        : trackFiles;
 
-        tracks.push({
-          fileName,
-          title: normalizeTrackTitle(fileName),
-          url: toPublicUrl(abs),
-          mime,
-          sourceFilePath,
-          sizeBytes: stat.size
-        });
+    if (selectedTracks.length > 0) {
+      if (fullPlaylistEntries.length === 0) {
+        throw new Error(
+          `Missing full.m3u8 playlist for release "${d.name}". Run: npm run optimize:media`
+        );
       }
-    } catch (error) {
-      void error;
+
+      if (selectedTracks.length !== fullPlaylistEntries.length) {
+        throw new Error(
+          `Track count mismatch in "${d.name}": sources=${selectedTracks.length}, full.m3u8=${fullPlaylistEntries.length}`
+        );
+      }
+    }
+
+    for (const [index, fileName] of selectedTracks.entries()) {
+      const playlistTrack = fullPlaylistEntries[index];
+      const previewPlaylistTrack = previewPlaylistEntries[index] ?? null;
+
+      if (!playlistTrack) {
+        throw new Error(`Missing playlist track #${index + 1} in "${d.name}"`);
+      }
+
+      const abs = path.join(tracksSourceDir, fileName);
+      const stat = await fs.stat(abs);
+      const sourceFilePath = path.relative(albumDir, abs).split(path.sep).join("/");
+      const safeStem = toSafeTrackStem(fileName);
+      const previewAbs = path.join(tracksDir, "preview", `${safeStem}.ogg`);
+      let previewUrl = null;
+      if (previewPlaylistTrack) {
+        previewUrl = previewPlaylistTrack.url;
+      } else if (await exists(previewAbs)) {
+        previewUrl = toPublicUrl(previewAbs);
+      }
+
+      tracks.push({
+        fileName,
+        safeStem,
+        title: playlistTrack.title || normalizeTrackTitle(fileName),
+        url: playlistTrack.url,
+        sourceFilePath,
+        sizeBytes: stat.size,
+        previewUrl
+      });
     }
 
     let notes = "";
     try {
       notes = (await fs.readFile(notesFile, "utf8")).trim();
-    } catch (error) {
-      void error;
+    } catch {
+      notes = "";
     }
 
     let releaseDate = parseReleaseDateFromNotes(notes);
@@ -174,14 +303,25 @@ async function readAlbums() {
       }
     }
 
+    const coverPreviewPath = path.join(coverDir, "cover-preview.webp");
+
     albums.push({
-      albumName: d.name,
       slug: slugify(d.name),
+      albumName: d.name,
       sourceDirName: d.name,
-      coverUrl: coverPath ? toPublicUrl(coverPath) : null,
-      tracks,
+      coverUrl: coverPath ? toPublicUrl(coverPath) : "/media/background/bg.jpg",
+      coverPreviewUrl: (await exists(coverPreviewPath)) ? toPublicUrl(coverPreviewPath) : null,
+      releaseDate,
       notes,
-      releaseDate
+      genre: {
+        en: "Electronic",
+        ru: "Электроника"
+      },
+      playlistM3uUrl: (await exists(playlistM3uPath)) ? toPublicUrl(playlistM3uPath) : null,
+      playlistM3u8Url: (await exists(playlistM3u8Path)) ? toPublicUrl(playlistM3u8Path) : null,
+      previewPlaylistM3uUrl: (await exists(previewM3uPath)) ? toPublicUrl(previewM3uPath) : null,
+      previewPlaylistM3u8Url: (await exists(previewM3u8Path)) ? toPublicUrl(previewM3u8Path) : null,
+      tracks
     });
   }
 
@@ -189,99 +329,12 @@ async function readAlbums() {
   return albums;
 }
 
-function buildReleaseMdx({ lang, albumName, coverUrl, tracks, notes, releaseDate, slug }) {
-  const isRu = lang === "ru";
-  const back = isRu ? "Назад к дискографии" : "Back to Discography";
-  const notesTitle = isRu ? "Заметки" : "Notes";
-  const noTracks = isRu ? "Треки не найдены в папке `tracks`." : "No tracks found in `tracks` folder.";
-  const trackRows = tracks.map((t) => ({ title: t.title, url: t.url }));
-  const tracksLiteral = JSON.stringify(trackRows, null, 2);
-  const safeCover = coverUrl ?? "/media/background/bg.jpg";
-  const genreLabel = isRu ? "Электроника" : "Electronic";
-
-  const lines = [];
-  lines.push('import ReleasePlayer from "@/components/ReleasePlayer";');
-  lines.push("");
-  lines.push(`[← ${back}](/${lang}/music)`);
-  lines.push("");
-  lines.push(`# ${albumName}`);
-  lines.push("");
-  lines.push(
-    `<ReleasePlayer albumSlug={${JSON.stringify(slug)}} artist="D7TUN6" albumTitle={${JSON.stringify(
-      albumName
-    )}} coverUrl={${JSON.stringify(safeCover)}} releaseDate={${JSON.stringify(
-      releaseDate
-    )}} genre={${JSON.stringify(genreLabel)}} tracks={${tracksLiteral}} />`
-  );
-  lines.push("");
-  if (tracks.length === 0) lines.push(noTracks);
-  if (tracks.length === 0) lines.push("");
-
-  lines.push(`<div className="release-notes">`);
-  lines.push("");
-  lines.push(`## ${notesTitle}`);
-  lines.push("");
-  if (notes) {
-    lines.push("```text");
-    lines.push(notes);
-    lines.push("```");
-  } else {
-    lines.push(isRu ? "Заметки не найдены." : "Notes not found.");
-  }
-  lines.push("");
-  lines.push("</div>");
-  lines.push("");
-
-  return lines.join("\n");
-}
-
-function buildMusicIndexMdx({ lang, albums }) {
-  const isRu = lang === "ru";
-  const title = isRu ? "Музыка" : "Music";
-  const lines = [`# ${title}`, "", "<div className='music-grid'>"];
-
-  for (const album of albums) {
-    const href = `/${lang}/music/${album.slug}`;
-    const cover = album.coverUrl ?? "/media/background/bg.jpg";
-    lines.push(`  <a href='${href}' className='release-card'>`);
-    lines.push(`    <img src='${cover}' alt='${album.albumName}' className='release-cover' />`);
-    lines.push(`    <span className='release-title'>${album.albumName}</span>`);
-    lines.push("  </a>");
-    lines.push("");
-  }
-
-  lines.push("</div>");
-  lines.push("");
-  return lines.join("\n");
-}
-
-function buildGeneratedRoutesTs(albums) {
-  const routes = albums.map((a) => `music/${a.slug}`);
-  const routeLiterals = routes.map((r) => `  "${r}"`).join(",\n");
-
-  const enMap = routes
-    .map((r) => {
-      const slug = r.replace("music/", "");
-      return `    "${r}": () => import("../../content/mdx/en/releases/${slug}.mdx")`;
-    })
-    .join(",\n");
-
-  const ruMap = routes
-    .map((r) => {
-      const slug = r.replace("music/", "");
-      return `    "${r}": () => import("../../content/mdx/ru/releases/${slug}.mdx")`;
-    })
-    .join(",\n");
-
-  return `import type { ComponentType } from "react";\n\nexport const releaseRoutes = [\n${routeLiterals}\n] as const;\n\nexport type ReleaseRoute = (typeof releaseRoutes)[number];\n\ntype MdxModule = {\n  default: ComponentType;\n};\n\nexport const releaseContentModuleMap: Record<"en" | "ru", Record<ReleaseRoute, () => Promise<MdxModule>>> = {\n  en: {\n${enMap}\n  },\n  ru: {\n${ruMap}\n  }\n};\n`;
-}
-
-function buildGeneratedReleaseDownloadDataJson(albums) {
+function buildServerReleaseData(albums) {
   return albums.map((album) => ({
     slug: album.slug,
     albumName: album.albumName,
     sourceDirName: album.sourceDirName,
-    coverUrl: album.coverUrl ?? "/media/background/bg.jpg",
+    coverUrl: album.coverUrl,
     releaseDate: album.releaseDate,
     tracks: album.tracks.map((track, index) => ({
       index: index + 1,
@@ -293,41 +346,99 @@ function buildGeneratedReleaseDownloadDataJson(albums) {
   }));
 }
 
+function buildClientReleaseManifest(albums) {
+  return {
+    generatedAt: new Date().toISOString(),
+    releases: albums.map((album) => ({
+      slug: album.slug,
+      albumName: album.albumName,
+      sourceDirName: album.sourceDirName,
+      coverUrl: album.coverUrl,
+      coverPreviewUrl: album.coverPreviewUrl,
+      releaseDate: album.releaseDate,
+      notes: album.notes,
+      genre: album.genre,
+      playlistM3uUrl: album.playlistM3uUrl,
+      playlistM3u8Url: album.playlistM3u8Url,
+      previewPlaylistM3uUrl: album.previewPlaylistM3uUrl,
+      previewPlaylistM3u8Url: album.previewPlaylistM3u8Url,
+      tracks: album.tracks.map((track, index) => ({
+        index: index + 1,
+        title: track.title,
+        url: track.url,
+        previewUrl: track.previewUrl
+      }))
+    }))
+  };
+}
+
+function buildMdxTrackListValue(tracks) {
+  const items = tracks.map((track) =>
+    [
+      "  {",
+      `    "title": ${JSON.stringify(track.title)},`,
+      `    "url": ${JSON.stringify(track.url)}`,
+      "  }"
+    ].join("\n")
+  );
+
+  return `tracks={[\n${items.join(",\n")}\n]}`;
+}
+
+async function syncReleaseMdxTrackUrls(albums) {
+  const langs = ["en", "ru"];
+  let updatedFiles = 0;
+
+  for (const lang of langs) {
+    const releasesDir = path.join(RELEASE_MDX_ROOT, lang, "releases");
+
+    for (const album of albums) {
+      const filePath = path.join(releasesDir, `${album.slug}.mdx`);
+      if (!(await exists(filePath))) continue;
+
+      const source = await fs.readFile(filePath, "utf8");
+      const withVuePlayerImport = source.replace(
+        /^import\s+ReleasePlayer\s+from\s+["']@\/components\/ReleasePlayer(?:\.[^"']+)?["'];?$/m,
+        'import ReleasePlayer from "@/components/ReleasePlayer.vue";'
+      );
+      const withVueLikeClassAttr = withVuePlayerImport.replace(/\bclassName=/g, "class=");
+
+      const replacedTracks = withVueLikeClassAttr.replace(
+        /tracks=\{\[[\s\S]*?\]\}/m,
+        buildMdxTrackListValue(album.tracks)
+      );
+
+      if (replacedTracks !== source) {
+        await fs.writeFile(filePath, replacedTracks);
+        updatedFiles += 1;
+      }
+    }
+  }
+
+  return updatedFiles;
+}
+
 async function main() {
-  await fs.mkdir(EN_RELEASES_DIR, { recursive: true });
-  await fs.mkdir(RU_RELEASES_DIR, { recursive: true });
-
   const albums = await readAlbums();
+  const syncedMdxFiles = await syncReleaseMdxTrackUrls(albums);
 
-  for (const dir of [EN_RELEASES_DIR, RU_RELEASES_DIR]) {
-    const files = await fs.readdir(dir);
-    await Promise.all(files.filter((f) => f.endsWith(".mdx")).map((f) => fs.unlink(path.join(dir, f))));
-  }
-
-  for (const album of albums) {
-    const en = buildReleaseMdx({ lang: "en", ...album });
-    const ru = buildReleaseMdx({ lang: "ru", ...album });
-    await fs.writeFile(path.join(EN_RELEASES_DIR, `${album.slug}.mdx`), en);
-    await fs.writeFile(path.join(RU_RELEASES_DIR, `${album.slug}.mdx`), ru);
-  }
-
-  await fs.writeFile(EN_BASE_MUSIC, buildMusicIndexMdx({ lang: "en", albums }));
-  await fs.writeFile(RU_BASE_MUSIC, buildMusicIndexMdx({ lang: "ru", albums }));
-
-  await fs.writeFile(GENERATED_ROUTES, buildGeneratedRoutesTs(albums));
   await fs.mkdir(path.dirname(GENERATED_RELEASE_DATA), { recursive: true });
+  await fs.writeFile(GENERATED_RELEASE_DATA, JSON.stringify(buildServerReleaseData(albums), null, 2));
+
+  await fs.mkdir(path.dirname(GENERATED_RELEASE_MANIFEST), { recursive: true });
   await fs.writeFile(
-    GENERATED_RELEASE_DATA,
-    JSON.stringify(buildGeneratedReleaseDownloadDataJson(albums), null, 2)
+    GENERATED_RELEASE_MANIFEST,
+    JSON.stringify(buildClientReleaseManifest(albums), null, 2)
   );
 
   console.log(`Generated ${albums.length} releases`);
-  for (const a of albums) {
-    console.log(`- ${a.albumName} -> ${a.slug} (${a.tracks.length} tracks)`);
+  console.log(`Synced ${syncedMdxFiles} MDX release files`);
+  for (const album of albums) {
+    console.log(`- ${album.albumName} -> ${album.slug} (${album.tracks.length} tracks)`);
   }
 }
 
-main().catch((err) => {
-  console.error(err);
+main().catch((error) => {
+  console.error(error);
   process.exit(1);
 });
