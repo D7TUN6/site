@@ -14,7 +14,6 @@ const props = defineProps<{
 const navItems: Array<{ id: BaseRoute; key: keyof LocaleDictionary["nav"] }> = [
   { id: "main", key: "main" },
   { id: "bio", key: "bio" },
-  { id: "git", key: "git" },
   { id: "music", key: "music" },
   { id: "news", key: "news" },
   { id: "blog", key: "blog" },
@@ -42,6 +41,7 @@ const switchLang = computed<Lang>(() => (isRu.value ? "en" : "ru"));
 const switchLabel = computed(() => (isRu.value ? "EN" : "RU"));
 const switchHref = computed(() => `/${switchLang.value}${switchRouteTarget(props.route)}`);
 const isMusicRoute = computed(() => props.route === "music" || props.route.startsWith("music/"));
+const isBlogRoute = computed(() => props.route === "blog" || props.route.startsWith("blog/"));
 </script>
 
 <template>
@@ -61,7 +61,9 @@ const isMusicRoute = computed(() => props.route === "music" || props.route.start
     <nav class="main-nav" aria-label="Primary">
       <ul>
         <li v-for="item in navItems" :key="item.id">
-          <span v-if="route === item.id" class="nav-active">{{ dictionary.nav[item.key] }}</span>
+          <span v-if="item.id === 'music' ? isMusicRoute : item.id === 'blog' ? isBlogRoute : route === item.id" class="nav-active">
+            {{ dictionary.nav[item.key] }}
+          </span>
           <RouterLink v-else :to="routeToHref(lang, item.id)">{{ dictionary.nav[item.key] }}</RouterLink>
         </li>
       </ul>
@@ -72,5 +74,5 @@ const isMusicRoute = computed(() => props.route === "music" || props.route.start
     </main>
   </div>
 
-  <NowPlayingBar :is-music-route="isMusicRoute" />
+  <NowPlayingBar :is-music-route="isMusicRoute" :lang="lang" />
 </template>

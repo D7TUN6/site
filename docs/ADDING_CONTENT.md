@@ -1,105 +1,95 @@
-# Adding Content
+# Content Workflow
 
-This document covers:
+## Add a Base Page
 
-1. adding a new base site section
-2. adding/updating a music release
+Example: add `/en/projects` and `/ru/projects`.
 
-## 1. Add a New Base Section
+1. Create:
+   - `content/mdx/en/base/projects.mdx`
+   - `content/mdx/ru/base/projects.mdx`
+2. Update `src/types/content.ts`:
+   - extend `BaseRoute`
+   - extend navigation dictionary types if needed
+3. Update `src/lib/content.ts`:
+   - add the route to `baseRoutes`
+   - add both language imports to `baseContentModuleMap`
+4. Update labels in:
+   - `public/locales/en.xml`
+   - `public/locales/ru.xml`
+5. Update nav items in `src/components/SiteFrame.vue`
 
-Example route: `/en/projects` and `/ru/projects`.
-
-### Step 1: Create content files
-
-Create:
-
-- `content/mdx/en/base/projects.mdx`
-- `content/mdx/ru/base/projects.mdx`
-
-### Step 2: Register route loading
-
-Edit `src/lib/content.ts`:
-
-- add `"projects"` to `BaseRoute`
-- add dynamic imports for both languages in `baseContentModuleMap`
-- add `"projects"` to `baseRoutes`
-
-### Step 3: Add dictionary labels
-
-Edit:
-
-- `public/locales/en.xml`
-- `public/locales/ru.xml`
-
-Add `<projects>` labels under `<nav>`.
-
-### Step 4: Add section to navigation
-
-Edit `src/components/SiteFrame.vue`:
-
-- add `{ id: "projects", key: "projects" }` to `navItems`
-
-### Step 5: Validate
+Validate:
 
 ```bash
-npm run lint
 npm run typecheck
 npm run build
 ```
 
-## 2. Add or Update a Release
+## Add or Update a Release
 
-Releases are generated from filesystem assets in `public/media/music`.
+Release pages are generated from `public/media/music/<Album Name>`.
 
-### Required layout per album
+Recommended layout:
 
 ```text
 public/media/music/<Album Name>/
   cover/
-    cover.jpg (or png/webp/avif)
+    cover.jpg                # optional if artwork is embedded in first track
   notes/
     notes
   tracks/
-    wav/
-      1 - Track Name.wav
-      2 - Track Name.wav
-      ...
+    wav/                     # optional source folder
+      01 - Track Name.wav
+  links.json                 # optional platform links
 ```
 
-Notes:
+### `notes`
 
-- if numbered tracks exist, generator prioritizes numbered tracks (plus optional `master.*`)
-- release date is parsed from notes (e.g. `released 05.03.26`) with fallback to timestamps
-- player URLs are generated from `playlists/full.m3u8`
+Use a plain text file. If it contains a line like `released 07.03.26`, the generator uses it as the release date.
 
-### Regenerate media + manifests
+### `links.json`
 
-```bash
-npm run optimize:media
-npm run generate:releases
+Example:
+
+```json
+{
+  "release": {
+    "bandcamp": "https://d7tun6.bandcamp.com"
+  },
+  "tracks": {
+    "01 - Track Name.wav": {
+      "spotify": "https://open.spotify.com/...",
+      "yandexMusic": "https://music.yandex.ru/...",
+      "bandcamp": "https://bandcamp.com/...",
+      "soundcloud": "https://soundcloud.com/..."
+    }
+  }
+}
 ```
 
-This updates:
+Track keys can match:
 
-- `src/generated/release-manifest.json`
-- `server/generated/release-download-data.json`
-- `content/mdx/<lang>/releases/*.mdx` track URL blocks (synced to M3U8-derived stream URLs)
+- the original filename
+- the normalized track title
+- the generated safe stem
 
-### Validate
+## Rebuild Media + Manifests
 
 ```bash
-npm run lint
+npm run prepare:media
+```
+
+This regenerates:
+
+- extracted covers and cover previews
+- preview audio
+- HLS stream output
+- frontend release manifest
+- backend download manifest
+
+## Final Check
+
+```bash
 npm run typecheck
 npm run build
 ```
-
-## Download API Formats
-
-`/api/releases/download` supports:
-
-- `flac` - 16-bit / 44.1kHz
-- `wav` - PCM s16le / 44.1kHz
-- `mp3` - 320 kbps / 44.1kHz
-- `ogg` - Opus VBR / 48kHz
-
-`ffmpeg` must be available on runtime host.

@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, reactive, watch } from "vue";
+import { computed, reactive, watch } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import MarkdownContent from "@/components/MarkdownContent.vue";
+import BlogIndex from "@/components/BlogIndex.vue";
 import MusicGrid from "@/components/MusicGrid.vue";
 import ReleasePlayer from "@/components/ReleasePlayer.vue";
 import SiteFrame from "@/components/SiteFrame.vue";
@@ -34,49 +35,8 @@ const state = reactive({
   dictionary: null as LocaleDictionary | null,
   payload: null as RoutePayload | null,
   route: null as RouteKey | null,
-  message: "",
-  showNotes: false
+  message: ""
 });
-
-type IdleAwareWindow = Window & {
-  requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
-  cancelIdleCallback?: (id: number) => void;
-};
-
-let notesRenderHandle: number | null = null;
-
-function clearNotesRenderSchedule() {
-  if (notesRenderHandle === null) return;
-
-  const idleWindow = window as IdleAwareWindow;
-  if (typeof idleWindow.cancelIdleCallback === "function") {
-    idleWindow.cancelIdleCallback(notesRenderHandle);
-  } else {
-    window.clearTimeout(notesRenderHandle);
-  }
-
-  notesRenderHandle = null;
-}
-
-function scheduleNotesRender(enabled: boolean) {
-  clearNotesRenderSchedule();
-  state.showNotes = false;
-
-  if (!enabled) return;
-
-  const reveal = () => {
-    notesRenderHandle = null;
-    state.showNotes = true;
-  };
-
-  const idleWindow = window as IdleAwareWindow;
-  if (typeof idleWindow.requestIdleCallback === "function") {
-    notesRenderHandle = idleWindow.requestIdleCallback(reveal, { timeout: 1200 });
-    return;
-  }
-
-  notesRenderHandle = window.setTimeout(reveal, 64);
-}
 
 const notesMarkdown = computed(() => {
   if (state.status !== "ready" || !state.payload || state.payload?.kind !== "release") return "";
@@ -93,6 +53,7 @@ const notesMarkdown = computed(() => {
 });
 
 const backLabel = computed(() => (lang.value === "ru" ? "Назад к дискографии" : "Back to Discography"));
+const blogBackLabel = computed(() => (lang.value === "ru" ? "Назад в блог" : "Back to Blog"));
 
 watch(
   () => [lang.value, routeKey.value] as const,
@@ -102,12 +63,11 @@ watch(
       return;
     }
 
-    state.status = "loading";
-    state.dictionary = null;
-    state.payload = null;
-    state.route = null;
+    const shouldShowBlockingLoader = !state.dictionary && !state.payload;
+    if (shouldShowBlockingLoader) {
+      state.status = "loading";
+    }
     state.message = "";
-    state.showNotes = false;
 
     try {
       const [dictionary, payload] = await Promise.all([
@@ -131,7 +91,6 @@ watch(
       state.dictionary = dictionary;
       state.payload = payload;
       state.route = nextRoute;
-      scheduleNotesRender(payload.kind === "release");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unexpected loading error";
 
@@ -149,10 +108,6 @@ watch(
   },
   { immediate: true }
 );
-
-onBeforeUnmount(() => {
-  clearNotesRenderSchedule();
-});
 </script>
 
 <template>
@@ -173,15 +128,30 @@ onBeforeUnmount(() => {
 
     <MusicGrid v-else-if="state.payload.kind === 'music-index'" :lang="lang" :releases="state.payload.releases" />
 
+    <BlogIndex v-else-if="state.payload.kind === 'blog-index'" :lang="lang" :posts="state.payload.posts" />
+
     <template v-else-if="state.payload.kind === 'release'">
-      <RouterLink :to="`/${lang}/music`">← {{ backLabel }}</RouterLink>
+      <RouterLink :to="`/${lang}/music`" class="content-link-plain">← {{ backLabel }}</RouterLink>
       <h1>{{ state.payload.release.albumName }}</h1>
 
       <ReleasePlayer :lang="lang" :release="state.payload.release" />
 
-      <div v-if="state.showNotes" class="release-notes">
+      <div class="release-notes">
         <MarkdownContent :source="notesMarkdown" />
       </div>
+    </template>
+
+    <template v-else-if="state.payload.kind === 'blog-post'">
+      <RouterLink :to="`/${lang}/blog`" class="content-link-plain">← {{ blogBackLabel }}</RouterLink>
+      <article class="blog-post">
+        <header class="blog-post-head">
+          <div class="blog-post-date">{{ state.payload.post.publishedAt }}</div>
+          <h1>{{ state.payload.post.title }}</h1>
+          <p v-if="state.payload.post.excerpt" class="blog-post-excerpt">{{ state.payload.post.excerpt }}</p>
+        </header>
+
+        <MarkdownContent :source="state.payload.post.content" />
+      </article>
     </template>
   </SiteFrame>
 

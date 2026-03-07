@@ -1,37 +1,24 @@
 # Migration Notes
 
-This project has gone through two major migrations:
+Short version:
 
-1. static HTML -> Next.js
-2. Next.js -> Vite + Vue + Node API server
+1. static HTML
+2. Next.js
+3. current stack: Vite + Vue + Express
 
-## Current Stack
+## Why The Current Stack Stayed
 
-- frontend: Vite + Vue + Vue Router
-- backend: Node + Express (download queue API + static serving)
-- content: raw MDX-like files in `content/mdx/<lang>/base`
-- i18n: XML dictionaries in `public/locales`
-- release metadata: generated JSON manifests from `public/media/music`
+- simple deployment
+- direct control over media generation
+- no SSR runtime overhead
+- easy filesystem-driven release publishing
 
-## Why Next.js Was Replaced
+## Current Direction
 
-- simpler deployment/runtime model for this site
-- explicit control over queue-based conversion API
-- no framework-coupled SSR/runtime requirements
+The site now treats music releases as generated content:
 
-## Stable Routing Model
+- source files live in `public/media/music`
+- `prepare:media` turns them into covers, previews, HLS streams, and manifests
+- the frontend reads generated manifests instead of hardcoded release pages
 
-- `/` redirects to `/en`
-- localized routes live under `/:lang/*`
-- supported languages: `en`, `ru`
-
-## Release Model
-
-Release data is generated from `public/media/music/*`:
-
-- `scripts/optimize-media.mjs` builds preview/stream tracks + playlists
-- `scripts/generate-releases.mjs` builds:
-  - `src/generated/release-manifest.json` (frontend)
-  - `server/generated/release-download-data.json` (API)
-
-Player track URLs are sourced from generated `full.m3u8` playlists.
+That keeps authoring simple and makes the player/download pipeline deterministic.

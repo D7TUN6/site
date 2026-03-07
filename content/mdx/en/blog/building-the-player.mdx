@@ -1,0 +1,18 @@
+---
+title: Building The Player
+slug: building-the-player
+publishedAt: 2026-03-07
+excerpt: Rebuilding the site player around HLS, segmented streaming, and a cleaner release flow.
+---
+
+The old player was doing too much on page open and too little at playback time.
+
+So the rebuild went in three directions:
+
+- media is prepared before runtime instead of during the first user action
+- tracks stream through `m3u8` playlists instead of waiting on raw file playback
+- release pages stop probing every track immediately after opening an album
+
+This makes the site feel closer to a real music surface instead of a static page with an audio tag attached to it.
+
+There is still visual work left, but the foundation is finally correct.

@@ -19,7 +19,6 @@ function isLocaleDictionary(input: unknown): input is LocaleDictionary {
     candidate.site?.title &&
       candidate.nav?.main &&
       candidate.nav?.bio &&
-      candidate.nav?.git &&
       candidate.nav?.music &&
       candidate.nav?.news &&
       candidate.nav?.blog &&
