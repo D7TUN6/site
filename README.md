@@ -19,7 +19,7 @@
     <img src="public/media/image/bandcamp-badge.png" alt="Bandcamp" height="44" />
   </a>
   &nbsp;&nbsp;
-  <a href="https://soundcloud.com">
+  <a href="https://soundcloud.com/d7tun6">
     <img src="public/media/image/soundcloud-badge.webp" alt="SoundCloud" height="42" />
   </a>
 </p>
