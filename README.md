@@ -7,21 +7,10 @@
 </div>
 
 <p align="center">
-  <a href="https://open.spotify.com/artist/3kxsK6GeWVOpm90RqqfYZy">
-    <img src="public/media/image/spotify-badge.png" alt="Spotify" height="44" />
-  </a>
-  &nbsp;&nbsp;
-  <a href="https://music.yandex.ru/artist/25225583">
-    <img src="public/media/image/yandex-badge.png" alt="Yandex Music" height="44" />
-  </a>
-  &nbsp;&nbsp;
-  <a href="https://d7tun6.bandcamp.com">
-    <img src="public/media/image/bandcamp-badge.png" alt="Bandcamp" height="44" />
-  </a>
-  &nbsp;&nbsp;
-  <a href="https://soundcloud.com/d7tun6">
-    <img src="public/media/image/soundcloud-badge.webp" alt="SoundCloud" height="42" />
-  </a>
+  <a href="https://open.spotify.com/artist/3kxsK6GeWVOpm90RqqfYZy"><img src="public/media/image/spotify-badge.png" alt="Spotify" height="44" /></a>&nbsp;&nbsp;
+  <a href="https://music.yandex.ru/artist/25225583"><img src="public/media/image/yandex-badge.png" alt="Yandex Music" height="44" /></a>&nbsp;&nbsp;
+  <a href="https://d7tun6.bandcamp.com"><img src="public/media/image/bandcamp-badge.png" alt="Bandcamp" height="44" /></a>&nbsp;&nbsp;
+  <a href="https://soundcloud.com/d7tun6"><img src="public/media/image/soundcloud-badge.webp" alt="SoundCloud" height="42" /></a>
 </p>
 
 <br />
