@@ -1,29 +1,23 @@
-# Contributing
+# Working On The Project
 
-## Prerequisites
+## Local Setup
+
+Requirements:
 
 - Node.js 24+
 - npm 10+
-- `ffmpeg`
+- `ffmpeg` and `ffprobe`
 
-## Setup
+Run:
 
 ```bash
 npm install
-npm run optimize:media
-npm run generate:releases
 npm run dev
 ```
 
-## Branch and Commit Guidelines
+## Before Shipping Changes
 
-- keep commits focused and small
-- avoid unrelated file churn
-- regenerate release artifacts when release assets or generator logic changes
-
-## Required Checks
-
-Run before PR:
+Run:
 
 ```bash
 npm run lint
@@ -31,39 +25,20 @@ npm run typecheck
 npm run build
 ```
 
-## Coding Standards
+## Editing Rules
 
-- strict TypeScript
-- clear naming over excessive comments
-- avoid dead code and stale flags
-- keep API validation strict
+- keep changes focused
+- do not hand-edit generated manifests unless debugging locally
+- if you touch release assets or generator logic, run `npm run prepare:media`
+- preserve bilingual routing under `/en` and `/ru`
 
-## Security Expectations
+## When Touching Audio / Releases
 
-- validate all API input parameters
-- keep format allowlists explicit
-- do not introduce shell interpolation with user input
-- keep dependencies patched and run audit after updates
+Check:
 
-```bash
-npm audit --omit=optional
-```
+- HLS output still builds
+- covers still resolve
+- track links still appear only when provided
+- fullscreen player still works from the bottom bar
 
-## Performance Expectations
-
-- keep initial bundle size controlled
-- avoid unnecessary client re-renders
-- keep conversion-heavy work server-side
-
-## Content Changes
-
-For new sections/releases, follow:
-
-- `docs/ADDING_CONTENT.md`
-
-## Review Checklist
-
-- routes resolve correctly for both languages
-- release generator output is deterministic
-- queue-based download API works for all formats
-- no lint/type/build regressions
+For release structure, use [Content Workflow](ADDING_CONTENT.md).

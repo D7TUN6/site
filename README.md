@@ -1,29 +1,59 @@
-# d7tun6.site (Vite + Vue)
+<div align="center">
+  <img src=".github/assets/dvigoon-avatar.jpg" alt="D7TUN6 avatar" width="120" />
 
-Personal D7TUN6's website.
-Vite + Vue with XML-based i18n, release manifest generator, global audio player, media optimization pipeline (preview + stream + M3U/M3U8), and queued download conversion API.
+  <h1>d7tun6.site</h1>
+  <p>Personal artist website for D7TUN6.</p>
+  <p>Music, notes, release pages, blog posts, streaming links, and a fullscreen player.</p>
+</div>
 
-## Requirements
+<p align="center">
+  <a href="https://open.spotify.com/artist/3kxsK6GeWVOpm90RqqfYZy"><img src="public/media/image/spotify-badge.png" alt="Spotify" height="44" /></a>&nbsp;&nbsp;
+  <a href="https://music.yandex.ru/artist/25225583"><img src="public/media/image/yandex-badge.png" alt="Yandex Music" height="44" /></a>&nbsp;&nbsp;
+  <a href="https://d7tun6.bandcamp.com"><img src="public/media/image/bandcamp-badge.png" alt="Bandcamp" height="44" /></a>&nbsp;&nbsp;
+  <a href="https://soundcloud.com/d7tun6"><img src="public/media/image/soundcloud-badge.webp" alt="SoundCloud" height="42" /></a>
+</p>
+
+<br />
+
+## Stack
+
+- Vue 3 + Vite
+- Vue Router
+- Express
+- `ffmpeg` / `ffprobe`
+- filesystem-generated release manifests
+
+## What It Does
+
+- localized site under `/en` and `/ru`
+- music release pages generated from `public/media/music`
+- HLS audio streaming with segmented playback
+- fullscreen now-playing player
+- release ZIP downloads via queued server-side transcoding
+- blog index + per-post routes from local MDX files
+- automatic cover extraction from embedded track artwork when no cover file exists
+
+## Quick Start
+
+Requirements:
 
 - Node.js 24+
 - npm 10+
-- `ffmpeg` (required for media optimization and release download conversion API)
+- `ffmpeg` and `ffprobe` in `PATH`
 
-## Development
+Install and run development:
 
 ```bash
 npm install
-npm run optimize:media
-npm run generate:releases
 npm run dev
 ```
 
-- Frontend (Vite): `http://127.0.0.1:3001`
-- API server (queue/conversion): `http://127.0.0.1:3002`
+Open:
 
-Vite dev server proxies `/api/*` to `3002`.
+- web: `http://127.0.0.1:3001`
+- api in dev: `http://127.0.0.1:3002`
 
-## Production Run
+## Production
 
 ```bash
 npm install
@@ -31,55 +61,56 @@ npm run build
 npm run start
 ```
 
-Server listens on `HOSTNAME` / `PORT` (defaults to `127.0.0.1:3001`) and serves:
+The production server serves the built SPA from `dist/` and the release download API from `/api/releases/download`.
 
-- static SPA from `dist/`
-- API endpoints under `/api/releases/download`
+## Main Scripts
 
-## Scripts
+- `npm run prepare:media` rebuild cover previews, HLS streams, previews, and release manifests
+- `npm run dev` run site + API locally
+- `npm run build` rebuild media and create production bundle
+- `npm run start` run production server
+- `npm run lint` run ESLint
+- `npm run typecheck` run Vue TypeScript checks
+- `npm run test` run lint + typecheck + build
 
-- `npm run dev` - run Vite + API server in parallel
-- `npm run dev:web` - run only Vite dev server
-- `npm run dev:api` - run only API server in dev mode
-- `npm run optimize:media` - generate cover previews, preview tracks, full stream tracks (`tracks/stream/*.ogg`), and M3U/M3U8 playlists
-- `npm run optimize:media:full` - alias for `npm run optimize:media` (kept for compatibility)
-- `npm run generate:releases` - regenerate backend download metadata + frontend release manifest (player tracks are sourced from `full.m3u8`)
-- `npm run lint` - ESLint checks
-- `npm run typecheck` - Vue + TypeScript checks
-- `npm run build` - optimize media + regenerate release metadata + build Vite frontend
-- `npm run start` - start production Node server
-- `npm run test` - lint + typecheck + build
-- `npm run sanitize:check` - preview cleanup before publishing to GitHub
-- `npm run sanitize:github` - remove build/cache/local junk before publishing to GitHub
+## Release Layout
 
-## Project Structure
+Each release lives under:
 
-- `src/` - client app (router, components, i18n/content loaders, styles)
-- `src/lib/content.ts` - route resolution and content payload loading
-- `src/lib/i18n.ts` - XML dictionary loader from `public/locales`
-- `src/generated/release-manifest.json` - generated release manifest for frontend routes/player
-- `server/index.mjs` - Node server (API + static serving)
-- `server/generated/release-download-data.json` - generated release metadata for API
-- `content/mdx/<lang>/base/` - base pages content source (raw markdown-like input)
-- `scripts/optimize-media.mjs` - media optimization pipeline (cover preview + preview/stream audio + playlists)
-- `scripts/generate-releases.mjs` - frontend/backend release manifest generator + release MDX `tracks=[...]` sync to M3U8-derived URLs
-- `public/media/music/` - music source assets (cover, notes, tracks)
-- `public/locales/*.xml` - UI dictionaries
-- `docs/` - project documentation
+```text
+public/media/music/<Album Name>/
+  cover/
+  notes/
+    notes
+  tracks/
+    wav/        # optional
+    preview/    # generated
+    stream/     # generated HLS output
+  playlists/    # generated
+  links.json    # optional release + track platform links
+```
 
-## Operations Notes
+Minimal `links.json` example:
 
-- `/` redirects to `/en` in client router.
-- Static build now includes precompressed `.br` + `.gz` assets and server-side precompressed delivery.
-- API protected with Helmet headers, same-origin check on conversion POST, stricter input validation, and rate limiting.
-- Download API supports `flac`, `wav`, `mp3`, `ogg` (Opus VBR).
-- Download API uses an in-memory queue with status polling and final archive pickup.
-- Player queue uses release tracks generated from `full.m3u8` (no runtime fallback to raw source tracks).
-- `ffmpeg` must be available in runtime PATH.
+```json
+{
+  "release": {
+    "bandcamp": "https://d7tun6.bandcamp.com"
+  },
+  "tracks": {
+    "01 - Track Name.wav": {
+      "spotify": "https://open.spotify.com/...",
+      "yandexMusic": "https://music.yandex.ru/...",
+      "bandcamp": "https://bandcamp.com/...",
+      "soundcloud": "https://soundcloud.com/..."
+    }
+  }
+}
+```
 
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE.md)
-- [Add New Section / New Release](docs/ADDING_CONTENT.md)
-- [Contributing Guide](docs/CONTRIBUTING.md)
+- [Content Workflow](docs/ADDING_CONTENT.md)
+- [Working On The Project](docs/CONTRIBUTING.md)
 - [Migration Notes](docs/MIGRATION.md)

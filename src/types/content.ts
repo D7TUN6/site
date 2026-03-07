@@ -1,8 +1,8 @@
 export type Lang = "en" | "ru";
 
-export type BaseRoute = "main" | "bio" | "git" | "music" | "news" | "blog" | "links";
+export type BaseRoute = "main" | "bio" | "music" | "news" | "blog" | "links";
 
-export type RouteKey = BaseRoute | `music/${string}`;
+export type RouteKey = BaseRoute | `music/${string}` | `blog/${string}`;
 
 export type LocaleDictionary = {
   site: {
@@ -11,7 +11,6 @@ export type LocaleDictionary = {
   nav: {
     main: string;
     bio: string;
-    git: string;
     music: string;
     news: string;
     blog: string;
@@ -29,8 +28,16 @@ export type ReleaseTrack = {
   index: number;
   title: string;
   url: string;
+  streamUrl: string | null;
   sourceUrl: string | null;
   previewUrl: string | null;
+  duration: number | null;
+  links: {
+    spotify: string | null;
+    yandexMusic: string | null;
+    bandcamp: string | null;
+    soundcloud: string | null;
+  };
 };
 
 export type ReleaseEntry = {
@@ -50,4 +57,19 @@ export type ReleaseEntry = {
   previewPlaylistM3uUrl: string | null;
   previewPlaylistM3u8Url: string | null;
   tracks: ReleaseTrack[];
+  links: {
+    spotify: string | null;
+    yandexMusic: string | null;
+    bandcamp: string | null;
+    soundcloud: string | null;
+  };
+};
+
+export type BlogPostEntry = {
+  slug: string;
+  title: string;
+  excerpt: string;
+  publishedAt: string;
+  content: string;
+  lang: Lang;
 };

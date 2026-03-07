@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref } from "vue";
+import { Pause, Play } from "lucide-vue-next";
 import { usePlayer, type GlobalPlayerQueue } from "@/composables/usePlayer";
 import type { ReleaseEntry } from "@/types/content";
 
@@ -37,7 +38,10 @@ const queuePayload = computed<GlobalPlayerQueue>(() => ({
   tracks: props.release.tracks.map((track) => ({
     title: track.title,
     url: track.url,
-    fallbackUrl: track.sourceUrl
+    streamUrl: track.streamUrl,
+    fallbackUrl: track.sourceUrl,
+    duration: track.duration,
+    links: track.links
   }))
 }));
 
@@ -324,7 +328,8 @@ onBeforeUnmount(() => {
             :aria-label="state.playing && isActiveQueue ? 'Pause' : 'Play'"
             @click="toggleMainPlayPause"
           >
-            {{ state.playing && isActiveQueue ? "❚❚" : "▶" }}
+            <Pause v-if="state.playing && isActiveQueue" class="release-player-main-icon" aria-hidden="true" />
+            <Play v-else class="release-player-main-icon release-player-main-icon-play" aria-hidden="true" />
           </button>
 
           <div class="release-player-meta">

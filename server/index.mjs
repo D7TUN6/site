@@ -514,6 +514,14 @@ if (!isDev) {
       index: false,
       setHeaders: (res, filePath) => {
         const relative = path.relative(DIST_DIR, filePath).split(path.sep).join("/");
+        if (relative.endsWith(".m3u8")) {
+          res.setHeader("Content-Type", "application/vnd.apple.mpegurl");
+        } else if (relative.endsWith(".m4s")) {
+          res.setHeader("Content-Type", "video/iso.segment");
+        } else if (relative.endsWith(".mp4") && relative.includes("/stream/")) {
+          res.setHeader("Content-Type", "audio/mp4");
+        }
+
         if (relative.endsWith(".html")) {
           res.setHeader("Cache-Control", "no-cache");
           return;

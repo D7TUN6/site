@@ -1,9 +1,23 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import {
+  ListMusic,
+  Pause,
+  Play,
+  Repeat,
+  Repeat1,
+  Shuffle,
+  SkipBack,
+  SkipForward,
+  Volume2,
+  VolumeX,
+  X
+} from "lucide-vue-next";
 import { usePlayer } from "@/composables/usePlayer";
 
 const props = defineProps<{
   isMusicRoute: boolean;
+  lang: "en" | "ru";
 }>();
 
 const {
@@ -18,10 +32,12 @@ const {
   toggleMute,
   toggleShuffle,
   cycleRepeatMode,
-  playTrack
+  playTrack,
+  clearPlayer
 } = usePlayer();
 
 const nextUpOpen = ref(false);
+const fullscreenOpen = ref(false);
 const panelRef = ref<HTMLDivElement | null>(null);
 const nextUpButtonRef = ref<HTMLButtonElement | null>(null);
 
@@ -40,6 +56,13 @@ const volumeSlider = computed({
     if (!Number.isFinite(value)) return;
     setVolume(value);
   }
+});
+
+const currentQueueTracks = computed(() => state.queue?.tracks ?? []);
+const repeatLabel = computed(() => {
+  if (state.repeatMode === "one") return "Repeat One";
+  if (state.repeatMode === "all") return "Repeat All";
+  return "Repeat Off";
 });
 
 function fmtTime(seconds: number | null): string {
@@ -70,10 +93,35 @@ function onPointerDown(event: MouseEvent) {
   nextUpOpen.value = false;
 }
 
+function onBarClick(event: MouseEvent) {
+  const target = event.target as HTMLElement | null;
+  if (!target) return;
+  if (
+    target.closest(
+      "button, input, a, .now-playing-progress, .now-playing-progress-wrap, .now-playing-volume-box, .now-playing-nextup"
+    )
+  ) {
+    return;
+  }
+  fullscreenOpen.value = true;
+}
+
 watch(
   shouldShow,
   (value) => {
     document.body.classList.toggle("has-now-playing-bar", value);
+    if (!value) {
+      fullscreenOpen.value = false;
+      nextUpOpen.value = false;
+    }
+  },
+  { immediate: true }
+);
+
+watch(
+  fullscreenOpen,
+  (value) => {
+    document.body.classList.toggle("has-now-playing-fullscreen", value);
   },
   { immediate: true }
 );
@@ -84,6 +132,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   document.body.classList.remove("has-now-playing-bar");
+  document.body.classList.remove("has-now-playing-fullscreen");
   window.removeEventListener("mousedown", onPointerDown);
 });
 </script>
@@ -93,7 +142,9 @@ onBeforeUnmount(() => {
     <div v-if="nextUpOpen" ref="panelRef" class="now-playing-nextup" role="dialog" aria-label="Next up">
       <div class="now-playing-nextup-head">
         <h4>Next up</h4>
-        <button type="button" @click="nextUpOpen = false" aria-label="Close next up">✕</button>
+        <button type="button" @click="nextUpOpen = false" aria-label="Close next up">
+          <X class="now-playing-icon" aria-hidden="true" />
+        </button>
       </div>
 
       <p v-if="upcomingTracks.length === 0" class="now-playing-nextup-empty">Queue is empty.</p>
@@ -112,12 +163,165 @@ onBeforeUnmount(() => {
       </ul>
     </div>
 
-    <div class="now-playing-bar" role="region" aria-label="Now playing">
+    <div
+      v-if="fullscreenOpen"
+      class="now-playing-fullscreen"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Now playing fullscreen"
+    >
+      <button
+        type="button"
+        class="now-playing-fullscreen-close"
+        aria-label="Close fullscreen player"
+        @click="fullscreenOpen = false"
+      >
+        <X class="now-playing-icon" aria-hidden="true" />
+      </button>
+
+      <div class="now-playing-fullscreen-shell">
+        <section class="now-playing-fullscreen-hero">
+          <div class="now-playing-fullscreen-art-card">
+            <div class="now-playing-fullscreen-art">
+              <img :src="state.queue.coverUrl" :alt="`${state.queue.albumTitle} cover`" />
+            </div>
+
+            <div class="now-playing-fullscreen-meta">
+              <div class="now-playing-fullscreen-artist">{{ state.queue.artist }}</div>
+              <h2>{{ currentTrack.title }}</h2>
+              <p>{{ state.queue.albumTitle }}</p>
+            </div>
+          </div>
+
+          <div class="now-playing-fullscreen-links-card">
+            <div class="now-playing-fullscreen-links">
+              <a
+                v-if="currentTrack.links?.spotify"
+                class="stream-badge-image-link"
+                :href="currentTrack.links.spotify"
+                target="_blank"
+                rel="noreferrer"
+              >
+                <img class="stream-badge-image" src="/media/image/spotify-badge.png" alt="Spotify" />
+              </a>
+              <a
+                v-if="currentTrack.links?.yandexMusic"
+                class="stream-badge-image-link"
+                :href="currentTrack.links.yandexMusic"
+                target="_blank"
+                rel="noreferrer"
+              >
+                <img class="stream-badge-image" src="/media/image/yandex-badge.png" alt="Yandex Music" />
+              </a>
+              <a
+                v-if="currentTrack.links?.bandcamp"
+                class="stream-badge-image-link"
+                :href="currentTrack.links.bandcamp"
+                target="_blank"
+                rel="noreferrer"
+              >
+                <img class="stream-badge-image" src="/media/image/bandcamp-badge.png" alt="Bandcamp" />
+              </a>
+              <a
+                v-if="currentTrack.links?.soundcloud"
+                class="stream-badge-image-link"
+                :href="currentTrack.links.soundcloud"
+                target="_blank"
+                rel="noreferrer"
+              >
+                <img
+                  class="stream-badge-image stream-badge-image-soundcloud"
+                  src="/media/image/soundcloud-badge.webp"
+                  alt="SoundCloud"
+                />
+              </a>
+            </div>
+          </div>
+        </section>
+
+        <section class="now-playing-fullscreen-panel">
+          <div class="now-playing-fullscreen-toolbar">
+            <div class="now-playing-fullscreen-modes">
+              <button
+                type="button"
+                :class="`now-playing-btn now-playing-btn-small${state.shuffleEnabled ? ' is-active' : ''}`"
+                aria-label="Shuffle"
+                @click="toggleShuffle"
+              >
+                <Shuffle class="now-playing-icon" aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                :class="`now-playing-btn now-playing-btn-small${state.repeatMode !== 'off' ? ' is-active' : ''}`"
+                :aria-label="repeatLabel"
+                @click="cycleRepeatMode"
+              >
+                <Repeat1 v-if="state.repeatMode === 'one'" class="now-playing-icon" aria-hidden="true" />
+                <Repeat v-else class="now-playing-icon" aria-hidden="true" />
+              </button>
+            </div>
+          </div>
+
+          <div class="now-playing-fullscreen-playback">
+            <div class="now-playing-fullscreen-progress">
+              <div class="now-playing-time">{{ fmtTime(state.currentTime) }}</div>
+              <div
+                class="now-playing-progress"
+                role="slider"
+                :aria-valuemin="0"
+                :aria-valuemax="Math.max(state.duration, 1)"
+                :aria-valuenow="state.currentTime"
+                aria-label="Playback position"
+                @click="seekFromClick"
+              >
+                <span class="now-playing-progress-fill" :style="{ width: `${progress}%` }" />
+              </div>
+              <div class="now-playing-time">{{ fmtTime(state.duration) }}</div>
+            </div>
+
+            <div class="now-playing-fullscreen-controls">
+              <button type="button" class="now-playing-btn" aria-label="Previous track" @click="prevTrack">
+                <SkipBack class="now-playing-icon" aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                class="now-playing-btn now-playing-btn-main"
+                :aria-label="state.playing ? 'Pause' : 'Play'"
+                @click="togglePlayPause"
+              >
+                <Pause v-if="state.playing" class="now-playing-icon now-playing-icon-pause" aria-hidden="true" />
+                <Play v-else class="now-playing-icon now-playing-icon-play" aria-hidden="true" />
+              </button>
+              <button type="button" class="now-playing-btn" aria-label="Next track" @click="nextTrack">
+                <SkipForward class="now-playing-icon" aria-hidden="true" />
+              </button>
+            </div>
+          </div>
+
+          <div class="now-playing-fullscreen-tracklist">
+            <div class="now-playing-fullscreen-tracklist-head">Tracklist</div>
+            <ul>
+              <li
+                v-for="(track, index) in currentQueueTracks"
+                :key="`${track.url}-${index}`"
+                :class="{ 'is-active': index === state.currentIndex }"
+              >
+                <button type="button" @click="playTrack(index)">
+                  <span class="now-playing-fullscreen-track-index">{{ index + 1 }}</span>
+                  <span class="now-playing-fullscreen-track-title">{{ track.title }}</span>
+                  <span class="now-playing-fullscreen-track-time">{{ fmtTime(track.duration ?? null) }}</span>
+                </button>
+              </li>
+            </ul>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div class="now-playing-bar" role="region" aria-label="Now playing" @click="onBarClick">
       <div class="now-playing-controls">
         <button type="button" class="now-playing-btn" aria-label="Previous track" @click="prevTrack">
-          <svg class="now-playing-icon" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M6 5h2v14H6zM18 5v14l-8-7z" />
-          </svg>
+          <SkipBack class="now-playing-icon" aria-hidden="true" />
         </button>
         <button
           type="button"
@@ -125,17 +329,11 @@ onBeforeUnmount(() => {
           :aria-label="state.playing ? 'Pause' : 'Play'"
           @click="togglePlayPause"
         >
-          <svg v-if="state.playing" class="now-playing-icon" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M7 5h4v14H7zM13 5h4v14h-4z" />
-          </svg>
-          <svg v-else class="now-playing-icon" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M8 5v14l11-7z" />
-          </svg>
+          <Pause v-if="state.playing" class="now-playing-icon now-playing-icon-pause" aria-hidden="true" />
+          <Play v-else class="now-playing-icon now-playing-icon-play" aria-hidden="true" />
         </button>
         <button type="button" class="now-playing-btn" aria-label="Next track" @click="nextTrack">
-          <svg class="now-playing-icon" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M16 5h2v14h-2zM6 5l8 7-8 7z" />
-          </svg>
+          <SkipForward class="now-playing-icon" aria-hidden="true" />
         </button>
         <button
           type="button"
@@ -143,13 +341,7 @@ onBeforeUnmount(() => {
           aria-label="Shuffle"
           @click="toggleShuffle"
         >
-          <svg class="now-playing-icon now-playing-icon-stroke" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M3 7h4l10 10h4" />
-            <path d="m19 15 2 2-2 2" />
-            <path d="M3 17h4l3.5-3.5" />
-            <path d="M17 7h4" />
-            <path d="m19 5 2 2-2 2" />
-          </svg>
+          <Shuffle class="now-playing-icon" aria-hidden="true" />
         </button>
         <button
           type="button"
@@ -157,15 +349,8 @@ onBeforeUnmount(() => {
           aria-label="Repeat"
           @click="cycleRepeatMode"
         >
-          <span class="now-playing-icon-wrap">
-            <svg class="now-playing-icon now-playing-icon-stroke" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M4 8h13" />
-              <path d="m14 5 3 3-3 3" />
-              <path d="M20 16H7" />
-              <path d="m10 13-3 3 3 3" />
-            </svg>
-            <span v-if="state.repeatMode === 'one'" class="now-playing-repeat-one">1</span>
-          </span>
+          <Repeat1 v-if="state.repeatMode === 'one'" class="now-playing-icon" aria-hidden="true" />
+          <Repeat v-else class="now-playing-icon" aria-hidden="true" />
         </button>
       </div>
 
@@ -193,21 +378,8 @@ onBeforeUnmount(() => {
             :aria-label="state.muted || state.volume <= 0 ? 'Unmute' : 'Mute'"
             @click="toggleMute"
           >
-            <svg
-              v-if="state.muted || state.volume <= 0"
-              class="now-playing-icon now-playing-icon-stroke"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <path d="M3 10h4l5-4v12l-5-4H3z" />
-              <path d="M16 9l5 6" />
-              <path d="M21 9l-5 6" />
-            </svg>
-            <svg v-else class="now-playing-icon now-playing-icon-stroke" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M3 10h4l5-4v12l-5-4H3z" />
-              <path d="M16 9.5a3.5 3.5 0 0 1 0 5" />
-              <path d="M18.5 7a7 7 0 0 1 0 10" />
-            </svg>
+            <VolumeX v-if="state.muted || state.volume <= 0" class="now-playing-icon" aria-hidden="true" />
+            <Volume2 v-else class="now-playing-icon" aria-hidden="true" />
           </button>
 
           <div class="now-playing-volume-popup">
@@ -245,11 +417,10 @@ onBeforeUnmount(() => {
           aria-label="Next up"
           @click="nextUpOpen = !nextUpOpen"
         >
-          <svg class="now-playing-icon now-playing-icon-stroke" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M5 7h14" />
-            <path d="M5 12h14" />
-            <path d="M5 17h14" />
-          </svg>
+          <ListMusic class="now-playing-icon" aria-hidden="true" />
+        </button>
+        <button type="button" class="now-playing-btn now-playing-btn-small" aria-label="Close player" @click="clearPlayer">
+          <X class="now-playing-icon" aria-hidden="true" />
         </button>
       </div>
     </div>

@@ -57,9 +57,10 @@ async function ensureFresh(inputPath, outputPath, buildFn) {
   return true;
 }
 
-async function runFfmpeg(args) {
+async function runFfmpeg(args, cwd) {
   await new Promise((resolve, reject) => {
     const ffmpeg = spawn("ffmpeg", args, {
+      cwd,
       stdio: ["ignore", "ignore", "pipe"]
     });
 
@@ -80,6 +81,25 @@ async function runFfmpeg(args) {
       reject(new Error(details || `ffmpeg exited with code ${code}`));
     });
   });
+}
+
+async function removeIfExists(pathToRemove) {
+  try {
+    await fs.rm(pathToRemove, { recursive: true, force: true });
+  } catch {
+    // Ignore cleanup errors.
+  }
+}
+
+async function findExistingCover(coverDir) {
+  try {
+    const covers = (await fs.readdir(coverDir))
+      .filter((f) => COVER_EXT.has(path.extname(f).toLowerCase()) && !/^cover-preview\./i.test(f))
+      .sort(sortTracksNatural);
+    return covers[0] ? path.join(coverDir, covers[0]) : null;
+  } catch {
+    return null;
+  }
 }
 
 function buildM3u(urls) {
@@ -111,37 +131,6 @@ async function optimizeAlbum(albumDirName) {
     tracksSourceDir = tracksDir;
   }
 
-  try {
-    const covers = (await fs.readdir(coverDir))
-      .filter((f) => COVER_EXT.has(path.extname(f).toLowerCase()) && !/^cover-preview\./i.test(f))
-      .sort(sortTracksNatural);
-
-    if (covers[0]) {
-      const coverInput = path.join(coverDir, covers[0]);
-      const coverPreview = path.join(coverDir, "cover-preview.webp");
-
-      await ensureFresh(coverInput, coverPreview, async () => {
-        await runFfmpeg([
-          "-hide_banner",
-          "-loglevel",
-          "error",
-          "-y",
-          "-i",
-          coverInput,
-          "-vf",
-          "scale='min(420,iw)':-2:flags=lanczos",
-          "-q:v",
-          "65",
-          "-compression_level",
-          "6",
-          coverPreview
-        ]);
-      });
-    }
-  } catch {
-    // No cover found, skip.
-  }
-
   let trackFiles = [];
   try {
     trackFiles = (await fs.readdir(tracksSourceDir))
@@ -157,6 +146,56 @@ async function optimizeAlbum(albumDirName) {
       ? trackFiles.filter((name) => /^\s*\d+\s*-\s*/.test(name) || /^master\./i.test(name))
       : trackFiles;
 
+  let coverInput = await findExistingCover(coverDir);
+  if (!coverInput && selectedTracks[0]) {
+    const sourceForCover = path.join(tracksSourceDir, selectedTracks[0]);
+    const extractedCover = path.join(coverDir, "cover.jpg");
+
+    await ensureFresh(sourceForCover, extractedCover, async () => {
+      await fs.mkdir(coverDir, { recursive: true });
+      await runFfmpeg([
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-y",
+        "-i",
+        sourceForCover,
+        "-an",
+        "-map",
+        "0:v:0",
+        "-frames:v",
+        "1",
+        extractedCover
+      ]);
+    }).catch(() => {
+      // Track has no embedded artwork, skip.
+    });
+
+    coverInput = await findExistingCover(coverDir);
+  }
+
+  if (coverInput) {
+    const coverPreview = path.join(coverDir, "cover-preview.webp");
+
+    await ensureFresh(coverInput, coverPreview, async () => {
+      await runFfmpeg([
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-y",
+        "-i",
+        coverInput,
+        "-vf",
+        "scale='min(420,iw)':-2:flags=lanczos",
+        "-q:v",
+        "65",
+        "-compression_level",
+        "6",
+        coverPreview
+      ]);
+    });
+  }
+
   const fullPlaylistItems = [];
   const previewPlaylistItems = [];
 
@@ -165,7 +204,9 @@ async function optimizeAlbum(albumDirName) {
     const stem = toSafeTrackStem(fileName);
 
     const previewAbs = path.join(previewDir, `${stem}.ogg`);
-    const streamAbs = path.join(streamDir, `${stem}.ogg`);
+    const streamTrackDir = path.join(streamDir, stem);
+    const streamPlaylistAbs = path.join(streamTrackDir, "index.m3u8");
+    const legacyStreamAbs = path.join(streamDir, `${stem}.ogg`);
 
     await ensureFresh(sourceAbs, previewAbs, async () => {
       await runFfmpeg([
@@ -196,7 +237,9 @@ async function optimizeAlbum(albumDirName) {
       ]);
     });
 
-    await ensureFresh(sourceAbs, streamAbs, async () => {
+    await ensureFresh(sourceAbs, streamPlaylistAbs, async () => {
+      await removeIfExists(streamTrackDir);
+      await fs.mkdir(streamTrackDir, { recursive: true });
       await runFfmpeg([
         "-hide_banner",
         "-loglevel",
@@ -212,21 +255,37 @@ async function optimizeAlbum(albumDirName) {
         "-ac",
         "2",
         "-ar",
-        "48000",
+        "44100",
         "-c:a",
-        "libopus",
+        "aac",
         "-b:a",
-        "160k",
-        "-vbr",
-        "on",
-        streamAbs
-      ]);
+        "192k",
+        "-movflags",
+        "+faststart",
+        "-f",
+        "hls",
+        "-hls_time",
+        "6",
+        "-hls_playlist_type",
+        "vod",
+        "-hls_segment_type",
+        "fmp4",
+        "-hls_fmp4_init_filename",
+        "init.mp4",
+        "-hls_flags",
+        "independent_segments",
+        "-hls_segment_filename",
+        "segment-%03d.m4s",
+        "index.m3u8"
+      ], streamTrackDir);
     });
+
+    await removeIfExists(legacyStreamAbs);
 
     const publicTitle = normalizeTrackTitle(fileName);
     fullPlaylistItems.push({
       title: publicTitle,
-      url: toPublicUrl(streamAbs)
+      url: toPublicUrl(streamPlaylistAbs)
     });
 
     previewPlaylistItems.push({

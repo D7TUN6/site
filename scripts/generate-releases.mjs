@@ -1,3 +1,4 @@
+import { spawn } from "node:child_process";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 
@@ -47,6 +48,89 @@ function sortAlbums(a, b) {
   const byBase = aBase.localeCompare(bBase, undefined, { sensitivity: "base" });
   if (byBase !== 0) return byBase;
   return Number(aDeluxe) - Number(bDeluxe);
+}
+
+async function getAudioDurationSeconds(inputPath) {
+  return await new Promise((resolve, reject) => {
+    const ffprobe = spawn("ffprobe", [
+      "-v",
+      "error",
+      "-show_entries",
+      "format=duration",
+      "-of",
+      "default=noprint_wrappers=1:nokey=1",
+      inputPath
+    ]);
+
+    const stdout = [];
+    const stderr = [];
+
+    ffprobe.stdout.on("data", (chunk) => stdout.push(Buffer.from(chunk)));
+    ffprobe.stderr.on("data", (chunk) => stderr.push(Buffer.from(chunk)));
+
+    ffprobe.on("error", (error) => {
+      reject(new Error(`ffprobe failed to start: ${error.message}`));
+    });
+
+    ffprobe.on("close", (code) => {
+      if (code !== 0) {
+        const details = Buffer.concat(stderr).toString("utf8").trim();
+        reject(new Error(details || `ffprobe exited with code ${code}`));
+        return;
+      }
+
+      const value = Buffer.concat(stdout).toString("utf8").trim();
+      const duration = Number(value);
+      resolve(Number.isFinite(duration) && duration > 0 ? duration : null);
+    });
+  });
+}
+
+function createEmptyLinks() {
+  return {
+    spotify: null,
+    yandexMusic: null,
+    bandcamp: null,
+    soundcloud: null
+  };
+}
+
+function normalizeLinks(raw) {
+  if (!raw || typeof raw !== "object") {
+    return createEmptyLinks();
+  }
+
+  return {
+    spotify: typeof raw.spotify === "string" && raw.spotify.trim() ? raw.spotify.trim() : null,
+    yandexMusic:
+      typeof raw.yandexMusic === "string" && raw.yandexMusic.trim() ? raw.yandexMusic.trim() : null,
+    bandcamp: typeof raw.bandcamp === "string" && raw.bandcamp.trim() ? raw.bandcamp.trim() : null,
+    soundcloud: typeof raw.soundcloud === "string" && raw.soundcloud.trim() ? raw.soundcloud.trim() : null
+  };
+}
+
+async function readReleaseLinks(albumDir) {
+  const filePath = path.join(albumDir, "links.json");
+  if (!(await exists(filePath))) {
+    return {
+      release: createEmptyLinks(),
+      tracks: {}
+    };
+  }
+
+  const parsed = JSON.parse(await fs.readFile(filePath, "utf8"));
+  const trackMap = {};
+
+  if (parsed?.tracks && typeof parsed.tracks === "object") {
+    for (const [key, value] of Object.entries(parsed.tracks)) {
+      trackMap[key] = normalizeLinks(value);
+    }
+  }
+
+  return {
+    release: normalizeLinks(parsed?.release),
+    tracks: trackMap
+  };
 }
 
 function pad2(value) {
@@ -197,6 +281,7 @@ async function readAlbums() {
     const playlistM3u8Path = path.join(playlistsDir, "full.m3u8");
     const previewM3uPath = path.join(playlistsDir, "preview.m3u");
     const previewM3u8Path = path.join(playlistsDir, "preview.m3u8");
+    const releaseLinks = await readReleaseLinks(albumDir);
 
     const fullPlaylistEntries = await readPlaylistEntries(playlistM3u8Path);
     const previewPlaylistEntries = await readPlaylistEntries(previewM3u8Path);
@@ -264,9 +349,11 @@ async function readAlbums() {
 
       const abs = path.join(tracksSourceDir, fileName);
       const stat = await fs.stat(abs);
+      const duration = await getAudioDurationSeconds(abs);
       const sourceFilePath = path.relative(albumDir, abs).split(path.sep).join("/");
       const safeStem = toSafeTrackStem(fileName);
       const previewAbs = path.join(tracksDir, "preview", `${safeStem}.ogg`);
+      const streamPlaylistAbs = path.join(tracksDir, "stream", safeStem, "index.m3u8");
       let previewUrl = null;
       if (previewPlaylistTrack) {
         previewUrl = previewPlaylistTrack.url;
@@ -274,15 +361,32 @@ async function readAlbums() {
         previewUrl = toPublicUrl(previewAbs);
       }
 
+      let streamUrl = null;
+      if (playlistTrack.url) {
+        streamUrl = playlistTrack.url;
+      } else if (await exists(streamPlaylistAbs)) {
+        streamUrl = toPublicUrl(streamPlaylistAbs);
+      }
+
+      const normalizedTitle = playlistTrack.title || normalizeTrackTitle(fileName);
+      const trackLinks =
+        releaseLinks.tracks[fileName] ??
+        releaseLinks.tracks[normalizedTitle] ??
+        releaseLinks.tracks[safeStem] ??
+        createEmptyLinks();
+
       tracks.push({
         fileName,
         safeStem,
-        title: playlistTrack.title || normalizeTrackTitle(fileName),
-        url: playlistTrack.url,
+        title: normalizedTitle,
+        url: streamUrl || playlistTrack.url,
+        streamUrl,
         sourceUrl: toPublicUrl(abs),
         sourceFilePath,
         sizeBytes: stat.size,
-        previewUrl
+        previewUrl,
+        duration,
+        links: trackLinks
       });
     }
 
@@ -322,7 +426,8 @@ async function readAlbums() {
       playlistM3u8Url: (await exists(playlistM3u8Path)) ? toPublicUrl(playlistM3u8Path) : null,
       previewPlaylistM3uUrl: (await exists(previewM3uPath)) ? toPublicUrl(previewM3uPath) : null,
       previewPlaylistM3u8Url: (await exists(previewM3u8Path)) ? toPublicUrl(previewM3u8Path) : null,
-      tracks
+      tracks,
+      links: releaseLinks.release
     });
   }
 
@@ -367,9 +472,13 @@ function buildClientReleaseManifest(albums) {
         index: index + 1,
         title: track.title,
         url: track.url,
+        streamUrl: track.streamUrl,
         sourceUrl: track.sourceUrl,
-        previewUrl: track.previewUrl
-      }))
+        previewUrl: track.previewUrl,
+        duration: track.duration,
+        links: track.links
+      })),
+      links: album.links
     }))
   };
 }
