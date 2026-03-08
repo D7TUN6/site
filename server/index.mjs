@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
@@ -18,10 +17,7 @@ const RELEASE_DATA_PATH = path.join(__dirname, "generated", "release-download-da
 
 const ARTIST_NAME = "D7TUN6";
 const MAX_TRACKS_PER_ARCHIVE = 64;
-const MAX_ACTIVE_JOBS = 12;
-const JOB_TTL_MS = 20 * 60 * 1000;
 const SLUG_RE = /^[a-z0-9-]{1,128}$/;
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const STATIC_PRECOMPRESSED_EXT_RE = /\.(?:js|css|html|json|svg|txt|xml|map|woff2?|ico)$/i;
 const TRACK_INDEX_RE = /^\d{1,3}$/;
 
@@ -31,12 +27,6 @@ const port = Number(process.env.PORT || defaultPort);
 const host = process.env.HOSTNAME || "127.0.0.1";
 
 let releaseDownloadData = [];
-
-const queue = {
-  jobs: new Map(),
-  pending: [],
-  workerActive: false
-};
 
 function sanitizeFileName(value) {
   return value.replace(/[\\/:*?"<>|]/g, "-").replace(/\s+/g, " ").trim();
@@ -51,46 +41,6 @@ function formatExt(format) {
 
 function isOutputFormat(value) {
   return value === "mp3" || value === "ogg" || value === "flac" || value === "wav";
-}
-
-function toPublicJob(job) {
-  const progress =
-    job.progressTotal > 0
-      ? Math.max(0, Math.min(100, Math.round((job.progressCurrent / job.progressTotal) * 100)))
-      : 0;
-
-  return {
-    jobId: job.id,
-    status: job.status,
-    progress,
-    message: job.message,
-    error: job.error,
-    createdAt: job.createdAt,
-    updatedAt: job.updatedAt
-  };
-}
-
-function countActiveJobs() {
-  let count = 0;
-  for (const job of queue.jobs.values()) {
-    if (job.status === "queued" || job.status === "running") {
-      count += 1;
-    }
-  }
-  return count;
-}
-
-function cleanupQueue() {
-  const now = Date.now();
-
-  for (const [jobId, job] of queue.jobs.entries()) {
-    if (job.status === "queued" || job.status === "running") continue;
-    if (now - job.updatedAt > JOB_TTL_MS) {
-      queue.jobs.delete(jobId);
-    }
-  }
-
-  queue.pending = queue.pending.filter((jobId) => queue.jobs.has(jobId));
 }
 
 function resolveTrackAssetPath(release, relative) {
@@ -158,159 +108,8 @@ async function createReleaseArchive(release, format) {
   };
 }
 
-async function buildReleaseArchive(job) {
-  const release = releaseDownloadData.find((entry) => entry.slug === job.slug);
-  if (!release) {
-    throw new Error("Release not found");
-  }
-
-  if (release.tracks.length === 0) {
-    throw new Error("No tracks found in release");
-  }
-
-  if (release.tracks.length > MAX_TRACKS_PER_ARCHIVE) {
-    throw new Error("Too many tracks in release");
-  }
-
-  const zip = new JSZip();
-  const extension = formatExt(job.format);
-  job.progressTotal = release.tracks.length + 1;
-
-  for (const track of release.tracks) {
-    job.message = `Converting track ${track.index}/${release.tracks.length}`;
-    job.updatedAt = Date.now();
-
-    if (!Array.isArray(track.availableDownloadFormats) || !track.availableDownloadFormats.includes(job.format)) {
-      throw new Error(`Track "${track.title}" is not available in ${job.format}`);
-    }
-
-    const encoded = await readFile(resolveTrackDownloadPath(release, track, job.format));
-
-    const zipName = `${String(track.index).padStart(2, "0")} - ${sanitizeFileName(track.title)}.${extension}`;
-    zip.file(`tracks/${zipName}`, encoded);
-
-    job.progressCurrent += 1;
-    job.updatedAt = Date.now();
-  }
-
-  job.message = "Packing ZIP archive";
-  job.updatedAt = Date.now();
-
-  const metadataText = [
-    `artist: ${ARTIST_NAME}`,
-    `album: ${release.albumName}`,
-    `release_date: ${release.releaseDate}`,
-    `format: ${job.format}`,
-    `sample_rate: ${job.format === "ogg" ? "48000" : "44100"}`,
-    job.format === "flac"
-      ? "bit_depth: 16"
-      : job.format === "ogg"
-        ? "codec: opus (vbr), target_bitrate: 320k"
-        : job.format === "wav"
-          ? "codec: pcm_s16le"
-          : "bitrate: 320k",
-    "",
-    "tracks:",
-    ...release.tracks.map((track) => `${track.index}. ${track.title}`)
-  ].join("\n");
-
-  zip.file("release-info.txt", metadataText);
-
-  const zipBuffer = await zip.generateAsync({
-    type: "nodebuffer",
-    compression: "DEFLATE",
-    compressionOptions: { level: 6 }
-  });
-
-  job.progressCurrent = job.progressTotal;
-  job.message = "Ready for download";
-  job.fileName = `${sanitizeFileName(release.albumName)}-${job.format}.zip`;
-  job.zipData = zipBuffer;
-  job.updatedAt = Date.now();
-}
-
-async function processQueue() {
-  if (queue.workerActive) return;
-
-  queue.workerActive = true;
-
-  try {
-    while (queue.pending.length > 0) {
-      const jobId = queue.pending.shift();
-      if (!jobId) break;
-
-      const job = queue.jobs.get(jobId);
-      if (!job || job.status !== "queued") continue;
-
-      job.status = "running";
-      job.message = "Preparing conversion";
-      job.updatedAt = Date.now();
-
-      try {
-        await buildReleaseArchive(job);
-        job.status = "done";
-        job.error = null;
-      } catch (error) {
-        job.status = "failed";
-        job.error = error instanceof Error ? error.message : "Unexpected conversion error";
-        job.message = "Conversion failed";
-      } finally {
-        job.updatedAt = Date.now();
-      }
-    }
-  } finally {
-    queue.workerActive = false;
-    cleanupQueue();
-
-    if (queue.pending.length > 0) {
-      void processQueue();
-    }
-  }
-}
-
 function findRelease(slug) {
   return releaseDownloadData.find((entry) => entry.slug === slug);
-}
-
-function isSameOriginRequest(req) {
-  const origin = req.get("origin");
-  const referer = req.get("referer");
-  if (!origin && !referer) return true;
-
-  const localHostnames = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
-
-  try {
-    const requestHost = req.get("host");
-    if (!requestHost) return false;
-
-    const requestUrl = new URL(`http://${requestHost}`);
-    const candidateUrls = [origin, referer].filter(Boolean).map((value) => new URL(value));
-
-    return candidateUrls.some((candidateUrl) => {
-      if (candidateUrl.host === requestUrl.host) {
-        return true;
-      }
-
-      const sameLocalMachine =
-        localHostnames.has(candidateUrl.hostname) && localHostnames.has(requestUrl.hostname);
-
-      if (!sameLocalMachine) {
-        return false;
-      }
-
-      if (isDev) {
-        return true;
-      }
-
-      if (!candidateUrl.port || !requestUrl.port) {
-        return true;
-      }
-
-      return candidateUrl.port === requestUrl.port;
-    });
-  } catch {
-    return false;
-  }
 }
 
 function precompressedStaticMiddleware(req, res, next) {

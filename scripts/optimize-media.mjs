@@ -6,6 +6,10 @@ const ROOT = process.cwd();
 const MUSIC_ROOT = path.join(ROOT, "public", "media", "music");
 const TRACK_EXT = new Set([".wav", ".mp3", ".flac", ".ogg", ".m4a", ".aac"]);
 const COVER_EXT = new Set([".jpg", ".jpeg", ".png", ".webp", ".avif"]);
+const LOCK_DIR = path.join(ROOT, ".cache");
+const LOCK_FILE = path.join(LOCK_DIR, "optimize-media.lock");
+const LOCK_WAIT_MS = 500;
+const LOCK_TIMEOUT_MS = 10 * 60 * 1000;
 
 function getDownloadTargets(ext) {
   const normalized = ext.toLowerCase();
@@ -163,6 +167,83 @@ async function buildDownloadFormat(sourceAbs, ext, outputPath, format) {
   });
 }
 
+function isPidRunning(pid) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    if (error && typeof error === "object" && "code" in error) {
+      return error.code !== "ESRCH";
+    }
+    return false;
+  }
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+async function readLockOwnerPid() {
+  try {
+    const raw = await fs.readFile(LOCK_FILE, "utf8");
+    const parsed = JSON.parse(raw);
+    return typeof parsed?.pid === "number" ? parsed.pid : null;
+  } catch {
+    return null;
+  }
+}
+
+async function acquireOptimizeLock() {
+  await fs.mkdir(LOCK_DIR, { recursive: true });
+  const waitStartedAt = Date.now();
+  let announcedWait = false;
+
+  while (true) {
+    try {
+      const handle = await fs.open(LOCK_FILE, "wx");
+      await handle.writeFile(JSON.stringify({
+        pid: process.pid,
+        createdAt: new Date().toISOString()
+      }));
+
+      if (announcedWait) {
+        console.log("Lock acquired, resuming optimization");
+      }
+
+      return async () => {
+        try {
+          await handle.close();
+        } catch {
+          // Ignore close errors.
+        }
+        await removeIfExists(LOCK_FILE);
+      };
+    } catch (error) {
+      if (!error || typeof error !== "object" || !("code" in error) || error.code !== "EEXIST") {
+        throw error;
+      }
+
+      const ownerPid = await readLockOwnerPid();
+      if (ownerPid && ownerPid !== process.pid && !isPidRunning(ownerPid)) {
+        await removeIfExists(LOCK_FILE);
+        continue;
+      }
+
+      if (!announcedWait) {
+        console.log("Another optimize-media run is active, waiting for lock...");
+        announcedWait = true;
+      }
+
+      if (Date.now() - waitStartedAt > LOCK_TIMEOUT_MS) {
+        throw new Error(`Timed out waiting for media lock: ${LOCK_FILE}`);
+      }
+
+      await sleep(LOCK_WAIT_MS);
+    }
+  }
+}
 async function findExistingCover(coverDir) {
   try {
     const covers = (await fs.readdir(coverDir))
@@ -382,15 +463,21 @@ async function optimizeAlbum(albumDirName) {
 }
 
 async function main() {
-  const dirents = await fs.readdir(MUSIC_ROOT, { withFileTypes: true });
-  const albums = dirents.filter((entry) => entry.isDirectory()).map((entry) => entry.name);
+  const releaseLock = await acquireOptimizeLock();
 
-  for (const albumDirName of albums) {
-    console.log(`Optimizing media: ${albumDirName}`);
-    await optimizeAlbum(albumDirName);
+  try {
+    const dirents = await fs.readdir(MUSIC_ROOT, { withFileTypes: true });
+    const albums = dirents.filter((entry) => entry.isDirectory()).map((entry) => entry.name);
+
+    for (const albumDirName of albums) {
+      console.log(`Optimizing media: ${albumDirName}`);
+      await optimizeAlbum(albumDirName);
+    }
+
+    console.log(`Media optimization complete (${albums.length} albums)`);
+  } finally {
+    await releaseLock();
   }
-
-  console.log(`Media optimization complete (${albums.length} albums)`);
 }
 
 main().catch((error) => {
