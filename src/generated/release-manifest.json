@@ -1,36 +1,153 @@
 {
-  "generatedAt": "2026-03-07T21:38:07.394Z",
+  "generatedAt": "2026-03-08T17:30:20.026Z",
   "releases": [
     {
-      "slug": "test-inhuman",
-      "albumName": "Test Inhuman",
-      "sourceDirName": "Test Inhuman",
-      "coverUrl": "/media/music/Test Inhuman/cover/cover.jpg",
-      "coverPreviewUrl": "/media/music/Test Inhuman/cover/cover-preview.webp",
-      "releaseDate": "07/03/2026",
-      "notes": "Test Inhuman\n\n1. inhuman\n\n### about\n\nSingle-track local test release for HLS playback.\n\n### credits\n\nreleased 07.03.26",
+      "slug": "a-path-of-static-snow-wav-prerelease",
+      "albumName": "A Path of Static Snow WAV Prerelease",
+      "sourceDirName": "A Path of Static Snow WAV Prerelease",
+      "coverUrl": "/media/background/bg.jpg",
+      "coverPreviewUrl": null,
+      "releaseDate": "08/03/2026",
+      "notes": "D7TUN6 :: A Path of Static Snow WAV Prerelease\n\n1. Acid Tears\n2. Crying Witches\n3. Dr. Star\n4. Drag Den\n5. unnamed012\n6. Winter Walk\n\n### about\n\nLocal WAV prerelease prepared for testing the prebuilt conversion pipeline.\n\n### credits\n\nreleased 08.03.26",
       "genre": {
         "en": "Electronic",
         "ru": "Электроника"
       },
-      "playlistM3uUrl": "/media/music/Test Inhuman/playlists/full.m3u",
-      "playlistM3u8Url": "/media/music/Test Inhuman/playlists/full.m3u8",
-      "previewPlaylistM3uUrl": "/media/music/Test Inhuman/playlists/preview.m3u",
-      "previewPlaylistM3u8Url": "/media/music/Test Inhuman/playlists/preview.m3u8",
+      "playlistM3uUrl": "/media/music/A Path of Static Snow WAV Prerelease/playlists/full.m3u",
+      "playlistM3u8Url": "/media/music/A Path of Static Snow WAV Prerelease/playlists/full.m3u8",
+      "previewPlaylistM3uUrl": "/media/music/A Path of Static Snow WAV Prerelease/playlists/preview.m3u",
+      "previewPlaylistM3u8Url": "/media/music/A Path of Static Snow WAV Prerelease/playlists/preview.m3u8",
+      "availableDownloadFormats": [
+        "flac",
+        "mp3",
+        "ogg",
+        "wav"
+      ],
       "tracks": [
         {
           "index": 1,
-          "title": "inhuman",
-          "url": "/media/music/Test Inhuman/tracks/stream/01-inhuman/index.m3u8",
-          "streamUrl": "/media/music/Test Inhuman/tracks/stream/01-inhuman/index.m3u8",
-          "sourceUrl": "/media/music/Test Inhuman/tracks/01 - inhuman.mp3",
-          "previewUrl": "/media/music/Test Inhuman/tracks/preview/01-inhuman.ogg",
-          "duration": 127.108833,
+          "title": "Acid Tears",
+          "url": "/media/music/A Path of Static Snow WAV Prerelease/tracks/stream/01-acid-tears/index.m3u8",
+          "streamUrl": "/media/music/A Path of Static Snow WAV Prerelease/tracks/stream/01-acid-tears/index.m3u8",
+          "sourceUrl": "/media/music/A Path of Static Snow WAV Prerelease/tracks/wav/01 - Acid Tears.wav",
+          "previewUrl": "/media/music/A Path of Static Snow WAV Prerelease/tracks/preview/01-acid-tears.ogg",
+          "duration": 104.570658,
+          "availableDownloadFormats": [
+            "flac",
+            "mp3",
+            "ogg",
+            "wav"
+          ],
           "links": {
-            "spotify": "https://open.spotify.com/artist/3kxsK6GeWVOpm90RqqfYZy",
-            "yandexMusic": "https://music.yandex.ru/artist/25225583",
-            "bandcamp": "https://d7tun6.bandcamp.com",
-            "soundcloud": "https://soundcloud.com"
+            "spotify": null,
+            "yandexMusic": null,
+            "bandcamp": null,
+            "soundcloud": null
+          }
+        },
+        {
+          "index": 2,
+          "title": "Crying Witches",
+          "url": "/media/music/A Path of Static Snow WAV Prerelease/tracks/stream/02-crying-witches/index.m3u8",
+          "streamUrl": "/media/music/A Path of Static Snow WAV Prerelease/tracks/stream/02-crying-witches/index.m3u8",
+          "sourceUrl": "/media/music/A Path of Static Snow WAV Prerelease/tracks/wav/02 - Crying Witches.wav",
+          "previewUrl": "/media/music/A Path of Static Snow WAV Prerelease/tracks/preview/02-crying-witches.ogg",
+          "duration": 281,
+          "availableDownloadFormats": [
+            "flac",
+            "mp3",
+            "ogg",
+            "wav"
+          ],
+          "links": {
+            "spotify": null,
+            "yandexMusic": null,
+            "bandcamp": null,
+            "soundcloud": null
+          }
+        },
+        {
+          "index": 3,
+          "title": "Dr. Star",
+          "url": "/media/music/A Path of Static Snow WAV Prerelease/tracks/stream/03-dr-star/index.m3u8",
+          "streamUrl": "/media/music/A Path of Static Snow WAV Prerelease/tracks/stream/03-dr-star/index.m3u8",
+          "sourceUrl": "/media/music/A Path of Static Snow WAV Prerelease/tracks/wav/03 - Dr. Star.wav",
+          "previewUrl": "/media/music/A Path of Static Snow WAV Prerelease/tracks/preview/03-dr-star.ogg",
+          "duration": 172.428571,
+          "availableDownloadFormats": [
+            "flac",
+            "mp3",
+            "ogg",
+            "wav"
+          ],
+          "links": {
+            "spotify": null,
+            "yandexMusic": null,
+            "bandcamp": null,
+            "soundcloud": null
+          }
+        },
+        {
+          "index": 4,
+          "title": "Drag Den",
+          "url": "/media/music/A Path of Static Snow WAV Prerelease/tracks/stream/04-drag-den/index.m3u8",
+          "streamUrl": "/media/music/A Path of Static Snow WAV Prerelease/tracks/stream/04-drag-den/index.m3u8",
+          "sourceUrl": "/media/music/A Path of Static Snow WAV Prerelease/tracks/wav/04 - Drag Den.wav",
+          "previewUrl": "/media/music/A Path of Static Snow WAV Prerelease/tracks/preview/04-drag-den.ogg",
+          "duration": 107.285714,
+          "availableDownloadFormats": [
+            "flac",
+            "mp3",
+            "ogg",
+            "wav"
+          ],
+          "links": {
+            "spotify": null,
+            "yandexMusic": null,
+            "bandcamp": null,
+            "soundcloud": null
+          }
+        },
+        {
+          "index": 5,
+          "title": "unnamed012",
+          "url": "/media/music/A Path of Static Snow WAV Prerelease/tracks/stream/05-unnamed012/index.m3u8",
+          "streamUrl": "/media/music/A Path of Static Snow WAV Prerelease/tracks/stream/05-unnamed012/index.m3u8",
+          "sourceUrl": "/media/music/A Path of Static Snow WAV Prerelease/tracks/wav/05 - unnamed012.wav",
+          "previewUrl": "/media/music/A Path of Static Snow WAV Prerelease/tracks/preview/05-unnamed012.ogg",
+          "duration": 305,
+          "availableDownloadFormats": [
+            "flac",
+            "mp3",
+            "ogg",
+            "wav"
+          ],
+          "links": {
+            "spotify": null,
+            "yandexMusic": null,
+            "bandcamp": null,
+            "soundcloud": null
+          }
+        },
+        {
+          "index": 6,
+          "title": "Winter Walk",
+          "url": "/media/music/A Path of Static Snow WAV Prerelease/tracks/stream/06-winter-walk/index.m3u8",
+          "streamUrl": "/media/music/A Path of Static Snow WAV Prerelease/tracks/stream/06-winter-walk/index.m3u8",
+          "sourceUrl": "/media/music/A Path of Static Snow WAV Prerelease/tracks/wav/06 - Winter Walk.wav",
+          "previewUrl": "/media/music/A Path of Static Snow WAV Prerelease/tracks/preview/06-winter-walk.ogg",
+          "duration": 321,
+          "availableDownloadFormats": [
+            "flac",
+            "mp3",
+            "ogg",
+            "wav"
+          ],
+          "links": {
+            "spotify": null,
+            "yandexMusic": null,
+            "bandcamp": null,
+            "soundcloud": null
           }
         }
       ],

@@ -7,6 +7,16 @@ const MUSIC_ROOT = path.join(ROOT, "public", "media", "music");
 const TRACK_EXT = new Set([".wav", ".mp3", ".flac", ".ogg", ".m4a", ".aac"]);
 const COVER_EXT = new Set([".jpg", ".jpeg", ".png", ".webp", ".avif"]);
 
+function getDownloadTargets(ext) {
+  const normalized = ext.toLowerCase();
+  if (normalized === ".wav") return ["wav", "flac", "mp3", "ogg"];
+  if (normalized === ".flac") return ["flac", "mp3", "ogg"];
+  if (normalized === ".mp3") return ["mp3", "ogg"];
+  if (normalized === ".ogg") return ["ogg"];
+  if (normalized === ".m4a" || normalized === ".aac") return ["mp3", "ogg"];
+  return ["mp3", "ogg"];
+}
+
 function slugify(value) {
   return value
     .toLowerCase()
@@ -91,6 +101,68 @@ async function removeIfExists(pathToRemove) {
   }
 }
 
+async function copyFileIfFresh(inputPath, outputPath) {
+  const inputMtime = await statMtime(inputPath);
+  const outputMtime = await statMtime(outputPath);
+  if (outputMtime >= inputMtime && outputMtime > 0) {
+    return false;
+  }
+
+  await fs.mkdir(path.dirname(outputPath), { recursive: true });
+  await fs.copyFile(inputPath, outputPath);
+  return true;
+}
+
+async function buildDownloadFormat(sourceAbs, ext, outputPath, format) {
+  if (format === "wav" && ext === ".wav") {
+    await copyFileIfFresh(sourceAbs, outputPath);
+    return;
+  }
+
+  if (format === "flac" && ext === ".flac") {
+    await copyFileIfFresh(sourceAbs, outputPath);
+    return;
+  }
+
+  if (format === "mp3" && ext === ".mp3") {
+    await copyFileIfFresh(sourceAbs, outputPath);
+    return;
+  }
+
+  if (format === "ogg" && ext === ".ogg") {
+    await copyFileIfFresh(sourceAbs, outputPath);
+    return;
+  }
+
+  const codecArgs =
+    format === "flac"
+      ? ["-c:a", "flac", "-sample_fmt", "s16", "-ar", "44100", outputPath]
+      : format === "mp3"
+        ? ["-c:a", "libmp3lame", "-b:a", "320k", "-ar", "44100", outputPath]
+        : format === "wav"
+          ? ["-c:a", "pcm_s16le", "-ar", "44100", outputPath]
+          : ["-c:a", "libopus", "-b:a", "192k", "-vbr", "on", "-ar", "48000", outputPath];
+
+  await ensureFresh(sourceAbs, outputPath, async () => {
+    await runFfmpeg([
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-y",
+      "-i",
+      sourceAbs,
+      "-map_metadata",
+      "-1",
+      "-vn",
+      "-sn",
+      "-dn",
+      "-ac",
+      "2",
+      ...codecArgs
+    ]);
+  });
+}
+
 async function findExistingCover(coverDir) {
   try {
     const covers = (await fs.readdir(coverDir))
@@ -119,6 +191,7 @@ async function optimizeAlbum(albumDirName) {
   const tracksWavDir = path.join(tracksDir, "wav");
   const previewDir = path.join(tracksDir, "preview");
   const streamDir = path.join(tracksDir, "stream");
+  const downloadDir = path.join(tracksDir, "download");
   const playlistsDir = path.join(albumDir, "playlists");
 
   let tracksSourceDir = tracksDir;
@@ -202,11 +275,13 @@ async function optimizeAlbum(albumDirName) {
   for (const fileName of selectedTracks) {
     const sourceAbs = path.join(tracksSourceDir, fileName);
     const stem = toSafeTrackStem(fileName);
+    const ext = path.extname(fileName).toLowerCase();
 
     const previewAbs = path.join(previewDir, `${stem}.ogg`);
     const streamTrackDir = path.join(streamDir, stem);
     const streamPlaylistAbs = path.join(streamTrackDir, "index.m3u8");
     const legacyStreamAbs = path.join(streamDir, `${stem}.ogg`);
+    const downloadTargets = getDownloadTargets(ext);
 
     await ensureFresh(sourceAbs, previewAbs, async () => {
       await runFfmpeg([
@@ -281,6 +356,11 @@ async function optimizeAlbum(albumDirName) {
     });
 
     await removeIfExists(legacyStreamAbs);
+
+    for (const format of downloadTargets) {
+      const outputAbs = path.join(downloadDir, format, `${stem}.${format}`);
+      await buildDownloadFormat(sourceAbs, ext, outputAbs, format);
+    }
 
     const publicTitle = normalizeTrackTitle(fileName);
     fullPlaylistItems.push({

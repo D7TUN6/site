@@ -1,17 +1,100 @@
 [
   {
-    "slug": "test-inhuman",
-    "albumName": "Test Inhuman",
-    "sourceDirName": "Test Inhuman",
-    "coverUrl": "/media/music/Test Inhuman/cover/cover.jpg",
-    "releaseDate": "07/03/2026",
+    "slug": "a-path-of-static-snow-wav-prerelease",
+    "albumName": "A Path of Static Snow WAV Prerelease",
+    "sourceDirName": "A Path of Static Snow WAV Prerelease",
+    "coverUrl": "/media/background/bg.jpg",
+    "releaseDate": "08/03/2026",
+    "availableDownloadFormats": [
+      "flac",
+      "mp3",
+      "ogg",
+      "wav"
+    ],
     "tracks": [
       {
         "index": 1,
-        "title": "inhuman",
-        "fileName": "01 - inhuman.mp3",
-        "sourceFilePath": "tracks/01 - inhuman.mp3",
-        "sizeBytes": 5170436
+        "title": "Acid Tears",
+        "fileName": "01 - Acid Tears.wav",
+        "sourceFilePath": "tracks/wav/01 - Acid Tears.wav",
+        "sizeBytes": 18446420,
+        "safeStem": "01-acid-tears",
+        "availableDownloadFormats": [
+          "flac",
+          "mp3",
+          "ogg",
+          "wav"
+        ]
+      },
+      {
+        "index": 2,
+        "title": "Crying Witches",
+        "fileName": "02 - Crying Witches.wav",
+        "sourceFilePath": "tracks/wav/02 - Crying Witches.wav",
+        "sizeBytes": 49568560,
+        "safeStem": "02-crying-witches",
+        "availableDownloadFormats": [
+          "flac",
+          "mp3",
+          "ogg",
+          "wav"
+        ]
+      },
+      {
+        "index": 3,
+        "title": "Dr. Star",
+        "fileName": "03 - Dr. Star.wav",
+        "sourceFilePath": "tracks/wav/03 - Dr. Star.wav",
+        "sizeBytes": 30416554,
+        "safeStem": "03-dr-star",
+        "availableDownloadFormats": [
+          "flac",
+          "mp3",
+          "ogg",
+          "wav"
+        ]
+      },
+      {
+        "index": 4,
+        "title": "Drag Den",
+        "fileName": "04 - Drag Den.wav",
+        "sourceFilePath": "tracks/wav/04 - Drag Den.wav",
+        "sizeBytes": 18925354,
+        "safeStem": "04-drag-den",
+        "availableDownloadFormats": [
+          "flac",
+          "mp3",
+          "ogg",
+          "wav"
+        ]
+      },
+      {
+        "index": 5,
+        "title": "unnamed012",
+        "fileName": "05 - unnamed012.wav",
+        "sourceFilePath": "tracks/wav/05 - unnamed012.wav",
+        "sizeBytes": 53802156,
+        "safeStem": "05-unnamed012",
+        "availableDownloadFormats": [
+          "flac",
+          "mp3",
+          "ogg",
+          "wav"
+        ]
+      },
+      {
+        "index": 6,
+        "title": "Winter Walk",
+        "fileName": "06 - Winter Walk.wav",
+        "sourceFilePath": "tracks/wav/06 - Winter Walk.wav",
+        "sizeBytes": 56624556,
+        "safeStem": "06-winter-walk",
+        "availableDownloadFormats": [
+          "flac",
+          "mp3",
+          "ogg",
+          "wav"
+        ]
       }
     ]
   }
