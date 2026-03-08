@@ -32,6 +32,7 @@ export type ReleaseTrack = {
   sourceUrl: string | null;
   previewUrl: string | null;
   duration: number | null;
+  availableDownloadFormats: Array<"flac" | "mp3" | "ogg" | "wav">;
   links: {
     spotify: string | null;
     yandexMusic: string | null;
@@ -56,6 +57,7 @@ export type ReleaseEntry = {
   playlistM3u8Url: string | null;
   previewPlaylistM3uUrl: string | null;
   previewPlaylistM3u8Url: string | null;
+  availableDownloadFormats: Array<"flac" | "mp3" | "ogg" | "wav">;
   tracks: ReleaseTrack[];
   links: {
     spotify: string | null;

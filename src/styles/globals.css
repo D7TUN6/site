@@ -777,6 +777,18 @@ a:not(.main-nav a):not(.control-btn):not(.site-title-link):not(.stream-badge-ima
   background: rgba(124, 156, 221, 0.8);
 }
 
+.release-download-btn + .release-download-btn {
+  margin-top: 8px;
+}
+
+.release-download-btn-secondary {
+  background: rgba(70, 92, 140, 0.46);
+}
+
+.release-download-btn-secondary:hover {
+  background: rgba(88, 113, 170, 0.58);
+}
+
 .release-download-btn:disabled {
   cursor: wait;
   opacity: 0.7;

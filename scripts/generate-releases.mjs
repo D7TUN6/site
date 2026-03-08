@@ -11,6 +11,7 @@ const RELEASE_MDX_ROOT = path.join(ROOT, "content", "mdx");
 const TRACK_EXT = new Set([".wav", ".mp3", ".flac", ".ogg", ".m4a", ".aac"]);
 const COVER_EXT = new Set([".jpg", ".jpeg", ".png", ".webp", ".avif"]);
 const URL_PROTOCOL_RE = /^[a-zA-Z][a-zA-Z\d+\-.]*:/;
+const DOWNLOAD_FORMATS = ["flac", "mp3", "ogg", "wav"];
 
 function slugify(value) {
   return value
@@ -354,6 +355,7 @@ async function readAlbums() {
       const safeStem = toSafeTrackStem(fileName);
       const previewAbs = path.join(tracksDir, "preview", `${safeStem}.ogg`);
       const streamPlaylistAbs = path.join(tracksDir, "stream", safeStem, "index.m3u8");
+      const availableDownloadFormats = [];
       let previewUrl = null;
       if (previewPlaylistTrack) {
         previewUrl = previewPlaylistTrack.url;
@@ -375,6 +377,13 @@ async function readAlbums() {
         releaseLinks.tracks[safeStem] ??
         createEmptyLinks();
 
+      for (const format of DOWNLOAD_FORMATS) {
+        const downloadAbs = path.join(tracksDir, "download", format, `${safeStem}.${format}`);
+        if (await exists(downloadAbs)) {
+          availableDownloadFormats.push(format);
+        }
+      }
+
       tracks.push({
         fileName,
         safeStem,
@@ -386,6 +395,7 @@ async function readAlbums() {
         sizeBytes: stat.size,
         previewUrl,
         duration,
+        availableDownloadFormats,
         links: trackLinks
       });
     }
@@ -426,6 +436,9 @@ async function readAlbums() {
       playlistM3u8Url: (await exists(playlistM3u8Path)) ? toPublicUrl(playlistM3u8Path) : null,
       previewPlaylistM3uUrl: (await exists(previewM3uPath)) ? toPublicUrl(previewM3uPath) : null,
       previewPlaylistM3u8Url: (await exists(previewM3u8Path)) ? toPublicUrl(previewM3u8Path) : null,
+      availableDownloadFormats: DOWNLOAD_FORMATS.filter((format) =>
+        tracks.length > 0 && tracks.every((track) => track.availableDownloadFormats.includes(format))
+      ),
       tracks,
       links: releaseLinks.release
     });
@@ -440,16 +453,19 @@ function buildServerReleaseData(albums) {
     slug: album.slug,
     albumName: album.albumName,
     sourceDirName: album.sourceDirName,
-    coverUrl: album.coverUrl,
-    releaseDate: album.releaseDate,
-    tracks: album.tracks.map((track, index) => ({
-      index: index + 1,
-      title: track.title,
-      fileName: track.fileName,
-      sourceFilePath: track.sourceFilePath,
-      sizeBytes: track.sizeBytes
-    }))
-  }));
+      coverUrl: album.coverUrl,
+      releaseDate: album.releaseDate,
+      availableDownloadFormats: album.availableDownloadFormats,
+      tracks: album.tracks.map((track, index) => ({
+        index: index + 1,
+        title: track.title,
+        fileName: track.fileName,
+        sourceFilePath: track.sourceFilePath,
+        sizeBytes: track.sizeBytes,
+        safeStem: track.safeStem,
+        availableDownloadFormats: track.availableDownloadFormats
+      }))
+    }));
 }
 
 function buildClientReleaseManifest(albums) {
@@ -468,6 +484,7 @@ function buildClientReleaseManifest(albums) {
       playlistM3u8Url: album.playlistM3u8Url,
       previewPlaylistM3uUrl: album.previewPlaylistM3uUrl,
       previewPlaylistM3u8Url: album.previewPlaylistM3u8Url,
+      availableDownloadFormats: album.availableDownloadFormats,
       tracks: album.tracks.map((track, index) => ({
         index: index + 1,
         title: track.title,
@@ -476,6 +493,7 @@ function buildClientReleaseManifest(albums) {
         sourceUrl: track.sourceUrl,
         previewUrl: track.previewUrl,
         duration: track.duration,
+        availableDownloadFormats: track.availableDownloadFormats,
         links: track.links
       })),
       links: album.links
