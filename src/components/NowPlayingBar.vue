@@ -38,8 +38,11 @@ const {
 
 const nextUpOpen = ref(false);
 const fullscreenOpen = ref(false);
+const volumeOpen = ref(false);
 const panelRef = ref<HTMLDivElement | null>(null);
 const nextUpButtonRef = ref<HTMLButtonElement | null>(null);
+const volumeBoxRef = ref<HTMLDivElement | null>(null);
+let volumeCloseTimer: number | null = null;
 
 const shouldShow = computed(() => {
   return Boolean(state.queue && currentTrack.value && (props.isMusicRoute || state.hasStartedPlayback));
@@ -96,14 +99,38 @@ function onPointerDown(event: MouseEvent) {
 function onBarClick(event: MouseEvent) {
   const target = event.target as HTMLElement | null;
   if (!target) return;
-  if (
-    target.closest(
-      "button, input, a, .now-playing-progress, .now-playing-progress-wrap, .now-playing-volume-box, .now-playing-nextup"
-    )
-  ) {
+  if (target.closest("[data-no-fullscreen]")) {
     return;
   }
   fullscreenOpen.value = true;
+}
+
+function clearVolumeCloseTimer() {
+  if (volumeCloseTimer === null) return;
+  window.clearTimeout(volumeCloseTimer);
+  volumeCloseTimer = null;
+}
+
+function openVolumePopup() {
+  clearVolumeCloseTimer();
+  volumeOpen.value = true;
+}
+
+function scheduleVolumePopupClose() {
+  clearVolumeCloseTimer();
+  volumeCloseTimer = window.setTimeout(() => {
+    volumeOpen.value = false;
+    volumeCloseTimer = null;
+  }, 180);
+}
+
+function onVolumeFocusOut(event: FocusEvent) {
+  const nextTarget = event.relatedTarget as Node | null;
+  if (nextTarget && volumeBoxRef.value?.contains(nextTarget)) {
+    return;
+  }
+
+  scheduleVolumePopupClose();
 }
 
 watch(
@@ -113,6 +140,8 @@ watch(
     if (!value) {
       fullscreenOpen.value = false;
       nextUpOpen.value = false;
+      volumeOpen.value = false;
+      clearVolumeCloseTimer();
     }
   },
   { immediate: true }
@@ -134,6 +163,7 @@ onBeforeUnmount(() => {
   document.body.classList.remove("has-now-playing-bar");
   document.body.classList.remove("has-now-playing-fullscreen");
   window.removeEventListener("mousedown", onPointerDown);
+  clearVolumeCloseTimer();
 });
 </script>
 
@@ -319,27 +349,27 @@ onBeforeUnmount(() => {
     </div>
 
     <div class="now-playing-bar" role="region" aria-label="Now playing" @click="onBarClick">
-      <div class="now-playing-controls">
-        <button type="button" class="now-playing-btn" aria-label="Previous track" @click="prevTrack">
+      <div class="now-playing-controls" data-no-fullscreen @click.stop>
+        <button type="button" class="now-playing-btn" aria-label="Previous track" @click.stop="prevTrack">
           <SkipBack class="now-playing-icon" aria-hidden="true" />
         </button>
         <button
           type="button"
           class="now-playing-btn now-playing-btn-main"
           :aria-label="state.playing ? 'Pause' : 'Play'"
-          @click="togglePlayPause"
+          @click.stop="togglePlayPause"
         >
           <Pause v-if="state.playing" class="now-playing-icon now-playing-icon-pause" aria-hidden="true" />
           <Play v-else class="now-playing-icon now-playing-icon-play" aria-hidden="true" />
         </button>
-        <button type="button" class="now-playing-btn" aria-label="Next track" @click="nextTrack">
+        <button type="button" class="now-playing-btn" aria-label="Next track" @click.stop="nextTrack">
           <SkipForward class="now-playing-icon" aria-hidden="true" />
         </button>
         <button
           type="button"
           :class="`now-playing-btn now-playing-btn-small${state.shuffleEnabled ? ' is-active' : ''}`"
           aria-label="Shuffle"
-          @click="toggleShuffle"
+          @click.stop="toggleShuffle"
         >
           <Shuffle class="now-playing-icon" aria-hidden="true" />
         </button>
@@ -347,14 +377,14 @@ onBeforeUnmount(() => {
           type="button"
           :class="`now-playing-btn now-playing-btn-small${state.repeatMode !== 'off' ? ' is-active' : ''}`"
           aria-label="Repeat"
-          @click="cycleRepeatMode"
+          @click.stop="cycleRepeatMode"
         >
           <Repeat1 v-if="state.repeatMode === 'one'" class="now-playing-icon" aria-hidden="true" />
           <Repeat v-else class="now-playing-icon" aria-hidden="true" />
         </button>
       </div>
 
-      <div class="now-playing-progress-wrap">
+      <div class="now-playing-progress-wrap" data-no-fullscreen @click.stop>
         <div class="now-playing-time">{{ fmtTime(state.currentTime) }}</div>
         <div
           class="now-playing-progress"
@@ -363,7 +393,7 @@ onBeforeUnmount(() => {
           :aria-valuemax="Math.max(state.duration, 1)"
           :aria-valuenow="state.currentTime"
           aria-label="Playback position"
-          @click="seekFromClick"
+          @click.stop="seekFromClick"
         >
           <span class="now-playing-progress-fill" :style="{ width: `${progress}%` }" />
         </div>
@@ -371,12 +401,21 @@ onBeforeUnmount(() => {
       </div>
 
       <div class="now-playing-right">
-        <div class="now-playing-volume-box">
+        <div
+          ref="volumeBoxRef"
+          :class="`now-playing-volume-box${volumeOpen ? ' is-open' : ''}`"
+          data-no-fullscreen
+          @click.stop
+          @mouseenter="openVolumePopup"
+          @mouseleave="scheduleVolumePopupClose"
+          @focusin="openVolumePopup"
+          @focusout="onVolumeFocusOut"
+        >
           <button
             type="button"
             :class="`now-playing-btn now-playing-btn-small${state.muted || state.volume <= 0 ? ' is-muted' : ''}`"
             :aria-label="state.muted || state.volume <= 0 ? 'Unmute' : 'Mute'"
-            @click="toggleMute"
+            @click.stop="toggleMute"
           >
             <VolumeX v-if="state.muted || state.volume <= 0" class="now-playing-icon" aria-hidden="true" />
             <Volume2 v-else class="now-playing-icon" aria-hidden="true" />
@@ -391,6 +430,7 @@ onBeforeUnmount(() => {
               step="0.01"
               v-model.number="volumeSlider"
               aria-label="Volume"
+              @click.stop
             />
           </div>
         </div>
@@ -415,11 +455,18 @@ onBeforeUnmount(() => {
           type="button"
           :class="`now-playing-btn now-playing-btn-small${nextUpOpen ? ' is-active' : ''}`"
           aria-label="Next up"
-          @click="nextUpOpen = !nextUpOpen"
+          data-no-fullscreen
+          @click.stop="nextUpOpen = !nextUpOpen"
         >
           <ListMusic class="now-playing-icon" aria-hidden="true" />
         </button>
-        <button type="button" class="now-playing-btn now-playing-btn-small" aria-label="Close player" @click="clearPlayer">
+        <button
+          type="button"
+          class="now-playing-btn now-playing-btn-small"
+          aria-label="Close player"
+          data-no-fullscreen
+          @click.stop="clearPlayer"
+        >
           <X class="now-playing-icon" aria-hidden="true" />
         </button>
       </div>

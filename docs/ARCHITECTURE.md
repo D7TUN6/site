@@ -14,9 +14,9 @@
 
 Development:
 
-- Vite frontend: `127.0.0.1:3001`
+- webpack dev server: `127.0.0.1:3001`
 - Express API: `127.0.0.1:3002`
-- Vite proxies `/api/*` to the API server
+- webpack dev server proxies `/api/*` to the API server
 
 Production:
 

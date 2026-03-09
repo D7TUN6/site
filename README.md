@@ -17,7 +17,7 @@
 
 ## Stack
 
-- Vue 3 + Vite
+- Vue 3 + webpack
 - Vue Router
 - Express
 - `ffmpeg` / `ffprobe`
@@ -41,11 +41,11 @@ Requirements:
 - npm 10+
 - `ffmpeg` and `ffprobe` in `PATH`
 
-Install and run development:
+Install and run development inside `nix-shell`:
 
 ```bash
-npm install
-npm run dev
+nix-shell --run "npm install"
+nix-shell --run "npm run dev"
 ```
 
 Open:
@@ -56,9 +56,9 @@ Open:
 ## Production
 
 ```bash
-npm install
-npm run build
-npm run start
+nix-shell --run "npm install"
+nix-shell --run "npm run build"
+nix-shell --run "npm run start"
 ```
 
 The production server serves the built SPA from `dist/` and the release download API from `/api/releases/download`.

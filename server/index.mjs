@@ -1,13 +1,13 @@
 import { existsSync } from "node:fs";
-import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import compression from "compression";
 import express from "express";
 import rateLimit from "express-rate-limit";
 import helmet from "helmet";
-import JSZip from "jszip";
 import mime from "mime-types";
+import { ReleaseDownloadService } from "./lib/release-download-service.mjs";
+import { createReleaseRouter } from "./routes/releases.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -15,112 +15,27 @@ const ROOT = path.resolve(__dirname, "..");
 const DIST_DIR = path.join(ROOT, "dist");
 const RELEASE_DATA_PATH = path.join(__dirname, "generated", "release-download-data.json");
 
-const ARTIST_NAME = "D7TUN6";
-const MAX_TRACKS_PER_ARCHIVE = 64;
-const SLUG_RE = /^[a-z0-9-]{1,128}$/;
 const STATIC_PRECOMPRESSED_EXT_RE = /\.(?:js|css|html|json|svg|txt|xml|map|woff2?|ico)$/i;
-const TRACK_INDEX_RE = /^\d{1,3}$/;
 
 const isDev = process.argv.includes("--dev");
 const defaultPort = isDev ? 3002 : 3001;
 const port = Number(process.env.PORT || defaultPort);
 const host = process.env.HOSTNAME || "127.0.0.1";
 
-let releaseDownloadData = [];
-
-function sanitizeFileName(value) {
-  return value.replace(/[\\/:*?"<>|]/g, "-").replace(/\s+/g, " ").trim();
-}
-
-function formatExt(format) {
-  if (format === "mp3") return "mp3";
-  if (format === "ogg") return "ogg";
-  if (format === "wav") return "wav";
-  return "flac";
-}
-
-function isOutputFormat(value) {
-  return value === "mp3" || value === "ogg" || value === "flac" || value === "wav";
-}
-
-function resolveTrackAssetPath(release, relative) {
-  const normalized = path.posix.normalize(relative);
-  if (!normalized || normalized === "." || normalized.startsWith("../") || path.posix.isAbsolute(normalized)) {
-    throw new Error("Invalid track path");
-  }
-
-  const releaseRoot = path.resolve(ROOT, "public", "media", "music", release.sourceDirName);
-  const resolvedPath = path.resolve(releaseRoot, normalized.split("/").join(path.sep));
-  if (resolvedPath !== releaseRoot && !resolvedPath.startsWith(`${releaseRoot}${path.sep}`)) {
-    throw new Error("Invalid track path");
-  }
-
-  return resolvedPath;
-}
-
-function resolveTrackDownloadPath(release, track, format) {
-  return resolveTrackAssetPath(release, path.posix.join("tracks", "download", format, `${track.safeStem}.${format}`));
-}
-
-async function createReleaseArchive(release, format) {
-  const zip = new JSZip();
-  const extension = formatExt(format);
-
-  for (const track of release.tracks) {
-    if (!Array.isArray(track.availableDownloadFormats) || !track.availableDownloadFormats.includes(format)) {
-      throw new Error(`Track "${track.title}" is not available in ${format}`);
-    }
-
-    const encoded = await readFile(resolveTrackDownloadPath(release, track, format));
-    const zipName = `${String(track.index).padStart(2, "0")} - ${sanitizeFileName(track.title)}.${extension}`;
-    zip.file(`tracks/${zipName}`, encoded);
-  }
-
-  const metadataText = [
-    `artist: ${ARTIST_NAME}`,
-    `album: ${release.albumName}`,
-    `release_date: ${release.releaseDate}`,
-    `format: ${format}`,
-    `sample_rate: ${format === "ogg" ? "48000" : "44100"}`,
-    format === "flac"
-      ? "bit_depth: 16"
-      : format === "ogg"
-        ? "codec: opus (vbr), target_bitrate: 320k"
-        : format === "wav"
-          ? "codec: pcm_s16le"
-          : "bitrate: 320k",
-    "",
-    "tracks:",
-    ...release.tracks.map((track) => `${track.index}. ${track.title}`)
-  ].join("\n");
-
-  zip.file("release-info.txt", metadataText);
-
-  const zipBuffer = await zip.generateAsync({
-    type: "nodebuffer",
-    compression: "DEFLATE",
-    compressionOptions: { level: 6 }
-  });
-
-  return {
-    fileName: `${sanitizeFileName(release.albumName)}-${format}.zip`,
-    zipBuffer
-  };
-}
-
-function findRelease(slug) {
-  return releaseDownloadData.find((entry) => entry.slug === slug);
-}
-
 function precompressedStaticMiddleware(req, res, next) {
   if (req.method !== "GET" && req.method !== "HEAD") {
     return next();
   }
 
-  let requestPath = req.path;
-  try {
-    requestPath = decodeURIComponent(req.path);
-  } catch {
+  const requestPath = (() => {
+    try {
+      return decodeURIComponent(req.path);
+    } catch {
+      return null;
+    }
+  })();
+
+  if (!requestPath) {
     return next();
   }
 
@@ -159,16 +74,12 @@ function precompressedStaticMiddleware(req, res, next) {
   return next();
 }
 
-async function bootstrapReleaseData() {
-  const raw = await readFile(RELEASE_DATA_PATH, "utf8");
-  const parsed = JSON.parse(raw);
-  if (!Array.isArray(parsed)) {
-    throw new Error("Invalid generated release data format");
-  }
-  releaseDownloadData = parsed;
-}
+const releaseDownloadService = new ReleaseDownloadService({
+  root: ROOT,
+  releaseDataPath: RELEASE_DATA_PATH
+});
 
-await bootstrapReleaseData();
+await releaseDownloadService.bootstrap();
 
 const app = express();
 app.disable("x-powered-by");
@@ -201,125 +112,26 @@ app.use(
   })
 );
 app.use(express.json({ limit: "64kb" }));
+app.use(express.urlencoded({ extended: false, limit: "64kb" }));
 app.use(
   "/api",
   rateLimit({
     windowMs: 60 * 1000,
-    max: 240,
+    max: 120,
     standardHeaders: true,
     legacyHeaders: false
   })
 );
-
-app.post("/api/releases/download", async (req, res) => {
-  const slug = typeof req.body?.slug === "string" ? req.body.slug : null;
-  const format = typeof req.body?.format === "string" ? req.body.format : null;
-
-  if (!slug || !SLUG_RE.test(slug) || !isOutputFormat(format)) {
-    return res.status(400).json({ error: "Invalid slug or format" });
-  }
-
-  const release = findRelease(slug);
-  if (!release) {
-    return res.status(404).json({ error: "Release not found" });
-  }
-
-  if (release.tracks.length === 0) {
-    return res.status(400).json({ error: "No tracks found in release" });
-  }
-
-  if (release.tracks.length > MAX_TRACKS_PER_ARCHIVE) {
-    return res.status(400).json({ error: "Too many tracks in release" });
-  }
-
-  if (!Array.isArray(release.availableDownloadFormats) || !release.availableDownloadFormats.includes(format)) {
-    return res.status(400).json({ error: "Format is not available for the whole release" });
-  }
-
-  try {
-    const { fileName, zipBuffer } = await createReleaseArchive(release, format);
-    res.setHeader("Cache-Control", "no-store");
-    res.setHeader("Content-Type", "application/zip");
-    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
-    return res.status(200).send(zipBuffer);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unable to build release archive";
-    return res.status(500).json({ error: message });
-  }
-});
-
-app.get("/api/releases/track", async (req, res) => {
-  const slug = typeof req.query.slug === "string" ? req.query.slug : null;
-  const trackIndexRaw = typeof req.query.track === "string" ? req.query.track : null;
-  const format = typeof req.query.format === "string" ? req.query.format : null;
-
-  if (!slug || !SLUG_RE.test(slug) || !trackIndexRaw || !TRACK_INDEX_RE.test(trackIndexRaw) || !isOutputFormat(format)) {
-    return res.status(400).json({ error: "Invalid slug, track, or format" });
-  }
-
-  const release = findRelease(slug);
-  if (!release) {
-    return res.status(404).json({ error: "Release not found" });
-  }
-
-  const trackIndex = Number(trackIndexRaw);
-  const track = release.tracks.find((entry) => entry.index === trackIndex);
-  if (!track) {
-    return res.status(404).json({ error: "Track not found" });
-  }
-
-  if (!Array.isArray(track.availableDownloadFormats) || !track.availableDownloadFormats.includes(format)) {
-    return res.status(400).json({ error: "Format is not available for this track" });
-  }
-
-  try {
-    const filePath = resolveTrackDownloadPath(release, track, format);
-    const fileName = `${String(track.index).padStart(2, "0")} - ${sanitizeFileName(track.title)}.${formatExt(format)}`;
-    res.setHeader("Cache-Control", "no-store");
-    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
-    return res.download(filePath, fileName);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unable to download track";
-    return res.status(500).json({ error: message });
-  }
-});
-
-app.get("/api/releases/download", async (req, res) => {
-  const slug = typeof req.query.slug === "string" ? req.query.slug : null;
-  const format = typeof req.query.format === "string" ? req.query.format : null;
-
-  if (!slug || !SLUG_RE.test(slug) || !isOutputFormat(format)) {
-    return res.status(400).json({ error: "Invalid slug or format" });
-  }
-
-  const release = findRelease(slug);
-  if (!release) {
-    return res.status(404).json({ error: "Release not found" });
-  }
-
-  if (release.tracks.length === 0) {
-    return res.status(400).json({ error: "No tracks found in release" });
-  }
-
-  if (release.tracks.length > MAX_TRACKS_PER_ARCHIVE) {
-    return res.status(400).json({ error: "Too many tracks in release" });
-  }
-
-  if (!Array.isArray(release.availableDownloadFormats) || !release.availableDownloadFormats.includes(format)) {
-    return res.status(400).json({ error: "Format is not available for the whole release" });
-  }
-
-  try {
-    const { fileName, zipBuffer } = await createReleaseArchive(release, format);
-    res.setHeader("Cache-Control", "no-store");
-    res.setHeader("Content-Type", "application/zip");
-    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
-    return res.status(200).send(zipBuffer);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unable to build release archive";
-    return res.status(500).json({ error: message });
-  }
-});
+app.use(
+  "/api/releases",
+  rateLimit({
+    windowMs: 60 * 1000,
+    max: 20,
+    standardHeaders: true,
+    legacyHeaders: false
+  }),
+  createReleaseRouter({ service: releaseDownloadService })
+);
 
 app.get("/api/health", (_req, res) => {
   res.status(200).json({ ok: true });
@@ -345,8 +157,13 @@ if (!isDev) {
           return;
         }
 
-        if (relative.startsWith("assets/") && /-[A-Za-z0-9_-]{8,}\./.test(path.basename(relative))) {
+        if (relative.startsWith("assets/") && /[.-][A-Za-z0-9_-]{8,}\./.test(path.basename(relative))) {
           res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+          return;
+        }
+
+        if (relative.startsWith("media/")) {
+          res.setHeader("Cache-Control", "public, max-age=86400");
           return;
         }
 
@@ -368,7 +185,7 @@ const server = app.listen(port, host, () => {
 server.ref();
 
 // Some Windows/Node setups let the dev API process exit immediately after listen().
-// Keep the event loop pinned explicitly in dev so concurrently does not tear down Vite.
+// Keep the event loop pinned explicitly in dev so concurrently does not tear down webpack-dev-server.
 const devKeepAlive = isDev ? setInterval(() => {}, 1 << 30) : null;
 
 function shutdown() {

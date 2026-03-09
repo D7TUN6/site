@@ -4,7 +4,7 @@ Short version:
 
 1. static HTML
 2. Next.js
-3. current stack: Vite + Vue + Express
+3. current stack: webpack + Vue + Express
 
 ## Why The Current Stack Stayed
 

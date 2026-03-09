@@ -1,10 +1,10 @@
 [
   {
-    "slug": "a-path-of-static-snow-wav-prerelease",
-    "albumName": "A Path of Static Snow WAV Prerelease",
-    "sourceDirName": "A Path of Static Snow WAV Prerelease",
-    "coverUrl": "/media/background/bg.jpg",
-    "releaseDate": "08/03/2026",
+    "slug": "a-path-of-static-snow",
+    "albumName": "A Path of Static Snow",
+    "sourceDirName": "A Path of Static Snow",
+    "coverUrl": "/media/music/A Path of Static Snow/cover/cover.jpg",
+    "releaseDate": "17/12/2025",
     "availableDownloadFormats": [
       "flac",
       "mp3",
@@ -15,10 +15,10 @@
       {
         "index": 1,
         "title": "Acid Tears",
-        "fileName": "01 - Acid Tears.wav",
-        "sourceFilePath": "tracks/wav/01 - Acid Tears.wav",
-        "sizeBytes": 18446420,
-        "safeStem": "01-acid-tears",
+        "fileName": "Acid Tears.wav",
+        "sourceFilePath": "tracks/wav/Acid Tears.wav",
+        "sizeBytes": 20815524,
+        "safeStem": "acid-tears",
         "availableDownloadFormats": [
           "flac",
           "mp3",
@@ -29,10 +29,10 @@
       {
         "index": 2,
         "title": "Crying Witches",
-        "fileName": "02 - Crying Witches.wav",
-        "sourceFilePath": "tracks/wav/02 - Crying Witches.wav",
-        "sizeBytes": 49568560,
-        "safeStem": "02-crying-witches",
+        "fileName": "Crying Witches.wav",
+        "sourceFilePath": "tracks/wav/Crying Witches.wav",
+        "sizeBytes": 51937608,
+        "safeStem": "crying-witches",
         "availableDownloadFormats": [
           "flac",
           "mp3",
@@ -43,10 +43,10 @@
       {
         "index": 3,
         "title": "Dr. Star",
-        "fileName": "03 - Dr. Star.wav",
-        "sourceFilePath": "tracks/wav/03 - Dr. Star.wav",
-        "sizeBytes": 30416554,
-        "safeStem": "03-dr-star",
+        "fileName": "Dr. Star.wav",
+        "sourceFilePath": "tracks/wav/Dr. Star.wav",
+        "sizeBytes": 32785690,
+        "safeStem": "dr-star",
         "availableDownloadFormats": [
           "flac",
           "mp3",
@@ -57,10 +57,10 @@
       {
         "index": 4,
         "title": "Drag Den",
-        "fileName": "04 - Drag Den.wav",
-        "sourceFilePath": "tracks/wav/04 - Drag Den.wav",
-        "sizeBytes": 18925354,
-        "safeStem": "04-drag-den",
+        "fileName": "Drag Den.wav",
+        "sourceFilePath": "tracks/wav/Drag Den.wav",
+        "sizeBytes": 21294450,
+        "safeStem": "drag-den",
         "availableDownloadFormats": [
           "flac",
           "mp3",
@@ -71,10 +71,10 @@
       {
         "index": 5,
         "title": "unnamed012",
-        "fileName": "05 - unnamed012.wav",
-        "sourceFilePath": "tracks/wav/05 - unnamed012.wav",
-        "sizeBytes": 53802156,
-        "safeStem": "05-unnamed012",
+        "fileName": "unnamed012.wav",
+        "sourceFilePath": "tracks/wav/unnamed012.wav",
+        "sizeBytes": 56171194,
+        "safeStem": "unnamed012",
         "availableDownloadFormats": [
           "flac",
           "mp3",
@@ -85,10 +85,517 @@
       {
         "index": 6,
         "title": "Winter Walk",
-        "fileName": "06 - Winter Walk.wav",
-        "sourceFilePath": "tracks/wav/06 - Winter Walk.wav",
-        "sizeBytes": 56624556,
-        "safeStem": "06-winter-walk",
+        "fileName": "Winter Walk.wav",
+        "sourceFilePath": "tracks/wav/Winter Walk.wav",
+        "sizeBytes": 58993574,
+        "safeStem": "winter-walk",
+        "availableDownloadFormats": [
+          "flac",
+          "mp3",
+          "ogg",
+          "wav"
+        ]
+      }
+    ]
+  },
+  {
+    "slug": "a-path-of-static-snow-deluxe-analog-edition",
+    "albumName": "A Path of Static Snow (Deluxe Analog Edition)",
+    "sourceDirName": "A Path of Static Snow (Deluxe Analog Edition)",
+    "coverUrl": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/cover/cover.jpg",
+    "releaseDate": "05/03/2026",
+    "availableDownloadFormats": [
+      "flac",
+      "mp3",
+      "ogg",
+      "wav"
+    ],
+    "tracks": [
+      {
+        "index": 1,
+        "title": "Acid Tears",
+        "fileName": "1 - Acid Tears.wav",
+        "sourceFilePath": "tracks/wav/1 - Acid Tears.wav",
+        "sizeBytes": 24992528,
+        "safeStem": "1-acid-tears",
+        "availableDownloadFormats": [
+          "flac",
+          "mp3",
+          "ogg",
+          "wav"
+        ]
+      },
+      {
+        "index": 2,
+        "title": "Dr.Star",
+        "fileName": "2 - Dr.Star.wav",
+        "sourceFilePath": "tracks/wav/2 - Dr.Star.wav",
+        "sizeBytes": 36458514,
+        "safeStem": "2-dr-star",
+        "availableDownloadFormats": [
+          "flac",
+          "mp3",
+          "ogg",
+          "wav"
+        ]
+      },
+      {
+        "index": 3,
+        "title": "Drag Den",
+        "fileName": "3 - Drag Den.wav",
+        "sourceFilePath": "tracks/wav/3 - Drag Den.wav",
+        "sizeBytes": 25168918,
+        "safeStem": "3-drag-den",
+        "availableDownloadFormats": [
+          "flac",
+          "mp3",
+          "ogg",
+          "wav"
+        ]
+      },
+      {
+        "index": 4,
+        "title": "unnamed012",
+        "fileName": "4 - unnamed012.wav",
+        "sourceFilePath": "tracks/wav/4 - unnamed012.wav",
+        "sizeBytes": 60272528,
+        "safeStem": "4-unnamed012",
+        "availableDownloadFormats": [
+          "flac",
+          "mp3",
+          "ogg",
+          "wav"
+        ]
+      },
+      {
+        "index": 5,
+        "title": "Crying Witches",
+        "fileName": "5 - Crying Witches.wav",
+        "sourceFilePath": "tracks/wav/5 - Crying Witches.wav",
+        "sizeBytes": 55421548,
+        "safeStem": "5-crying-witches",
+        "availableDownloadFormats": [
+          "flac",
+          "mp3",
+          "ogg",
+          "wav"
+        ]
+      },
+      {
+        "index": 6,
+        "title": "Winter Walk",
+        "fileName": "6 - Winter Walk.wav",
+        "sourceFilePath": "tracks/wav/6 - Winter Walk.wav",
+        "sizeBytes": 63094934,
+        "safeStem": "6-winter-walk",
+        "availableDownloadFormats": [
+          "flac",
+          "mp3",
+          "ogg",
+          "wav"
+        ]
+      },
+      {
+        "index": 7,
+        "title": "master",
+        "fileName": "master.wav",
+        "sourceFilePath": "tracks/wav/master.wav",
+        "sizeBytes": 227169206,
+        "safeStem": "master",
+        "availableDownloadFormats": [
+          "flac",
+          "mp3",
+          "ogg",
+          "wav"
+        ]
+      }
+    ]
+  },
+  {
+    "slug": "wh1te-hous3",
+    "albumName": "Wh1te Hous3",
+    "sourceDirName": "Wh1te Hous3",
+    "coverUrl": "/media/music/Wh1te Hous3/cover/cover.jpg",
+    "releaseDate": "04/03/2026",
+    "availableDownloadFormats": [
+      "flac",
+      "mp3",
+      "ogg",
+      "wav"
+    ],
+    "tracks": [
+      {
+        "index": 1,
+        "title": "Static N0is3 Tvrn3d int0 Static Pain (intro)",
+        "fileName": "1 - Static N0is3 Tvrn3d int0 Static Pain (intro).wav",
+        "sourceFilePath": "tracks/wav/1 - Static N0is3 Tvrn3d int0 Static Pain (intro).wav",
+        "sizeBytes": 71037750,
+        "safeStem": "1-static-n0is3-tvrn3d-int0-static-pain-intro",
+        "availableDownloadFormats": [
+          "flac",
+          "mp3",
+          "ogg",
+          "wav"
+        ]
+      },
+      {
+        "index": 2,
+        "title": "Lucifer",
+        "fileName": "2 - Lucifer.wav",
+        "sourceFilePath": "tracks/wav/2 - Lucifer.wav",
+        "sizeBytes": 83847642,
+        "safeStem": "2-lucifer",
+        "availableDownloadFormats": [
+          "flac",
+          "mp3",
+          "ogg",
+          "wav"
+        ]
+      },
+      {
+        "index": 3,
+        "title": "Starfighter",
+        "fileName": "3 - Starfighter.wav",
+        "sourceFilePath": "tracks/wav/3 - Starfighter.wav",
+        "sizeBytes": 52679604,
+        "safeStem": "3-starfighter",
+        "availableDownloadFormats": [
+          "flac",
+          "mp3",
+          "ogg",
+          "wav"
+        ]
+      },
+      {
+        "index": 4,
+        "title": "Acid Tears (t2)",
+        "fileName": "4 - Acid Tears (t2).wav",
+        "sourceFilePath": "tracks/wav/4 - Acid Tears (t2).wav",
+        "sizeBytes": 25450702,
+        "safeStem": "4-acid-tears-t2",
+        "availableDownloadFormats": [
+          "flac",
+          "mp3",
+          "ogg",
+          "wav"
+        ]
+      },
+      {
+        "index": 5,
+        "title": "Dope",
+        "fileName": "5 - Dope.wav",
+        "sourceFilePath": "tracks/wav/5 - Dope.wav",
+        "sizeBytes": 72977928,
+        "safeStem": "5-dope",
+        "availableDownloadFormats": [
+          "flac",
+          "mp3",
+          "ogg",
+          "wav"
+        ]
+      },
+      {
+        "index": 6,
+        "title": "Thai",
+        "fileName": "6 - Thai.wav",
+        "sourceFilePath": "tracks/wav/6 - Thai.wav",
+        "sizeBytes": 30096542,
+        "safeStem": "6-thai",
+        "availableDownloadFormats": [
+          "flac",
+          "mp3",
+          "ogg",
+          "wav"
+        ]
+      },
+      {
+        "index": 7,
+        "title": "Understation",
+        "fileName": "7 - Understation.wav",
+        "sourceFilePath": "tracks/wav/7 - Understation.wav",
+        "sizeBytes": 56396358,
+        "safeStem": "7-understation",
+        "availableDownloadFormats": [
+          "flac",
+          "mp3",
+          "ogg",
+          "wav"
+        ]
+      },
+      {
+        "index": 8,
+        "title": "unnrR35sT",
+        "fileName": "8 - unnrR35sT.wav",
+        "sourceFilePath": "tracks/wav/8 - unnrR35sT.wav",
+        "sizeBytes": 49919958,
+        "safeStem": "8-unnrr35st",
+        "availableDownloadFormats": [
+          "flac",
+          "mp3",
+          "ogg",
+          "wav"
+        ]
+      },
+      {
+        "index": 9,
+        "title": "hd1ep2amb.mmpz",
+        "fileName": "9 - hd1ep2amb.mmpz.wav",
+        "sourceFilePath": "tracks/wav/9 - hd1ep2amb.mmpz.wav",
+        "sizeBytes": 21519564,
+        "safeStem": "9-hd1ep2amb-mmpz",
+        "availableDownloadFormats": [
+          "flac",
+          "mp3",
+          "ogg",
+          "wav"
+        ]
+      },
+      {
+        "index": 10,
+        "title": "D0nor",
+        "fileName": "10 - D0nor.wav",
+        "sourceFilePath": "tracks/wav/10 - D0nor.wav",
+        "sizeBytes": 40590502,
+        "safeStem": "10-d0nor",
+        "availableDownloadFormats": [
+          "flac",
+          "mp3",
+          "ogg",
+          "wav"
+        ]
+      },
+      {
+        "index": 11,
+        "title": "Poignant",
+        "fileName": "11 - Poignant.wav",
+        "sourceFilePath": "tracks/wav/11 - Poignant.wav",
+        "sizeBytes": 45527614,
+        "safeStem": "11-poignant",
+        "availableDownloadFormats": [
+          "flac",
+          "mp3",
+          "ogg",
+          "wav"
+        ]
+      },
+      {
+        "index": 12,
+        "title": "Snowgazer",
+        "fileName": "12 - Snowgazer.wav",
+        "sourceFilePath": "tracks/wav/12 - Snowgazer.wav",
+        "sizeBytes": 46420930,
+        "safeStem": "12-snowgazer",
+        "availableDownloadFormats": [
+          "flac",
+          "mp3",
+          "ogg",
+          "wav"
+        ]
+      },
+      {
+        "index": 13,
+        "title": "K1ndn3ss",
+        "fileName": "13 - K1ndn3ss.wav",
+        "sourceFilePath": "tracks/wav/13 - K1ndn3ss.wav",
+        "sizeBytes": 91499942,
+        "safeStem": "13-k1ndn3ss",
+        "availableDownloadFormats": [
+          "flac",
+          "mp3",
+          "ogg",
+          "wav"
+        ]
+      }
+    ]
+  },
+  {
+    "slug": "wh1te-hous3-deluxe-analog-edition",
+    "albumName": "Wh1te Hous3 (Deluxe Analog Edition)",
+    "sourceDirName": "Wh1te Hous3 (Deluxe Analog Edition)",
+    "coverUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/cover/cover.jpg",
+    "releaseDate": "05/03/2026",
+    "availableDownloadFormats": [
+      "flac",
+      "mp3",
+      "ogg",
+      "wav"
+    ],
+    "tracks": [
+      {
+        "index": 1,
+        "title": "Static N0is3 Tvrn3d int0 Static Pain",
+        "fileName": "1 - Static N0is3 Tvrn3d int0 Static Pain.wav",
+        "sourceFilePath": "tracks/wav/1 - Static N0is3 Tvrn3d int0 Static Pain.wav",
+        "sizeBytes": 70247330,
+        "safeStem": "1-static-n0is3-tvrn3d-int0-static-pain",
+        "availableDownloadFormats": [
+          "flac",
+          "mp3",
+          "ogg",
+          "wav"
+        ]
+      },
+      {
+        "index": 2,
+        "title": "Lucifer",
+        "fileName": "2 - Lucifer.wav",
+        "sourceFilePath": "tracks/wav/2 - Lucifer.wav",
+        "sizeBytes": 83300784,
+        "safeStem": "2-lucifer",
+        "availableDownloadFormats": [
+          "flac",
+          "mp3",
+          "ogg",
+          "wav"
+        ]
+      },
+      {
+        "index": 3,
+        "title": "Starfighter",
+        "fileName": "3 - Starfighter.wav",
+        "sourceFilePath": "tracks/wav/3 - Starfighter.wav",
+        "sizeBytes": 52607204,
+        "safeStem": "3-starfighter",
+        "availableDownloadFormats": [
+          "flac",
+          "mp3",
+          "ogg",
+          "wav"
+        ]
+      },
+      {
+        "index": 4,
+        "title": "Acid Tears (t2)",
+        "fileName": "4 - Acid Tears (t2).wav",
+        "sourceFilePath": "tracks/wav/4 - Acid Tears (t2).wav",
+        "sizeBytes": 25265224,
+        "safeStem": "4-acid-tears-t2",
+        "availableDownloadFormats": [
+          "flac",
+          "mp3",
+          "ogg",
+          "wav"
+        ]
+      },
+      {
+        "index": 5,
+        "title": "Dope",
+        "fileName": "5 - Dope.wav",
+        "sourceFilePath": "tracks/wav/5 - Dope.wav",
+        "sizeBytes": 74480770,
+        "safeStem": "5-dope",
+        "availableDownloadFormats": [
+          "flac",
+          "mp3",
+          "ogg",
+          "wav"
+        ]
+      },
+      {
+        "index": 6,
+        "title": "Thai",
+        "fileName": "6 - Thai.wav",
+        "sourceFilePath": "tracks/wav/6 - Thai.wav",
+        "sizeBytes": 29322370,
+        "safeStem": "6-thai",
+        "availableDownloadFormats": [
+          "flac",
+          "mp3",
+          "ogg",
+          "wav"
+        ]
+      },
+      {
+        "index": 7,
+        "title": "Understation",
+        "fileName": "7 - Understation.wav",
+        "sourceFilePath": "tracks/wav/7 - Understation.wav",
+        "sizeBytes": 56311610,
+        "safeStem": "7-understation",
+        "availableDownloadFormats": [
+          "flac",
+          "mp3",
+          "ogg",
+          "wav"
+        ]
+      },
+      {
+        "index": 8,
+        "title": "unnrR35sT",
+        "fileName": "8 - unnrR35sT.wav",
+        "sourceFilePath": "tracks/wav/8 - unnrR35sT.wav",
+        "sizeBytes": 49784794,
+        "safeStem": "8-unnrr35st",
+        "availableDownloadFormats": [
+          "flac",
+          "mp3",
+          "ogg",
+          "wav"
+        ]
+      },
+      {
+        "index": 9,
+        "title": "hd1ep2amb.mmpz",
+        "fileName": "9 - hd1ep2amb.mmpz.wav",
+        "sourceFilePath": "tracks/wav/9 - hd1ep2amb.mmpz.wav",
+        "sizeBytes": 21296220,
+        "safeStem": "9-hd1ep2amb-mmpz",
+        "availableDownloadFormats": [
+          "flac",
+          "mp3",
+          "ogg",
+          "wav"
+        ]
+      },
+      {
+        "index": 10,
+        "title": "D0nor",
+        "fileName": "10 - D0nor.wav",
+        "sourceFilePath": "tracks/wav/10 - D0nor.wav",
+        "sizeBytes": 57546378,
+        "safeStem": "10-d0nor",
+        "availableDownloadFormats": [
+          "flac",
+          "mp3",
+          "ogg",
+          "wav"
+        ]
+      },
+      {
+        "index": 11,
+        "title": "Poignant",
+        "fileName": "11 - Poignant.wav",
+        "sourceFilePath": "tracks/wav/11 - Poignant.wav",
+        "sizeBytes": 44845594,
+        "safeStem": "11-poignant",
+        "availableDownloadFormats": [
+          "flac",
+          "mp3",
+          "ogg",
+          "wav"
+        ]
+      },
+      {
+        "index": 12,
+        "title": "Snowgazer",
+        "fileName": "12 - Snowgazer.wav",
+        "sourceFilePath": "tracks/wav/12 - Snowgazer.wav",
+        "sizeBytes": 45551198,
+        "safeStem": "12-snowgazer",
+        "availableDownloadFormats": [
+          "flac",
+          "mp3",
+          "ogg",
+          "wav"
+        ]
+      },
+      {
+        "index": 13,
+        "title": "K1ndn3ss",
+        "fileName": "13 - K1ndn3ss.wav",
+        "sourceFilePath": "tracks/wav/13 - K1ndn3ss.wav",
+        "sizeBytes": 91415194,
+        "safeStem": "13-k1ndn3ss",
         "availableDownloadFormats": [
           "flac",
           "mp3",

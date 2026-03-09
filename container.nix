@@ -35,7 +35,7 @@ in {
       };
       "/var/www/thecombox.site" = {
         hostPath = thecomboxSitePath;
-        isReadOnly = true;
+        isReadOnly = false;
       };
       "/var/www/boxchat" = {
         hostPath = boxchatPath;
@@ -54,9 +54,13 @@ in {
         "d /var/www/d7tun6.site/node_modules 0755 d7tun6 users -"
         "d /var/www/d7tun6.site/dist 0755 d7tun6 users -"
         "d /var/www/thecombox.site 0755 d7tun6 users -"
+        "d /var/www/thecombox.site/node_modules 0755 d7tun6 users -"
+        "d /var/www/thecombox.site/dist 0755 d7tun6 users -"
         "d /var/www/boxchat 0755 d7tun6 users -"
         "d /var/lib/d7tun6 0755 d7tun6 users -"
         "d /var/lib/d7tun6/.npm 0755 d7tun6 users -"
+        "d /var/lib/thecombox 0755 d7tun6 users -"
+        "d /var/lib/thecombox/.npm 0755 d7tun6 users -"
       ];
       system.stateVersion = "24.11";
       time.timeZone = "Asia/Yekaterinburg";
@@ -104,7 +108,14 @@ in {
           "thecombox.site" = {
             addSSL = true;
             enableACME = true;
-            root = "/var/www/thecombox.site";
+            locations."/" = {
+              proxyPass = "http://127.0.0.1:3002";
+              proxyWebsockets = true;
+              extraConfig = ''
+                proxy_read_timeout 300s;
+                proxy_send_timeout 300s;
+              '';
+            };
           };
           "boxchat.thecombox.site" = {
             addSSL = true;
@@ -173,6 +184,56 @@ in {
           ReadWritePaths = [
             "/var/www/d7tun6.site"
             "/var/lib/d7tun6"
+          ];
+          NoNewPrivileges = true;
+        };
+      };
+
+      systemd.services.thecombox-site = {
+        wantedBy = ["multi-user.target"];
+        after = ["network-online.target"];
+        wants = ["network-online.target"];
+
+        path = [
+          pkgs.nodejs_24
+          pkgs.nodePackages.npm
+          pkgs.coreutils
+          pkgs.bash
+          pkgs.procps
+          pkgs.psmisc
+          pkgs.ffmpeg
+        ];
+
+        environment = {
+          NODE_ENV = "production";
+          PORT = "3002";
+          HOSTNAME = "127.0.0.1";
+          HOME = "/var/lib/thecombox";
+          npm_config_cache = "/var/lib/thecombox/.npm";
+          SHELL = "${pkgs.bash}/bin/bash";
+        };
+
+        serviceConfig = {
+          User = "d7tun6";
+          Group = "users";
+          WorkingDirectory = "/var/www/thecombox.site";
+
+          ExecStartPre = [
+            "${pkgs.coreutils}/bin/mkdir -p /var/www/thecombox.site/node_modules /var/www/thecombox.site/dist /var/lib/thecombox/.npm"
+            "-${pkgs.psmisc}/bin/fuser -k 3002/tcp"
+            "-${pkgs.procps}/bin/pkill -f 'node server/index.mjs'"
+            "${pkgs.nodejs_24}/bin/npm ci --include=dev --no-audit --no-fund"
+          ];
+          ExecStart = "${pkgs.nodejs_24}/bin/node /var/www/thecombox.site/server/index.mjs";
+
+          Restart = "on-failure";
+          RestartSec = 5;
+          PrivateTmp = true;
+          ProtectSystem = "strict";
+          ProtectHome = false;
+          ReadWritePaths = [
+            "/var/www/thecombox.site"
+            "/var/lib/thecombox"
           ];
           NoNewPrivileges = true;
         };

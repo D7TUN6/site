@@ -1,42 +1,14 @@
 <script setup lang="ts">
-import { computed, reactive, watch } from "vue";
-import { RouterLink, useRoute, useRouter } from "vue-router";
+import { computed, defineAsyncComponent } from "vue";
+import { RouterLink } from "vue-router";
 import MarkdownContent from "@/components/MarkdownContent.vue";
 import BlogIndex from "@/components/BlogIndex.vue";
 import MusicGrid from "@/components/MusicGrid.vue";
-import ReleasePlayer from "@/components/ReleasePlayer.vue";
 import SiteFrame from "@/components/SiteFrame.vue";
-import { getRoutePayload, resolveRoute, splitSplat, type RoutePayload } from "@/lib/content";
-import { getLocaleDictionary } from "@/lib/i18n";
-import type { Lang, LocaleDictionary, RouteKey } from "@/types/content";
+import { useLocalizedPage } from "@/composables/useLocalizedPage";
 
-const route = useRoute();
-const router = useRouter();
-
-const lang = computed<Lang | null>(() => {
-  const raw = typeof route.params.lang === "string" ? route.params.lang : null;
-  if (raw === "en" || raw === "ru") return raw;
-  return null;
-});
-
-const splat = computed(() => {
-  const raw = route.params.pathMatch;
-  if (typeof raw === "string") return raw;
-  if (Array.isArray(raw)) return raw.join("/");
-  return "";
-});
-
-const routeKey = computed<RouteKey | null>(() => {
-  return resolveRoute(splitSplat(splat.value));
-});
-
-const state = reactive({
-  status: "loading" as "loading" | "ready" | "not-found" | "error",
-  dictionary: null as LocaleDictionary | null,
-  payload: null as RoutePayload | null,
-  route: null as RouteKey | null,
-  message: ""
-});
+const { lang, state } = useLocalizedPage();
+const ReleasePlayer = defineAsyncComponent(() => import("@/components/ReleasePlayer.vue"));
 
 const notesMarkdown = computed(() => {
   if (state.status !== "ready" || !state.payload || state.payload?.kind !== "release") return "";
@@ -54,60 +26,6 @@ const notesMarkdown = computed(() => {
 
 const backLabel = computed(() => (lang.value === "ru" ? "Назад к дискографии" : "Back to Discography"));
 const blogBackLabel = computed(() => (lang.value === "ru" ? "Назад в блог" : "Back to Blog"));
-
-watch(
-  () => [lang.value, routeKey.value] as const,
-  async ([nextLang, nextRoute]) => {
-    if (!nextLang) {
-      await router.replace("/en");
-      return;
-    }
-
-    const shouldShowBlockingLoader = !state.dictionary && !state.payload;
-    if (shouldShowBlockingLoader) {
-      state.status = "loading";
-    }
-    state.message = "";
-
-    try {
-      const [dictionary, payload] = await Promise.all([
-        getLocaleDictionary(nextLang),
-        nextRoute ? getRoutePayload(nextLang, nextRoute) : Promise.resolve(null)
-      ]);
-
-      if (!nextRoute) {
-        state.status = "not-found";
-        state.dictionary = dictionary;
-        return;
-      }
-
-      if (!payload) {
-        state.status = "not-found";
-        state.dictionary = dictionary;
-        return;
-      }
-
-      state.status = "ready";
-      state.dictionary = dictionary;
-      state.payload = payload;
-      state.route = nextRoute;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Unexpected loading error";
-
-      try {
-        const dictionary = await getLocaleDictionary(nextLang);
-        state.status = "error";
-        state.dictionary = dictionary;
-        state.message = message;
-      } catch {
-        state.status = "error";
-        state.dictionary = null;
-        state.message = message;
-      }
-    }
-  },
-  { immediate: true }
-);
 </script>
 
 <template>

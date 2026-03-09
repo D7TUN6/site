@@ -2,7 +2,7 @@ import DOMPurify from "dompurify";
 import MarkdownIt from "markdown-it";
 
 const markdown = new MarkdownIt({
-  html: true,
+  html: false,
   linkify: true,
   breaks: true
 });
@@ -12,7 +12,8 @@ const INTERNAL_PROTOCOL_RE = /^[a-zA-Z][a-zA-Z\d+\-.]*:/;
 export function renderMarkdown(source: string): string {
   const rendered = markdown.render(source);
   return DOMPurify.sanitize(rendered, {
-    USE_PROFILES: { html: true }
+    USE_PROFILES: { html: true },
+    ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|tel):|\/|#)/i
   });
 }
 

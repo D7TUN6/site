@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, defineAsyncComponent } from "vue";
 import { RouterLink } from "vue-router";
 import LanguageToggle from "@/components/LanguageToggle.vue";
-import NowPlayingBar from "@/components/NowPlayingBar.vue";
 import type { BaseRoute, Lang, LocaleDictionary, RouteKey } from "@/types/content";
+
+const NowPlayingBar = defineAsyncComponent(() => import("@/components/NowPlayingBar.vue"));
 
 const props = defineProps<{
   lang: Lang;

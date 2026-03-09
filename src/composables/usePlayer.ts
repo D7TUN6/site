@@ -1,31 +1,9 @@
-import Hls from "hls.js";
 import { computed, reactive, readonly, watch } from "vue";
 import { getReleaseBySlug } from "@/lib/releaseManifest";
+import { buildPlayerQueueFromRelease, type GlobalPlayerQueue, type GlobalPlayerTrack } from "@/player/queue";
 
-export type GlobalPlayerTrack = {
-  title: string;
-  url: string;
-  streamUrl?: string | null;
-  fallbackUrl?: string | null;
-  duration?: number | null;
-  links?: {
-    spotify: string | null;
-    yandexMusic: string | null;
-    bandcamp: string | null;
-    soundcloud: string | null;
-  };
-};
-
-export type GlobalPlayerQueue = {
-  queueKey: string;
-  albumSlug: string;
-  albumTitle: string;
-  artist: string;
-  coverUrl: string;
-  releaseDate: string;
-  genre: string;
-  tracks: GlobalPlayerTrack[];
-};
+type HlsModule = typeof import("hls.js/light");
+type HlsInstance = InstanceType<HlsModule["default"]>;
 
 export type RepeatMode = "off" | "all" | "one";
 
@@ -71,11 +49,16 @@ const audio = new Audio();
 audio.preload = "metadata";
 const supportsOggOpus = audio.canPlayType('audio/ogg; codecs="opus"') !== "";
 const supportsNativeHls = audio.canPlayType("application/vnd.apple.mpegurl") !== "";
-let hls: Hls | null = null;
+let hls: HlsInstance | null = null;
+let hlsModule: HlsModule | null = null;
+let hlsModulePromise: Promise<HlsModule> | null = null;
 let pendingAutoplay = false;
 let playRequestInFlight = false;
 let pendingRestoreTime: number | null = null;
 let hasRestoredState = false;
+let persistTimer: number | null = null;
+let lastPersistedPlaybackBucket = -1;
+let sourceLoadToken = 0;
 
 let listenersAttached = false;
 
@@ -104,27 +87,20 @@ function persistState(): void {
   window.localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(payload));
 }
 
+function schedulePersist(): void {
+  if (typeof window === "undefined") return;
+  if (persistTimer !== null) return;
+
+  persistTimer = window.setTimeout(() => {
+    persistTimer = null;
+    persistState();
+  }, 1000);
+}
+
 function buildQueueFromReleaseSlug(slug: string): GlobalPlayerQueue | null {
   const release = getReleaseBySlug(slug);
   if (!release) return null;
-
-  return {
-    queueKey: release.slug,
-    albumSlug: release.slug,
-    albumTitle: release.albumName,
-    artist: "D7TUN6",
-    coverUrl: release.coverPreviewUrl || release.coverUrl,
-    releaseDate: release.releaseDate,
-    genre: release.genre.en,
-    tracks: release.tracks.map((track) => ({
-      title: track.title,
-      url: track.url,
-      streamUrl: track.streamUrl,
-      fallbackUrl: track.sourceUrl,
-      duration: track.duration,
-      links: track.links
-    }))
-  };
+  return buildPlayerQueueFromRelease(release, "en");
 }
 
 function restorePersistedState(): void {
@@ -248,12 +224,21 @@ function destroyHls(): void {
   playRequestInFlight = false;
 }
 
-function canUseHlsJs(track: GlobalPlayerTrack): boolean {
-  return Boolean(track.streamUrl && Hls.isSupported());
-}
-
 function canUseNativeHls(track: GlobalPlayerTrack): boolean {
   return Boolean(track.streamUrl && supportsNativeHls);
+}
+
+async function loadHlsModule(): Promise<HlsModule> {
+  if (hlsModule) return hlsModule;
+
+  if (!hlsModulePromise) {
+    hlsModulePromise = import("hls.js/light").then((module) => {
+      hlsModule = module;
+      return module;
+    });
+  }
+
+  return hlsModulePromise;
 }
 
 function flushPendingAutoplay(): void {
@@ -277,51 +262,76 @@ function requestImmediatePlayback(): void {
     });
 }
 
-function attachTrackSource(track: GlobalPlayerTrack, autoplay: boolean): void {
-  const playbackUrl = getTrackPlaybackUrl(track);
-  const targetUrl = new URL(playbackUrl, window.location.origin).toString();
-  pendingAutoplay = autoplay;
+function applyTrackSource(playbackUrl: string, targetUrl: string, autoplay: boolean): void {
+  destroyHls();
+  if (audio.src !== targetUrl) {
+    audio.src = playbackUrl;
+    audio.load();
+  }
+  if (autoplay) {
+    requestImmediatePlayback();
+  }
+  flushPendingAutoplay();
+}
 
-  if (track.streamUrl) {
-    if (canUseHlsJs(track)) {
-      destroyHls();
-      hls = new Hls({
-        startPosition: -1,
-        enableWorker: true
-      });
+async function attachHlsTrack(track: GlobalPlayerTrack, autoplay: boolean, requestToken: number): Promise<void> {
+  const module = await loadHlsModule();
 
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        flushPendingAutoplay();
-      });
+  if (requestToken !== sourceLoadToken || !track.streamUrl) {
+    return;
+  }
 
-      hls.on(Hls.Events.ERROR, (_event, data) => {
-        if (!data.fatal) return;
+  if (!module.default.isSupported()) {
+    if (track.fallbackUrl) {
+      const fallbackUrl = track.fallbackUrl;
+      applyTrackSource(fallbackUrl, new URL(fallbackUrl, window.location.origin).toString(), autoplay);
+    }
+    return;
+  }
 
-        if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
-          hls?.recoverMediaError();
-          return;
-        }
+  destroyHls();
+  hls = new module.default({
+    startPosition: -1,
+    enableWorker: true
+  });
 
-        destroyHls();
-        if (track.fallbackUrl) {
-          audio.src = track.fallbackUrl;
-          audio.load();
-          flushPendingAutoplay();
-        }
-      });
+  hls.on(module.default.Events.MANIFEST_PARSED, () => {
+    flushPendingAutoplay();
+  });
 
-      if (audio.src) {
-        audio.removeAttribute("src");
-      }
+  hls.on(module.default.Events.ERROR, (_event, data) => {
+    if (!data.fatal) return;
 
-      hls.attachMedia(audio);
-      hls.loadSource(track.streamUrl);
-      if (autoplay) {
-        requestImmediatePlayback();
-      }
+    if (data.type === module.default.ErrorTypes.MEDIA_ERROR) {
+      hls?.recoverMediaError();
       return;
     }
 
+    destroyHls();
+    if (track.fallbackUrl) {
+      const fallbackUrl = track.fallbackUrl;
+      applyTrackSource(fallbackUrl, new URL(fallbackUrl, window.location.origin).toString(), autoplay);
+    }
+  });
+
+  if (audio.src) {
+    audio.removeAttribute("src");
+  }
+
+  hls.attachMedia(audio);
+  hls.loadSource(track.streamUrl);
+  if (autoplay) {
+    requestImmediatePlayback();
+  }
+}
+
+function attachTrackSource(track: GlobalPlayerTrack, autoplay: boolean): void {
+  const playbackUrl = getTrackPlaybackUrl(track);
+  const targetUrl = new URL(playbackUrl, window.location.origin).toString();
+  const requestToken = ++sourceLoadToken;
+  pendingAutoplay = autoplay;
+
+  if (track.streamUrl) {
     if (canUseNativeHls(track)) {
       destroyHls();
       if (audio.src !== targetUrl) {
@@ -334,17 +344,12 @@ function attachTrackSource(track: GlobalPlayerTrack, autoplay: boolean): void {
       flushPendingAutoplay();
       return;
     }
+
+    void attachHlsTrack(track, autoplay, requestToken);
+    return;
   }
 
-  destroyHls();
-  if (audio.src !== targetUrl) {
-    audio.src = playbackUrl;
-    audio.load();
-  }
-  if (autoplay) {
-    requestImmediatePlayback();
-  }
-  flushPendingAutoplay();
+  applyTrackSource(playbackUrl, targetUrl, autoplay);
 }
 
 function loadTrack(index: number, autoplay: boolean): void {
@@ -415,6 +420,11 @@ function attachListeners(): void {
 
   audio.addEventListener("timeupdate", () => {
     state.currentTime = audio.currentTime || 0;
+    const playbackBucket = Math.floor(state.currentTime / 5);
+    if (playbackBucket !== lastPersistedPlaybackBucket) {
+      lastPersistedPlaybackBucket = playbackBucket;
+      schedulePersist();
+    }
   });
 
   audio.addEventListener("loadedmetadata", () => {
@@ -438,10 +448,12 @@ function attachListeners(): void {
 
   audio.addEventListener("pause", () => {
     state.playing = false;
+    persistState();
   });
 
   audio.addEventListener("ended", () => {
     moveToNextTrack(true);
+    persistState();
   });
 
   watch(
@@ -464,7 +476,6 @@ function attachListeners(): void {
     () => [
       state.queue?.queueKey ?? "",
       state.currentIndex,
-      state.currentTime,
       state.volume,
       state.muted,
       state.shuffleEnabled,
@@ -475,7 +486,7 @@ function attachListeners(): void {
       state.playOrder.join(",")
     ],
     () => {
-      persistState();
+      schedulePersist();
     }
   );
 
@@ -511,6 +522,7 @@ function setQueue(nextQueue: GlobalPlayerQueue): void {
 
   audio.removeAttribute("src");
   audio.load();
+  lastPersistedPlaybackBucket = -1;
 }
 
 function clearPlayer(): void {
@@ -529,6 +541,7 @@ function clearPlayer(): void {
   state.playOrder = [];
   state.orderPos = 0;
   state.trackDurations = {};
+  lastPersistedPlaybackBucket = -1;
 
   persistState();
 }

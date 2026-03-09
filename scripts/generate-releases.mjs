@@ -310,15 +310,14 @@ async function readAlbums() {
     }
 
     const tracks = [];
-    let trackFiles = [];
-
-    try {
-      trackFiles = (await fs.readdir(tracksSourceDir))
+    const trackFiles = await fs
+      .readdir(tracksSourceDir)
+      .then((entries) =>
+        entries
         .filter((f) => TRACK_EXT.has(path.extname(f).toLowerCase()))
-        .sort(sortTracksNatural);
-    } catch {
-      trackFiles = [];
-    }
+        .sort(sortTracksNatural)
+      )
+      .catch(() => []);
 
     const numberedTracks = trackFiles.filter((name) => /^\s*\d+\s*-\s*/.test(name));
     const selectedTracks =
@@ -400,12 +399,10 @@ async function readAlbums() {
       });
     }
 
-    let notes = "";
-    try {
-      notes = (await fs.readFile(notesFile, "utf8")).trim();
-    } catch {
-      notes = "";
-    }
+    const notes = await fs
+      .readFile(notesFile, "utf8")
+      .then((value) => value.trim())
+      .catch(() => "");
 
     let releaseDate = parseReleaseDateFromNotes(notes);
     if (!releaseDate) {

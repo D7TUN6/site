@@ -1150,6 +1150,7 @@ body.has-now-playing-fullscreen {
 }
 
 .now-playing-volume-box:hover .now-playing-volume-popup,
+.now-playing-volume-box.is-open .now-playing-volume-popup,
 .now-playing-volume-box:focus-within .now-playing-volume-popup {
   opacity: 1;
   pointer-events: auto;

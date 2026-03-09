@@ -237,7 +237,7 @@ async function acquireOptimizeLock() {
       }
 
       if (Date.now() - waitStartedAt > LOCK_TIMEOUT_MS) {
-        throw new Error(`Timed out waiting for media lock: ${LOCK_FILE}`);
+        throw new Error(`Timed out waiting for media lock: ${LOCK_FILE}`, { cause: error });
       }
 
       await sleep(LOCK_WAIT_MS);
@@ -285,12 +285,15 @@ async function optimizeAlbum(albumDirName) {
     tracksSourceDir = tracksDir;
   }
 
-  let trackFiles = [];
-  try {
-    trackFiles = (await fs.readdir(tracksSourceDir))
+  const trackFiles = await fs
+    .readdir(tracksSourceDir)
+    .then((entries) =>
+      entries
       .filter((f) => TRACK_EXT.has(path.extname(f).toLowerCase()))
-      .sort(sortTracksNatural);
-  } catch {
+      .sort(sortTracksNatural)
+    )
+    .catch(() => null);
+  if (!trackFiles) {
     return;
   }
 

@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { Pause, Play } from "lucide-vue-next";
-import { usePlayer, type GlobalPlayerQueue } from "@/composables/usePlayer";
+import { usePlayer } from "@/composables/usePlayer";
+import { useReleaseDownloads } from "@/composables/useReleaseDownloads";
+import { buildPlayerQueueFromRelease, type GlobalPlayerQueue } from "@/player/queue";
 import type { ReleaseEntry } from "@/types/content";
 
 type DownloadFormat = "flac" | "mp3" | "ogg" | "wav";
@@ -19,23 +21,16 @@ const {
   seekByRatio
 } = usePlayer();
 
-const queuePayload = computed<GlobalPlayerQueue>(() => ({
-  queueKey: props.release.slug,
-  albumSlug: props.release.slug,
-  albumTitle: props.release.albumName,
-  artist: "D7TUN6",
-  coverUrl: props.release.coverPreviewUrl || props.release.coverUrl,
-  releaseDate: props.release.releaseDate,
-  genre: props.lang === "ru" ? props.release.genre.ru : props.release.genre.en,
-  tracks: props.release.tracks.map((track) => ({
-    title: track.title,
-    url: track.url,
-    streamUrl: track.streamUrl,
-    fallbackUrl: track.sourceUrl,
-    duration: track.duration,
-    links: track.links
-  }))
-}));
+const {
+  isDownloading,
+  isTrackDownloading,
+  downloadError,
+  setDownloadError,
+  downloadRelease,
+  downloadTrack
+} = useReleaseDownloads(props.release);
+
+const queuePayload = computed<GlobalPlayerQueue>(() => buildPlayerQueueFromRelease(props.release, props.lang));
 
 const isRu = computed(() => props.lang === "ru");
 const isActiveQueue = computed(() => state.queue?.queueKey === props.release.slug);
@@ -55,44 +50,12 @@ const trackDownloadFormats = computed<DownloadFormat[]>(() => {
 });
 
 const downloadFormat = ref<DownloadFormat>((props.release.availableDownloadFormats[0] as DownloadFormat) || "ogg");
-const isDownloading = ref(false);
-const downloadError = ref<string | null>(null);
-const isTrackDownloading = ref(false);
 
 function fmtTime(seconds: number): string {
   if (!Number.isFinite(seconds) || seconds < 0) return "0:00";
   const m = Math.floor(seconds / 60);
   const s = Math.floor(seconds % 60);
   return `${m}:${String(s).padStart(2, "0")}`;
-}
-
-function parseDownloadFileName(contentDisposition: string | null, fallbackName: string): string {
-  if (!contentDisposition) return fallbackName;
-
-  const utf8Match = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
-  if (utf8Match?.[1]) {
-    try {
-      return decodeURIComponent(utf8Match[1]);
-    } catch {
-      return utf8Match[1];
-    }
-  }
-
-  const simpleMatch = contentDisposition.match(/filename="([^"]+)"/i);
-  if (simpleMatch?.[1]) return simpleMatch[1];
-
-  return fallbackName;
-}
-
-function getApiError(payload: { error?: string; message?: string } | null, fallback: string): string {
-  if (payload?.error && payload.error.trim().length > 0) return payload.error;
-  if (payload?.message && payload.message.trim().length > 0) return payload.message;
-  return fallback;
-}
-
-function isLikelyIOSDevice(): boolean {
-  const ua = navigator.userAgent || "";
-  return /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 }
 
 function toggleMainPlayPause() {
@@ -135,51 +98,10 @@ function seekByClick(event: MouseEvent) {
 
 async function handleDownload() {
   if (!releaseDownloadFormats.value.includes(downloadFormat.value)) {
-    downloadError.value = isRu.value ? "Этот формат недоступен для релиза" : "Format is not available for this release";
+    setDownloadError(isRu.value ? "Этот формат недоступен для релиза" : "Format is not available for this release");
     return;
   }
-
-  if (isDownloading.value) return;
-
-  downloadError.value = null;
-  isDownloading.value = true;
-
-  try {
-    const directDownloadUrl = `/api/releases/download?slug=${encodeURIComponent(props.release.slug)}&format=${encodeURIComponent(downloadFormat.value)}`;
-
-    if (isLikelyIOSDevice()) {
-      window.location.assign(directDownloadUrl);
-      return;
-    }
-
-    const response = await fetch(directDownloadUrl, {
-      method: "GET",
-      cache: "no-store"
-    });
-
-    if (!response.ok) {
-      const payload = (await response.json().catch(() => null)) as { error?: string; message?: string } | null;
-      throw new Error(getApiError(payload, "Download failed"));
-    }
-    const blob = await response.blob();
-    const objectUrl = URL.createObjectURL(blob);
-
-    const anchor = document.createElement("a");
-    anchor.href = objectUrl;
-    anchor.download = parseDownloadFileName(
-      response.headers.get("content-disposition"),
-      `${props.release.slug}-${downloadFormat.value}.zip`
-    );
-
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-    URL.revokeObjectURL(objectUrl);
-  } catch (error) {
-    downloadError.value = error instanceof Error ? error.message : "Unexpected download error";
-  } finally {
-    isDownloading.value = false;
-  }
+  await downloadRelease(downloadFormat.value);
 }
 
 async function handleTrackDownload() {
@@ -187,52 +109,10 @@ async function handleTrackDownload() {
   if (!track) return;
 
   if (!trackDownloadFormats.value.includes(downloadFormat.value)) {
-    downloadError.value = isRu.value ? "Этот формат недоступен для трека" : "Format is not available for this track";
+    setDownloadError(isRu.value ? "Этот формат недоступен для трека" : "Format is not available for this track");
     return;
   }
-
-  isTrackDownloading.value = true;
-  downloadError.value = null;
-
-  try {
-    const response = await fetch(
-      `/api/releases/track?slug=${encodeURIComponent(props.release.slug)}&track=${encodeURIComponent(String(track.index))}&format=${encodeURIComponent(downloadFormat.value)}`,
-      {
-        method: "GET",
-        cache: "no-store"
-      }
-    );
-
-    if (!response.ok) {
-      const payload = (await response.json().catch(() => null)) as { error?: string; message?: string } | null;
-      throw new Error(getApiError(payload, "Track download failed"));
-    }
-
-    if (isLikelyIOSDevice()) {
-      window.location.assign(
-        `/api/releases/track?slug=${encodeURIComponent(props.release.slug)}&track=${encodeURIComponent(String(track.index))}&format=${encodeURIComponent(downloadFormat.value)}`
-      );
-      return;
-    }
-
-    const blob = await response.blob();
-    const objectUrl = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = objectUrl;
-    anchor.download = parseDownloadFileName(
-      response.headers.get("content-disposition"),
-      `${props.release.slug}-${track.index}.${downloadFormat.value}`
-    );
-
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-    URL.revokeObjectURL(objectUrl);
-  } catch (error) {
-    downloadError.value = error instanceof Error ? error.message : "Unexpected track download error";
-  } finally {
-    isTrackDownloading.value = false;
-  }
+  await downloadTrack(track.index, downloadFormat.value);
 }
 
 </script>

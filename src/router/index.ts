@@ -1,12 +1,13 @@
 import { createRouter, createWebHistory } from "vue-router";
 import LocalizedPage from "@/views/LocalizedPage.vue";
+import { resolvePreferredLanguage } from "@/lib/languagePreference";
 
 const router = createRouter({
   history: createWebHistory(),
   routes: [
     {
       path: "/",
-      redirect: "/en"
+      redirect: () => `/${resolvePreferredLanguage()}`
     },
     {
       path: "/:lang/:pathMatch(.*)*",
@@ -14,7 +15,7 @@ const router = createRouter({
     },
     {
       path: "/:pathMatch(.*)*",
-      redirect: "/en"
+      redirect: () => `/${resolvePreferredLanguage()}`
     }
   ],
   scrollBehavior() {

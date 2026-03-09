@@ -1,4 +1,5 @@
 import { getAllReleases, getReleaseBySlug, getReleaseRoutes } from "@/lib/releaseManifest";
+import { getAllBlogPosts, getBlogPostBySlug } from "@/lib/blog";
 import type { BaseRoute, BlogPostEntry, Lang, ReleaseEntry, RouteKey } from "@/types/content";
 
 export type RoutePayload =
@@ -37,92 +38,22 @@ function isReleaseRoute(value: string): boolean {
   return getReleaseRoutes().includes(value);
 }
 
-type BlogModuleMap = Record<string, string>;
-
-const blogModules = {
-  en: import.meta.glob("../../content/mdx/en/blog/*.mdx", { query: "?raw", import: "default", eager: true }),
-  ru: import.meta.glob("../../content/mdx/ru/blog/*.mdx", { query: "?raw", import: "default", eager: true })
-} satisfies Record<Lang, BlogModuleMap>;
-
-function parseFrontmatter(source: string): { data: Record<string, string>; content: string } {
-  const normalized = source.replace(/^\uFEFF/, "");
-  if (!normalized.startsWith("---\n")) {
-    return { data: {}, content: normalized.trim() };
-  }
-
-  const endIndex = normalized.indexOf("\n---\n", 4);
-  if (endIndex === -1) {
-    return { data: {}, content: normalized.trim() };
-  }
-
-  const rawFrontmatter = normalized.slice(4, endIndex);
-  const body = normalized.slice(endIndex + 5).trim();
-  const data: Record<string, string> = {};
-
-  for (const line of rawFrontmatter.split("\n")) {
-    const separatorIndex = line.indexOf(":");
-    if (separatorIndex === -1) continue;
-
-    const key = line.slice(0, separatorIndex).trim();
-    const value = line
-      .slice(separatorIndex + 1)
-      .trim()
-      .replace(/^['"]|['"]$/g, "");
-
-    if (key) data[key] = value;
-  }
-
-  return { data, content: body };
-}
-
-function getBlogSlugFromPath(path: string): string {
-  return path.split("/").pop()?.replace(/\.mdx$/, "") ?? "";
-}
-
-function getAllBlogPosts(lang: Lang): BlogPostEntry[] {
-  const modules = blogModules[lang];
-
-  return Object.entries(modules)
-    .map(([path, source]) => {
-      const { data, content } = parseFrontmatter(source);
-      const slug = data.slug?.trim() || getBlogSlugFromPath(path);
-      const title = data.title?.trim() || slug;
-      const excerpt = data.excerpt?.trim() || "";
-      const publishedAt = data.publishedAt?.trim() || "";
-
-      return {
-        slug,
-        title,
-        excerpt,
-        publishedAt,
-        content,
-        lang
-      };
-    })
-    .filter((post) => post.slug.length > 0)
-    .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
-}
-
-function getBlogPostBySlug(lang: Lang, slug: string): BlogPostEntry | null {
-  return getAllBlogPosts(lang).find((post) => post.slug === slug) ?? null;
-}
-
 const baseContentModuleMap: Record<Lang, Record<BaseRoute, () => Promise<RawContentModule>>> = {
   en: {
-    main: () => import("../../content/mdx/en/base/main.mdx?raw"),
-    bio: () => import("../../content/mdx/en/base/bio.mdx?raw"),
-    music: () => import("../../content/mdx/en/base/music.mdx?raw"),
-    news: () => import("../../content/mdx/en/base/news.mdx?raw"),
-    blog: () => import("../../content/mdx/en/base/blog.mdx?raw"),
-    links: () => import("../../content/mdx/en/base/links.mdx?raw")
+    main: () => import("../../content/mdx/en/base/main.mdx"),
+    bio: () => import("../../content/mdx/en/base/bio.mdx"),
+    music: () => import("../../content/mdx/en/base/music.mdx"),
+    news: () => import("../../content/mdx/en/base/news.mdx"),
+    blog: () => import("../../content/mdx/en/base/blog.mdx"),
+    links: () => import("../../content/mdx/en/base/links.mdx")
   },
   ru: {
-    main: () => import("../../content/mdx/ru/base/main.mdx?raw"),
-    bio: () => import("../../content/mdx/ru/base/bio.mdx?raw"),
-    music: () => import("../../content/mdx/ru/base/music.mdx?raw"),
-    news: () => import("../../content/mdx/ru/base/news.mdx?raw"),
-    blog: () => import("../../content/mdx/ru/base/blog.mdx?raw"),
-    links: () => import("../../content/mdx/ru/base/links.mdx?raw")
+    main: () => import("../../content/mdx/ru/base/main.mdx"),
+    bio: () => import("../../content/mdx/ru/base/bio.mdx"),
+    music: () => import("../../content/mdx/ru/base/music.mdx"),
+    news: () => import("../../content/mdx/ru/base/news.mdx"),
+    blog: () => import("../../content/mdx/ru/base/blog.mdx"),
+    links: () => import("../../content/mdx/ru/base/links.mdx")
   }
 };
 
