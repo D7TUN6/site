@@ -24,9 +24,7 @@ function isLocaleDictionary(input: unknown): input is LocaleDictionary {
 }
 
 async function loadLocale(lang: Lang): Promise<LocaleDictionary> {
-  const response = await fetch(`/locales/${lang}.xml`, {
-    cache: "no-store"
-  });
+  const response = await fetch(`/locales/${lang}.xml`);
 
   if (!response.ok) {
     throw new Error(`Failed to load locale ${lang}`);

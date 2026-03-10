@@ -1,9 +1,9 @@
 import { computed, reactive, readonly, watch } from "vue";
-import { getReleaseBySlug } from "@/lib/releaseManifest";
 import { buildPlayerQueueFromRelease, type GlobalPlayerQueue, type GlobalPlayerTrack } from "@/player/queue";
 
 type HlsModule = typeof import("hls.js/light");
 type HlsInstance = InstanceType<HlsModule["default"]>;
+type ReleaseManifestModule = typeof import("@/lib/releaseManifest");
 
 export type RepeatMode = "off" | "all" | "one";
 
@@ -59,8 +59,17 @@ let hasRestoredState = false;
 let persistTimer: number | null = null;
 let lastPersistedPlaybackBucket = -1;
 let sourceLoadToken = 0;
+let restoreLoadToken = 0;
 
 let listenersAttached = false;
+let releaseManifestModulePromise: Promise<ReleaseManifestModule> | null = null;
+
+function loadReleaseManifestModule(): Promise<ReleaseManifestModule> {
+  if (!releaseManifestModulePromise) {
+    releaseManifestModulePromise = import("@/lib/releaseManifest");
+  }
+  return releaseManifestModulePromise;
+}
 
 function persistState(): void {
   if (typeof window === "undefined") return;
@@ -97,7 +106,8 @@ function schedulePersist(): void {
   }, 1000);
 }
 
-function buildQueueFromReleaseSlug(slug: string): GlobalPlayerQueue | null {
+async function buildQueueFromReleaseSlug(slug: string): Promise<GlobalPlayerQueue | null> {
+  const { getReleaseBySlug } = await loadReleaseManifestModule();
   const release = getReleaseBySlug(slug);
   if (!release) return null;
   return buildPlayerQueueFromRelease(release, "en");
@@ -114,45 +124,57 @@ function restorePersistedState(): void {
     const persisted = JSON.parse(raw) as PersistedPlayerState;
     if (!persisted?.queueKey) return;
 
-    const queue = buildQueueFromReleaseSlug(persisted.queueKey);
-    if (!queue || queue.tracks.length === 0) return;
+    const token = ++restoreLoadToken;
+    void buildQueueFromReleaseSlug(persisted.queueKey)
+      .then((queue) => {
+        if (token !== restoreLoadToken) return;
+        if (!queue || queue.tracks.length === 0) return;
+        if (state.queue) return;
 
-    state.queue = queue;
-    state.currentIndex = clamp(persisted.currentIndex ?? 0, 0, Math.max(queue.tracks.length - 1, 0));
-    state.currentTime = Math.max(0, persisted.currentTime || 0);
-    state.duration =
-      typeof queue.tracks[state.currentIndex]?.duration === "number" ? (queue.tracks[state.currentIndex]?.duration as number) : 0;
-    state.volume = clamp(persisted.volume ?? 1, 0, 1);
-    state.muted = Boolean(persisted.muted);
-    state.shuffleEnabled = Boolean(persisted.shuffleEnabled);
-    state.repeatMode =
-      persisted.repeatMode === "all" || persisted.repeatMode === "one" ? persisted.repeatMode : "off";
-    state.hasStartedPlayback = Boolean(persisted.hasStartedPlayback);
+        state.queue = queue;
+        state.currentIndex = clamp(persisted.currentIndex ?? 0, 0, Math.max(queue.tracks.length - 1, 0));
+        state.currentTime = Math.max(0, persisted.currentTime || 0);
+        state.duration =
+          typeof queue.tracks[state.currentIndex]?.duration === "number"
+            ? (queue.tracks[state.currentIndex]?.duration as number)
+            : 0;
+        state.volume = clamp(persisted.volume ?? 1, 0, 1);
+        state.muted = Boolean(persisted.muted);
+        state.shuffleEnabled = Boolean(persisted.shuffleEnabled);
+        state.repeatMode =
+          persisted.repeatMode === "all" || persisted.repeatMode === "one" ? persisted.repeatMode : "off";
+        state.hasStartedPlayback = Boolean(persisted.hasStartedPlayback);
 
-    const validOrder =
-      Array.isArray(persisted.playOrder) &&
-      persisted.playOrder.length === queue.tracks.length &&
-      persisted.playOrder.every((value) => Number.isInteger(value) && value >= 0 && value < queue.tracks.length);
+        const validOrder =
+          Array.isArray(persisted.playOrder) &&
+          persisted.playOrder.length === queue.tracks.length &&
+          persisted.playOrder.every((value) => Number.isInteger(value) && value >= 0 && value < queue.tracks.length);
 
-    state.playOrder = validOrder
-      ? [...persisted.playOrder]
-      : state.shuffleEnabled
-        ? buildShuffledOrder(queue.tracks.length, state.currentIndex)
-        : buildSequentialOrder(queue.tracks.length);
+        state.playOrder = validOrder
+          ? [...persisted.playOrder]
+          : state.shuffleEnabled
+            ? buildShuffledOrder(queue.tracks.length, state.currentIndex)
+            : buildSequentialOrder(queue.tracks.length);
 
-    state.orderPos = clamp(
-      validOrder ? persisted.orderPos ?? state.playOrder.indexOf(state.currentIndex) : state.playOrder.indexOf(state.currentIndex),
-      0,
-      Math.max(state.playOrder.length - 1, 0)
-    );
-    state.trackDurations = Object.fromEntries(
-      queue.tracks
-        .map((track) => [getTrackPlaybackUrl(track), track.duration])
-        .filter((entry): entry is [string, number] => typeof entry[1] === "number")
-    );
+        state.orderPos = clamp(
+          validOrder
+            ? persisted.orderPos ?? state.playOrder.indexOf(state.currentIndex)
+            : state.playOrder.indexOf(state.currentIndex),
+          0,
+          Math.max(state.playOrder.length - 1, 0)
+        );
+        state.trackDurations = Object.fromEntries(
+          queue.tracks
+            .map((track) => [getTrackPlaybackUrl(track), track.duration])
+            .filter((entry): entry is [string, number] => typeof entry[1] === "number")
+        );
 
-    pendingRestoreTime = state.currentTime;
-    attachTrackSource(queue.tracks[state.currentIndex], Boolean(persisted.wasPlaying));
+        pendingRestoreTime = state.currentTime;
+        attachTrackSource(queue.tracks[state.currentIndex], Boolean(persisted.wasPlaying));
+      })
+      .catch(() => {
+        window.localStorage.removeItem(PLAYER_STORAGE_KEY);
+      });
   } catch {
     window.localStorage.removeItem(PLAYER_STORAGE_KEY);
   }

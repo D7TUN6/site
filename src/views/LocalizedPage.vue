@@ -2,12 +2,12 @@
 import { computed, defineAsyncComponent } from "vue";
 import { RouterLink } from "vue-router";
 import MarkdownContent from "@/components/MarkdownContent.vue";
-import BlogIndex from "@/components/BlogIndex.vue";
-import MusicGrid from "@/components/MusicGrid.vue";
 import SiteFrame from "@/components/SiteFrame.vue";
 import { useLocalizedPage } from "@/composables/useLocalizedPage";
 
 const { lang, state } = useLocalizedPage();
+const BlogIndex = defineAsyncComponent(() => import("@/components/BlogIndex.vue"));
+const MusicGrid = defineAsyncComponent(() => import("@/components/MusicGrid.vue"));
 const ReleasePlayer = defineAsyncComponent(() => import("@/components/ReleasePlayer.vue"));
 
 const notesMarkdown = computed(() => {

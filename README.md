@@ -66,6 +66,7 @@ The production server serves the built SPA from `dist/` and the release download
 ## Main Scripts
 
 - `npm run prepare:media` rebuild cover previews, HLS streams, previews, and release manifests
+- `npm run generate:seo` generate `public/robots.txt` + `public/sitemap.xml` (set `SITE_ORIGIN` to override the default origin)
 - `npm run dev` run site + API locally
 - `npm run build` rebuild media and create production bundle
 - `npm run start` run production server

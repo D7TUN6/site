@@ -1,5 +1,3 @@
-import { getAllReleases, getReleaseBySlug, getReleaseRoutes } from "@/lib/releaseManifest";
-import { getAllBlogPosts, getBlogPostBySlug } from "@/lib/blog";
 import type { BaseRoute, BlogPostEntry, Lang, ReleaseEntry, RouteKey } from "@/types/content";
 
 export type RoutePayload =
@@ -34,8 +32,24 @@ function isBaseRoute(value: string): value is (typeof baseRoutes)[number] {
   return baseRoutes.includes(value as (typeof baseRoutes)[number]);
 }
 
-function isReleaseRoute(value: string): boolean {
-  return getReleaseRoutes().includes(value);
+type ReleaseManifestModule = typeof import("@/lib/releaseManifest");
+let releaseManifestModulePromise: Promise<ReleaseManifestModule> | null = null;
+
+function loadReleaseManifestModule(): Promise<ReleaseManifestModule> {
+  if (!releaseManifestModulePromise) {
+    releaseManifestModulePromise = import("@/lib/releaseManifest");
+  }
+  return releaseManifestModulePromise;
+}
+
+type BlogModule = typeof import("@/lib/blog");
+let blogModulePromise: Promise<BlogModule> | null = null;
+
+function loadBlogModule(): Promise<BlogModule> {
+  if (!blogModulePromise) {
+    blogModulePromise = import("@/lib/blog");
+  }
+  return blogModulePromise;
 }
 
 const baseContentModuleMap: Record<Lang, Record<BaseRoute, () => Promise<RawContentModule>>> = {
@@ -75,7 +89,9 @@ export function resolveRoute(slugParts: string[]): RouteKey | null {
     return value;
   }
 
-  if (isReleaseRoute(value)) {
+  if (value.startsWith("music/")) {
+    const slug = value.replace("music/", "").trim();
+    if (!slug) return null;
     return value as RouteKey;
   }
 
@@ -97,6 +113,7 @@ function cleanupBaseMarkdown(source: string): string {
 
 export async function getRoutePayload(lang: Lang, route: RouteKey): Promise<RoutePayload | null> {
   if (route === "music") {
+    const { getAllReleases } = await loadReleaseManifestModule();
     return {
       kind: "music-index",
       releases: getAllReleases()
@@ -104,6 +121,7 @@ export async function getRoutePayload(lang: Lang, route: RouteKey): Promise<Rout
   }
 
   if (route.startsWith("music/")) {
+    const { getReleaseBySlug } = await loadReleaseManifestModule();
     const release = getReleaseBySlug(route.replace("music/", ""));
     if (!release) return null;
 
@@ -114,6 +132,7 @@ export async function getRoutePayload(lang: Lang, route: RouteKey): Promise<Rout
   }
 
   if (route === "blog") {
+    const { getAllBlogPosts } = await loadBlogModule();
     return {
       kind: "blog-index",
       posts: getAllBlogPosts(lang)
@@ -121,6 +140,7 @@ export async function getRoutePayload(lang: Lang, route: RouteKey): Promise<Rout
   }
 
   if (route.startsWith("blog/")) {
+    const { getBlogPostBySlug } = await loadBlogModule();
     const post = getBlogPostBySlug(lang, route.replace("blog/", ""));
     if (!post) return null;
 

@@ -3,7 +3,6 @@ import { fileURLToPath } from "node:url";
 import zlib from "node:zlib";
 import webpack from "webpack";
 import CompressionPlugin from "compression-webpack-plugin";
-import CopyPlugin from "copy-webpack-plugin";
 import CssMinimizerPlugin from "css-minimizer-webpack-plugin";
 import HtmlWebpackPlugin from "html-webpack-plugin";
 import MiniCssExtractPlugin from "mini-css-extract-plugin";
@@ -16,6 +15,63 @@ const PUBLIC_DIR = path.resolve(__dirname, "public");
 const ENTRY_FILE = path.resolve(__dirname, "src", "main.ts");
 const HTML_TEMPLATE = path.resolve(__dirname, "index.html");
 const PRECOMPRESS_RE = /\.(?:js|css|html|json|svg|txt|xml|map|woff2?|ico)$/i;
+
+class InlineCssPlugin {
+  apply(compiler) {
+    compiler.hooks.compilation.tap("InlineCssPlugin", (compilation) => {
+      const hooks = HtmlWebpackPlugin.getHooks(compilation);
+      hooks.alterAssetTagGroups.tap("InlineCssPlugin", (data) => {
+        const cssAssets = [];
+
+        function rewriteTags(tags) {
+          const kept = [];
+          for (const tag of tags) {
+            if (tag?.tagName !== "link") {
+              kept.push(tag);
+              continue;
+            }
+
+            const rel = tag.attributes?.rel;
+            const hrefRaw = tag.attributes?.href;
+            if (rel !== "stylesheet" || typeof hrefRaw !== "string") {
+              kept.push(tag);
+              continue;
+            }
+
+            const href = hrefRaw.startsWith("/") ? hrefRaw.slice(1) : hrefRaw;
+            cssAssets.push({ hrefRaw, assetName: href });
+          }
+
+          return kept;
+        }
+
+        data.headTags = rewriteTags(data.headTags);
+        data.bodyTags = rewriteTags(data.bodyTags);
+
+        const cssText = cssAssets
+          .map(({ assetName }) => {
+            const asset = compilation.getAsset(assetName);
+            if (!asset) return "";
+            const raw = asset.source.source();
+            return typeof raw === "string" ? raw : raw.toString();
+          })
+          .filter(Boolean)
+          .join("\n");
+
+        if (cssText) {
+          data.headTags.push({
+            tagName: "style",
+            voidTag: false,
+            attributes: { "data-inline": "true" },
+            innerHTML: cssText
+          });
+        }
+
+        return data;
+      });
+    });
+  }
+}
 
 export default (_env, argv) => {
   const isProd = argv.mode === "production";
@@ -100,15 +156,7 @@ export default (_env, argv) => {
               filename: "assets/[name].[contenthash:8].css",
               chunkFilename: "assets/[name].[contenthash:8].css"
             }),
-            new CopyPlugin({
-              patterns: [
-                {
-                  from: PUBLIC_DIR,
-                  to: DIST_DIR,
-                  noErrorOnMissing: true
-                }
-              ]
-            }),
+            new InlineCssPlugin(),
             new CompressionPlugin({
               algorithm: "brotliCompress",
               compressionOptions: {

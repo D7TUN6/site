@@ -13,6 +13,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT = path.resolve(__dirname, "..");
 const DIST_DIR = path.join(ROOT, "dist");
+const PUBLIC_DIR = path.join(ROOT, "public");
 const RELEASE_DATA_PATH = path.join(__dirname, "generated", "release-download-data.json");
 
 const STATIC_PRECOMPRESSED_EXT_RE = /\.(?:js|css|html|json|svg|txt|xml|map|woff2?|ico)$/i;
@@ -21,6 +22,17 @@ const isDev = process.argv.includes("--dev");
 const defaultPort = isDev ? 3002 : 3001;
 const port = Number(process.env.PORT || defaultPort);
 const host = process.env.HOSTNAME || "127.0.0.1";
+
+function shouldRewriteToIndex(req) {
+  if (req.method !== "GET" && req.method !== "HEAD") return false;
+  if (req.path === "/index.html") return false;
+  if (req.path === "/api" || req.path.startsWith("/api/")) return false;
+
+  const lastSegment = req.path.split("/").filter(Boolean).pop() ?? "";
+  if (!lastSegment) return true; // "/"
+
+  return !lastSegment.includes(".");
+}
 
 function precompressedStaticMiddleware(req, res, next) {
   if (req.method !== "GET" && req.method !== "HEAD") {
@@ -138,7 +150,35 @@ app.get("/api/health", (_req, res) => {
 });
 
 if (!isDev) {
+  app.use(
+    express.static(PUBLIC_DIR, {
+      index: false,
+      setHeaders: (res, filePath) => {
+        const relative = path.relative(PUBLIC_DIR, filePath).split(path.sep).join("/");
+        if (relative.startsWith("media/")) {
+          res.setHeader("Cache-Control", "public, max-age=31536000");
+          return;
+        }
+
+        if (relative.startsWith("locales/")) {
+          res.setHeader("Cache-Control", "public, max-age=86400");
+          return;
+        }
+
+        res.setHeader("Cache-Control", "public, max-age=86400");
+      }
+    })
+  );
+
+  app.use((req, _res, next) => {
+    if (shouldRewriteToIndex(req)) {
+      req.url = "/index.html";
+    }
+    next();
+  });
+
   app.use(precompressedStaticMiddleware);
+
   app.use(
     express.static(DIST_DIR, {
       index: false,
@@ -163,7 +203,7 @@ if (!isDev) {
         }
 
         if (relative.startsWith("media/")) {
-          res.setHeader("Cache-Control", "public, max-age=86400");
+          res.setHeader("Cache-Control", "public, max-age=31536000");
           return;
         }
 
@@ -171,10 +211,6 @@ if (!isDev) {
       }
     })
   );
-
-  app.get(/^(?!\/api\/).*/, (_req, res) => {
-    res.sendFile(path.join(DIST_DIR, "index.html"));
-  });
 }
 
 const server = app.listen(port, host, () => {
