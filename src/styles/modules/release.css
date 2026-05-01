@@ -271,6 +271,10 @@
   margin-top: 8px;
 }
 
+.release-player-content > * {
+  min-width: 0;
+}
+
 .release-player-list li + li {
   margin-top: 2px;
 }
@@ -286,7 +290,9 @@
   gap: 8px;
   grid-template-columns: 28px 1fr;
   min-height: 38px;
+  overflow: hidden;
   padding: 4px 8px 4px 6px;
+  position: relative;
   text-align: left;
   width: 100%;
   box-shadow: var(--ui-shadow);
@@ -400,7 +406,10 @@
 .release-download-panel {
   background: var(--ui-surface);
   border: 1px solid var(--ui-border);
+  min-width: 0;
+  overflow: hidden;
   padding: 16px;
+  position: relative;
 }
 
 .release-download-panel h4 {
@@ -428,7 +437,7 @@
   background: var(--ui-surface-2);
   border: 1px solid var(--ui-border-strong);
   color: var(--text-color);
-  display: inline-block;
+  display: block;
   font-size: 0.9rem;
   font-family: var(--font-ui);
   letter-spacing: 0.14em;
@@ -436,6 +445,7 @@
   text-decoration: none;
   cursor: pointer;
   text-transform: uppercase;
+  width: 100%;
   box-shadow: var(--ui-shadow);
 }
 
@@ -656,4 +666,3 @@
   height: 24px;
   width: 24px;
 }
-
