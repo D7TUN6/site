@@ -1,0 +1,252 @@
+@media (max-width: 768px) {
+  body {
+    padding: 17px 17px 20px;
+  }
+
+  .container {
+    min-height: calc(100vh - 37px);
+    min-height: calc(100dvh - 37px);
+  }
+
+  .controls {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    margin-bottom: 12px;
+    position: relative;
+    right: auto;
+    top: auto;
+  }
+
+  .control-btn {
+    font-size: 0.78rem;
+    letter-spacing: 0.1em;
+    padding: 6px 9px;
+  }
+
+  .main-nav ul {
+    align-items: flex-start;
+    flex-direction: row;
+    flex-wrap: nowrap;
+  }
+
+  .content {
+    margin: 0;
+    padding: 0;
+  }
+
+  .site-header h1 {
+    font-size: 1.95rem;
+  }
+
+  .main-nav a,
+  .nav-active {
+    font-size: 1rem;
+    padding: 10px 12px;
+  }
+
+  h1 {
+    font-size: 2.05rem;
+  }
+
+  h2 {
+    font-size: 1.55rem;
+  }
+
+  p {
+    font-size: 1.1rem;
+  }
+
+  .release-player {
+    padding: 10px;
+  }
+
+  .release-player-top {
+    grid-template-columns: 1fr;
+  }
+
+  .release-player-cover-large {
+    height: 160px;
+    width: 160px;
+  }
+
+  .release-player-list {
+    margin-left: 0;
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .release-player-content {
+    grid-template-columns: 1fr;
+    row-gap: 10px;
+  }
+
+  .release-player-head {
+    grid-template-columns: auto 1fr;
+  }
+
+  .release-player-side {
+    grid-column: 1 / -1;
+    justify-content: space-between;
+    flex-direction: row;
+    text-align: left;
+  }
+
+  .release-player-track-name {
+    font-size: 1.05rem;
+  }
+
+  body.has-now-playing-bar {
+    padding-bottom: calc(124px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .now-playing-bar {
+    padding: 6px 6px 8px;
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+    gap: 6px;
+  }
+
+  .now-playing-bar-top {
+    gap: 8px;
+  }
+
+  .now-playing-controls {
+    gap: 1px;
+  }
+
+  .now-playing-info {
+    gap: 8px;
+  }
+
+  .now-playing-actions {
+    gap: 4px;
+  }
+
+  .now-playing-cover {
+    height: 28px;
+    width: 28px;
+  }
+
+  .now-playing-meta {
+    max-width: min(52vw, 240px);
+  }
+
+  .now-playing-nextup {
+    bottom: calc(116px + env(safe-area-inset-bottom, 0px));
+    right: 8px;
+    width: min(420px, calc(100vw - 16px));
+  }
+
+  .now-playing-volume-popup {
+    bottom: calc(100% + 6px);
+  }
+
+  .now-playing-fullscreen {
+    padding: 56px 14px 118px;
+  }
+
+  .now-playing-fullscreen-shell {
+    grid-template-columns: 1fr;
+    width: min(100%, 560px);
+  }
+
+  .now-playing-fullscreen-hero {
+    position: static;
+  }
+
+  .now-playing-fullscreen-toolbar {
+    justify-content: flex-end;
+  }
+
+  .now-playing-fullscreen-art img {
+    margin: 0 auto;
+    max-width: min(76vw, 320px);
+  }
+
+  .now-playing-fullscreen-progress {
+    gap: 8px;
+    grid-template-columns: 40px minmax(0, 1fr) 40px;
+    width: 100%;
+  }
+
+  .now-playing-fullscreen-links {
+    gap: 10px;
+  }
+
+  .stream-badge-image {
+    height: 42px;
+  }
+
+  .stream-badge-image-soundcloud {
+    height: 40px;
+  }
+
+  .now-playing-fullscreen-tracklist {
+    max-height: min(280px, 34vh);
+  }
+}
+
+@media (pointer: coarse), (hover: none), (max-width: 1200px) {
+  body::before {
+    background-attachment: scroll;
+    opacity: 0.62;
+  }
+
+  .release-card:hover {
+    transform: none;
+  }
+}
+
+@media (pointer: fine) and (min-width: 1201px) {
+  body::before {
+    background-attachment: fixed;
+    opacity: 0.66;
+  }
+}
+
+@media (max-width: 600px) {
+  .music-grid {
+    gap: 11px;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .shop-grid {
+    gap: 11px;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .shop-product-cover {
+    height: auto;
+    width: 100%;
+  }
+
+  .cart-line {
+    grid-template-columns: 86px minmax(0, 1fr);
+  }
+
+  .cart-line-total {
+    grid-column: 1 / -1;
+    min-width: 0;
+    text-align: left;
+  }
+
+  .checkout-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pickup-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pickup-map-inner {
+    height: 320px;
+  }
+
+  .admin-order-edit {
+    grid-template-columns: 1fr;
+  }
+
+  .release-info-cover {
+    height: auto;
+    width: 100%;
+  }
+}

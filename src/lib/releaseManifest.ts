@@ -1,4 +1,5 @@
 import manifest from "@/generated/release-manifest.json";
+import { compareReleasesByDateDesc } from "@/lib/music";
 import type { ReleaseEntry } from "@/types/content";
 
 type ReleaseManifest = {
@@ -19,9 +20,16 @@ export function getReleaseRoutes(): string[] {
 }
 
 export function getAllReleases(): ReleaseEntry[] {
-  return typedManifest.releases;
+  return typedManifest.releases.slice().sort(compareReleasesByDateDesc);
 }
 
 export function getReleaseBySlug(slug: string): ReleaseEntry | null {
   return releaseBySlug.get(slug) ?? null;
+}
+
+// Fetch live manifest from server at runtime (bypasses the build-time static JSON)
+export async function fetchLiveManifest(): Promise<ReleaseManifest> {
+  const res = await fetch("/api/releases/manifest");
+  if (!res.ok) throw new Error(`Failed to fetch manifest: ${res.status}`);
+  return res.json() as Promise<ReleaseManifest>;
 }

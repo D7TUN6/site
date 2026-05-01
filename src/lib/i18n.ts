@@ -1,6 +1,14 @@
 import type { Lang, LocaleDictionary } from "@/types/content";
 
+import enLocaleSource from "../../public/locales/en.xml?raw";
+import ruLocaleSource from "../../public/locales/ru.xml?raw";
+
 const localeCache = new Map<Lang, Promise<LocaleDictionary>>();
+
+const localeSourceByLang: Record<Lang, string> = {
+  en: enLocaleSource,
+  ru: ruLocaleSource
+};
 
 function isLocaleDictionary(input: unknown): input is LocaleDictionary {
   if (!input || typeof input !== "object") {
@@ -16,6 +24,7 @@ function isLocaleDictionary(input: unknown): input is LocaleDictionary {
       candidate.nav?.news &&
       candidate.nav?.blog &&
       candidate.nav?.links &&
+      candidate.nav?.shop &&
       candidate.loader?.detecting &&
       candidate.loader?.fallback &&
       candidate.loader?.english &&
@@ -24,13 +33,7 @@ function isLocaleDictionary(input: unknown): input is LocaleDictionary {
 }
 
 async function loadLocale(lang: Lang): Promise<LocaleDictionary> {
-  const response = await fetch(`/locales/${lang}.xml`);
-
-  if (!response.ok) {
-    throw new Error(`Failed to load locale ${lang}`);
-  }
-
-  const source = await response.text();
+  const source = localeSourceByLang[lang];
   const document = new DOMParser().parseFromString(source, "application/xml");
   const parserError = document.querySelector("parsererror");
   if (parserError) {
@@ -50,7 +53,8 @@ async function loadLocale(lang: Lang): Promise<LocaleDictionary> {
         music: text("nav > music"),
         news: text("nav > news"),
         blog: text("nav > blog"),
-        links: text("nav > links")
+        links: text("nav > links"),
+        shop: text("nav > shop")
       },
       loader: {
         detecting: text("loader > detecting"),

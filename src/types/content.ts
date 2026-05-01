@@ -1,8 +1,8 @@
 export type Lang = "en" | "ru";
 
-export type BaseRoute = "main" | "bio" | "music" | "news" | "blog" | "links";
+export type BaseRoute = "main" | "bio" | "music" | "news" | "blog" | "links" | "shop" | "legal" | "contact";
 
-export type RouteKey = BaseRoute | `music/${string}` | `blog/${string}`;
+export type RouteKey = BaseRoute | "cart" | "account" | "admin" | `music/${string}` | `blog/${string}` | `shop/${string}`;
 
 export type LocaleDictionary = {
   site: {
@@ -15,6 +15,7 @@ export type LocaleDictionary = {
     news: string;
     blog: string;
     links: string;
+    shop: string;
   };
   loader: {
     detecting: string;
@@ -48,6 +49,7 @@ export type ReleaseEntry = {
   coverUrl: string;
   coverPreviewUrl: string | null;
   releaseDate: string;
+  releaseType: string | null;
   notes: string;
   genre: {
     en: string;

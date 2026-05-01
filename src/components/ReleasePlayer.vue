@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { Pause, Play } from "lucide-vue-next";
+import UiSelect from "@/components/UiSelect.vue";
 import { usePlayer } from "@/composables/usePlayer";
 import { useReleaseDownloads } from "@/composables/useReleaseDownloads";
 import { buildPlayerQueueFromRelease, type GlobalPlayerQueue } from "@/player/queue";
@@ -43,6 +44,23 @@ const progress = computed(() => {
   return Math.max(0, Math.min(100, (activePosition.value / activeDuration.value) * 100));
 });
 
+const buffered = computed(() => {
+  if (!isActiveQueue.value || !activeDuration.value) return 0;
+  const value = (state.bufferedTime / activeDuration.value) * 100;
+  return Math.max(0, Math.min(100, value));
+});
+
+const seekDragRatio = ref<number | null>(null);
+const displayProgress = computed(() => {
+  if (seekDragRatio.value == null) return progress.value;
+  return Math.max(0, Math.min(100, seekDragRatio.value * 100));
+});
+
+const displayPosition = computed(() => {
+  if (seekDragRatio.value == null) return fmtTime(activePosition.value);
+  return fmtTime(activeDuration.value * seekDragRatio.value);
+});
+
 const releaseDownloadFormats = computed<DownloadFormat[]>(() => props.release.availableDownloadFormats as DownloadFormat[]);
 const trackDownloadFormats = computed<DownloadFormat[]>(() => {
   const track = props.release.tracks[activeIndex.value];
@@ -50,6 +68,30 @@ const trackDownloadFormats = computed<DownloadFormat[]>(() => {
 });
 
 const downloadFormat = ref<DownloadFormat>((props.release.availableDownloadFormats[0] as DownloadFormat) || "ogg");
+
+function formatLabel(format: DownloadFormat): string {
+  switch (format) {
+    case "flac":
+      return "FLAC 16-bit / 44.1kHz";
+    case "mp3":
+      return "MP3 320 kbps / 44.1kHz";
+    case "wav":
+      return "WAV PCM 16-bit / 44.1kHz";
+    default:
+      return "Ogg Opus VBR / 48kHz";
+  }
+}
+
+const downloadFormatOptions = computed(() => {
+  return releaseDownloadFormats.value.map((format) => ({
+    value: format,
+    label: formatLabel(format)
+  }));
+});
+
+function setDownloadFormat(value: string) {
+  downloadFormat.value = value as DownloadFormat;
+}
 
 function fmtTime(seconds: number): string {
   if (!Number.isFinite(seconds) || seconds < 0) return "0:00";
@@ -87,13 +129,49 @@ function playTrackFromList(index: number) {
   playTrack(index);
 }
 
-function seekByClick(event: MouseEvent) {
+function clamp01(value: number): number {
+  return Math.max(0, Math.min(1, value));
+}
+
+function ratioFromPointer(event: PointerEvent, target: HTMLElement): number {
+  const rect = target.getBoundingClientRect();
+  if (rect.width <= 0) return 0;
+  return (event.clientX - rect.left) / rect.width;
+}
+
+function onTimelinePointerDown(event: PointerEvent) {
   if (!isActiveQueue.value || !activeDuration.value) return;
+  if (typeof event.button === "number" && event.button !== 0) return;
 
   const target = event.currentTarget as HTMLElement;
-  const rect = target.getBoundingClientRect();
-  const ratio = (event.clientX - rect.left) / rect.width;
+  try {
+    target.setPointerCapture(event.pointerId);
+  } catch {
+    // ignore
+  }
+
+  const ratio = clamp01(ratioFromPointer(event, target));
+  seekDragRatio.value = ratio;
   seekByRatio(ratio);
+}
+
+function onTimelinePointerMove(event: PointerEvent) {
+  if (seekDragRatio.value == null) return;
+  const target = event.currentTarget as HTMLElement;
+  const ratio = clamp01(ratioFromPointer(event, target));
+  seekDragRatio.value = ratio;
+  seekByRatio(ratio);
+}
+
+function onTimelinePointerUp(event: PointerEvent) {
+  if (seekDragRatio.value == null) return;
+  const target = event.currentTarget as HTMLElement;
+  try {
+    target.releasePointerCapture(event.pointerId);
+  } catch {
+    // ignore
+  }
+  seekDragRatio.value = null;
 }
 
 async function handleDownload() {
@@ -162,16 +240,22 @@ async function handleTrackDownload() {
         </header>
 
         <div class="release-player-timeline-wrap">
-          <div class="release-player-time">{{ fmtTime(activePosition) }}</div>
+          <div class="release-player-time">{{ displayPosition }}</div>
           <div
             class="release-player-timeline"
             role="slider"
+            :class="{ 'is-dragging': seekDragRatio !== null }"
             :aria-valuemin="0"
             :aria-valuemax="Math.max(activeDuration, 1)"
-            :aria-valuenow="activePosition"
-            @click="seekByClick"
+            :aria-valuenow="seekDragRatio == null ? activePosition : activeDuration * seekDragRatio"
+            @pointerdown.prevent="onTimelinePointerDown"
+            @pointermove.prevent="onTimelinePointerMove"
+            @pointerup.prevent="onTimelinePointerUp"
+            @pointercancel.prevent="onTimelinePointerUp"
           >
-            <div class="release-player-timeline-fill" :style="{ width: `${progress}%` }" />
+            <div class="release-player-timeline-buffer" :style="{ width: `${buffered}%` }" />
+            <div class="release-player-timeline-fill" :style="{ width: `${displayProgress}%` }" />
+            <div class="release-player-timeline-knob" :style="{ left: `${displayProgress}%` }" />
           </div>
           <div class="release-player-time">{{ fmtTime(activeDuration) }}</div>
         </div>
@@ -211,19 +295,12 @@ async function handleTrackDownload() {
           <aside class="release-download-panel" aria-label="Release download">
             <h4>{{ isRu ? "Скачать релиз" : "Download Release" }}</h4>
             <p>{{ isRu ? "Выбери формат:" : "Choose format:" }}</p>
-            <select v-model="downloadFormat">
-              <option v-for="format in releaseDownloadFormats" :key="format" :value="format">
-                {{
-                  format === "flac"
-                    ? "FLAC 16-bit / 44.1kHz"
-                    : format === "mp3"
-                      ? "MP3 320 kbps / 44.1kHz"
-                      : format === "wav"
-                        ? "WAV PCM 16-bit / 44.1kHz"
-                        : "Ogg Opus VBR / 48kHz"
-                }}
-              </option>
-            </select>
+            <UiSelect
+              :model-value="downloadFormat"
+              :options="downloadFormatOptions"
+              :aria-label="isRu ? 'формат скачивания' : 'download format'"
+              @update:model-value="setDownloadFormat"
+            />
             <button type="button" class="release-download-btn" :disabled="isDownloading" @click="handleDownload">
               {{ isRu ? "Скачать ZIP" : "Download ZIP" }}
             </button>

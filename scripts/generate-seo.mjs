@@ -142,7 +142,10 @@ async function collectBaseUrls(lang) {
     { route: "music", pathname: `/${lang}/music`, fileName: "music.mdx" },
     { route: "news", pathname: `/${lang}/news`, fileName: "news.mdx" },
     { route: "blog", pathname: `/${lang}/blog`, fileName: "blog.mdx" },
-    { route: "links", pathname: `/${lang}/links`, fileName: "links.mdx" }
+    { route: "shop", pathname: `/${lang}/shop`, fileName: "shop.mdx" },
+    { route: "links", pathname: `/${lang}/links`, fileName: "links.mdx" },
+    { route: "legal", pathname: `/${lang}/legal`, fileName: "legal.mdx" },
+    { route: "contact", pathname: `/${lang}/contact`, fileName: "contact.mdx" }
   ];
 
   const items = [];

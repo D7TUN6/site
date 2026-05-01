@@ -1,9 +1,14 @@
 import { computed, reactive, readonly, watch } from "vue";
+import Hls from "hls.js/light";
 import { buildPlayerQueueFromRelease, type GlobalPlayerQueue, type GlobalPlayerTrack } from "@/player/queue";
-
-type HlsModule = typeof import("hls.js/light");
-type HlsInstance = InstanceType<HlsModule["default"]>;
-type ReleaseManifestModule = typeof import("@/lib/releaseManifest");
+import { buildSequentialOrder, buildShuffledOrder, clamp } from "@/player/order";
+import {
+  clearPersistedPlayerState,
+  readPersistedPlayerState,
+  type PersistedPlayerState,
+  writePersistedPlayerState
+} from "@/player/storage";
+import { getReleaseBySlug } from "@/lib/releaseManifest";
 
 export type RepeatMode = "off" | "all" | "one";
 
@@ -13,28 +18,13 @@ export type UpcomingTrack = {
   duration: number | null;
 };
 
-type PersistedPlayerState = {
-  queueKey: string;
-  currentIndex: number;
-  currentTime: number;
-  volume: number;
-  muted: boolean;
-  shuffleEnabled: boolean;
-  repeatMode: RepeatMode;
-  hasStartedPlayback: boolean;
-  playOrder: number[];
-  orderPos: number;
-  wasPlaying: boolean;
-};
-
-const PLAYER_STORAGE_KEY = "site-player-state";
-
 const state = reactive({
   queue: null as GlobalPlayerQueue | null,
   currentIndex: 0,
   playing: false,
   currentTime: 0,
   duration: 0,
+  bufferedTime: 0,
   volume: 1,
   muted: false,
   shuffleEnabled: false,
@@ -49,9 +39,7 @@ const audio = new Audio();
 audio.preload = "metadata";
 const supportsOggOpus = audio.canPlayType('audio/ogg; codecs="opus"') !== "";
 const supportsNativeHls = audio.canPlayType("application/vnd.apple.mpegurl") !== "";
-let hls: HlsInstance | null = null;
-let hlsModule: HlsModule | null = null;
-let hlsModulePromise: Promise<HlsModule> | null = null;
+let hls: Hls | null = null;
 let pendingAutoplay = false;
 let playRequestInFlight = false;
 let pendingRestoreTime: number | null = null;
@@ -62,20 +50,10 @@ let sourceLoadToken = 0;
 let restoreLoadToken = 0;
 
 let listenersAttached = false;
-let releaseManifestModulePromise: Promise<ReleaseManifestModule> | null = null;
-
-function loadReleaseManifestModule(): Promise<ReleaseManifestModule> {
-  if (!releaseManifestModulePromise) {
-    releaseManifestModulePromise = import("@/lib/releaseManifest");
-  }
-  return releaseManifestModulePromise;
-}
 
 function persistState(): void {
-  if (typeof window === "undefined") return;
-
   if (!state.queue) {
-    window.localStorage.removeItem(PLAYER_STORAGE_KEY);
+    clearPersistedPlayerState();
     return;
   }
 
@@ -93,7 +71,7 @@ function persistState(): void {
     wasPlaying: state.playing
   };
 
-  window.localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(payload));
+  writePersistedPlayerState(payload);
 }
 
 function schedulePersist(): void {
@@ -107,7 +85,6 @@ function schedulePersist(): void {
 }
 
 async function buildQueueFromReleaseSlug(slug: string): Promise<GlobalPlayerQueue | null> {
-  const { getReleaseBySlug } = await loadReleaseManifestModule();
   const release = getReleaseBySlug(slug);
   if (!release) return null;
   return buildPlayerQueueFromRelease(release, "en");
@@ -117,95 +94,60 @@ function restorePersistedState(): void {
   if (typeof window === "undefined" || hasRestoredState) return;
   hasRestoredState = true;
 
-  const raw = window.localStorage.getItem(PLAYER_STORAGE_KEY);
-  if (!raw) return;
+  const persisted = readPersistedPlayerState();
+  if (!persisted?.queueKey) return;
 
-  try {
-    const persisted = JSON.parse(raw) as PersistedPlayerState;
-    if (!persisted?.queueKey) return;
+  const token = ++restoreLoadToken;
+  void buildQueueFromReleaseSlug(persisted.queueKey)
+    .then((queue) => {
+      if (token !== restoreLoadToken) return;
+      if (!queue || queue.tracks.length === 0) return;
+      if (state.queue) return;
 
-    const token = ++restoreLoadToken;
-    void buildQueueFromReleaseSlug(persisted.queueKey)
-      .then((queue) => {
-        if (token !== restoreLoadToken) return;
-        if (!queue || queue.tracks.length === 0) return;
-        if (state.queue) return;
+      state.queue = queue;
+      state.currentIndex = clamp(persisted.currentIndex ?? 0, 0, Math.max(queue.tracks.length - 1, 0));
+      state.currentTime = Math.max(0, persisted.currentTime || 0);
+      state.duration =
+        typeof queue.tracks[state.currentIndex]?.duration === "number"
+          ? (queue.tracks[state.currentIndex]?.duration as number)
+          : 0;
+      state.volume = clamp(persisted.volume ?? 1, 0, 1);
+      state.muted = Boolean(persisted.muted);
+      state.shuffleEnabled = Boolean(persisted.shuffleEnabled);
+      state.repeatMode =
+        persisted.repeatMode === "all" || persisted.repeatMode === "one" ? persisted.repeatMode : "off";
+      state.hasStartedPlayback = Boolean(persisted.hasStartedPlayback);
 
-        state.queue = queue;
-        state.currentIndex = clamp(persisted.currentIndex ?? 0, 0, Math.max(queue.tracks.length - 1, 0));
-        state.currentTime = Math.max(0, persisted.currentTime || 0);
-        state.duration =
-          typeof queue.tracks[state.currentIndex]?.duration === "number"
-            ? (queue.tracks[state.currentIndex]?.duration as number)
-            : 0;
-        state.volume = clamp(persisted.volume ?? 1, 0, 1);
-        state.muted = Boolean(persisted.muted);
-        state.shuffleEnabled = Boolean(persisted.shuffleEnabled);
-        state.repeatMode =
-          persisted.repeatMode === "all" || persisted.repeatMode === "one" ? persisted.repeatMode : "off";
-        state.hasStartedPlayback = Boolean(persisted.hasStartedPlayback);
+      const validOrder =
+        Array.isArray(persisted.playOrder) &&
+        persisted.playOrder.length === queue.tracks.length &&
+        persisted.playOrder.every((value) => Number.isInteger(value) && value >= 0 && value < queue.tracks.length);
 
-        const validOrder =
-          Array.isArray(persisted.playOrder) &&
-          persisted.playOrder.length === queue.tracks.length &&
-          persisted.playOrder.every((value) => Number.isInteger(value) && value >= 0 && value < queue.tracks.length);
+      state.playOrder = validOrder
+        ? [...persisted.playOrder]
+        : state.shuffleEnabled
+          ? buildShuffledOrder(queue.tracks.length, state.currentIndex)
+          : buildSequentialOrder(queue.tracks.length);
 
-        state.playOrder = validOrder
-          ? [...persisted.playOrder]
-          : state.shuffleEnabled
-            ? buildShuffledOrder(queue.tracks.length, state.currentIndex)
-            : buildSequentialOrder(queue.tracks.length);
+      state.orderPos = clamp(
+        validOrder
+          ? persisted.orderPos ?? state.playOrder.indexOf(state.currentIndex)
+          : state.playOrder.indexOf(state.currentIndex),
+        0,
+        Math.max(state.playOrder.length - 1, 0)
+      );
+      state.trackDurations = Object.fromEntries(
+        queue.tracks
+          .map((track) => [getTrackPlaybackUrl(track), track.duration])
+          .filter((entry): entry is [string, number] => typeof entry[1] === "number")
+      );
 
-        state.orderPos = clamp(
-          validOrder
-            ? persisted.orderPos ?? state.playOrder.indexOf(state.currentIndex)
-            : state.playOrder.indexOf(state.currentIndex),
-          0,
-          Math.max(state.playOrder.length - 1, 0)
-        );
-        state.trackDurations = Object.fromEntries(
-          queue.tracks
-            .map((track) => [getTrackPlaybackUrl(track), track.duration])
-            .filter((entry): entry is [string, number] => typeof entry[1] === "number")
-        );
-
-        pendingRestoreTime = state.currentTime;
-        attachTrackSource(queue.tracks[state.currentIndex], Boolean(persisted.wasPlaying));
-      })
-      .catch(() => {
-        window.localStorage.removeItem(PLAYER_STORAGE_KEY);
-      });
-  } catch {
-    window.localStorage.removeItem(PLAYER_STORAGE_KEY);
-  }
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
-}
-
-function buildSequentialOrder(total: number): number[] {
-  return Array.from({ length: total }, (_, index) => index);
-}
-
-function shuffleArray(values: number[]): number[] {
-  const next = [...values];
-  for (let index = next.length - 1; index > 0; index -= 1) {
-    const randomIndex = Math.floor(Math.random() * (index + 1));
-    [next[index], next[randomIndex]] = [next[randomIndex], next[index]];
-  }
-  return next;
-}
-
-function buildShuffledOrder(total: number, firstIndex?: number): number[] {
-  if (total <= 0) return [];
-
-  if (typeof firstIndex === "number" && firstIndex >= 0 && firstIndex < total) {
-    const rest = Array.from({ length: total }, (_, index) => index).filter((index) => index !== firstIndex);
-    return [firstIndex, ...shuffleArray(rest)];
-  }
-
-  return shuffleArray(Array.from({ length: total }, (_, index) => index));
+      pendingRestoreTime = state.currentTime;
+      attachTrackSource(queue.tracks[state.currentIndex], Boolean(persisted.wasPlaying));
+    })
+    .catch(() => {
+      clearPersistedPlayerState();
+    });
 }
 
 function syncOrderPosition(index: number): void {
@@ -250,19 +192,6 @@ function canUseNativeHls(track: GlobalPlayerTrack): boolean {
   return Boolean(track.streamUrl && supportsNativeHls);
 }
 
-async function loadHlsModule(): Promise<HlsModule> {
-  if (hlsModule) return hlsModule;
-
-  if (!hlsModulePromise) {
-    hlsModulePromise = import("hls.js/light").then((module) => {
-      hlsModule = module;
-      return module;
-    });
-  }
-
-  return hlsModulePromise;
-}
-
 function flushPendingAutoplay(): void {
   if (!pendingAutoplay) return;
 
@@ -296,14 +225,12 @@ function applyTrackSource(playbackUrl: string, targetUrl: string, autoplay: bool
   flushPendingAutoplay();
 }
 
-async function attachHlsTrack(track: GlobalPlayerTrack, autoplay: boolean, requestToken: number): Promise<void> {
-  const module = await loadHlsModule();
-
+function attachHlsTrack(track: GlobalPlayerTrack, autoplay: boolean, requestToken: number): void {
   if (requestToken !== sourceLoadToken || !track.streamUrl) {
     return;
   }
 
-  if (!module.default.isSupported()) {
+  if (!Hls.isSupported()) {
     if (track.fallbackUrl) {
       const fallbackUrl = track.fallbackUrl;
       applyTrackSource(fallbackUrl, new URL(fallbackUrl, window.location.origin).toString(), autoplay);
@@ -312,19 +239,19 @@ async function attachHlsTrack(track: GlobalPlayerTrack, autoplay: boolean, reque
   }
 
   destroyHls();
-  hls = new module.default({
+  hls = new Hls({
     startPosition: -1,
     enableWorker: true
   });
 
-  hls.on(module.default.Events.MANIFEST_PARSED, () => {
+  hls.on(Hls.Events.MANIFEST_PARSED, () => {
     flushPendingAutoplay();
   });
 
-  hls.on(module.default.Events.ERROR, (_event, data) => {
+  hls.on(Hls.Events.ERROR, (_event, data) => {
     if (!data.fatal) return;
 
-    if (data.type === module.default.ErrorTypes.MEDIA_ERROR) {
+    if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
       hls?.recoverMediaError();
       return;
     }
@@ -367,7 +294,7 @@ function attachTrackSource(track: GlobalPlayerTrack, autoplay: boolean): void {
       return;
     }
 
-    void attachHlsTrack(track, autoplay, requestToken);
+    attachHlsTrack(track, autoplay, requestToken);
     return;
   }
 
@@ -380,6 +307,7 @@ function loadTrack(index: number, autoplay: boolean): void {
   if (!activeQueue || !track) return;
   state.currentIndex = index;
   state.duration = typeof track.duration === "number" ? track.duration : 0;
+  state.bufferedTime = 0;
   attachTrackSource(track, autoplay);
 
   syncOrderPosition(index);
@@ -440,8 +368,36 @@ function moveToNextTrack(autoplay: boolean): void {
 function attachListeners(): void {
   if (listenersAttached) return;
 
+  function updateBufferedTime() {
+    let bufferedEnd = 0;
+    const current = audio.currentTime || 0;
+    try {
+      const ranges = audio.buffered;
+      if (ranges && ranges.length > 0) {
+        for (let i = 0; i < ranges.length; i += 1) {
+          const start = ranges.start(i);
+          const end = ranges.end(i);
+          bufferedEnd = Math.max(bufferedEnd, end);
+          if (current >= start && current <= end) {
+            bufferedEnd = end;
+            break;
+          }
+        }
+      }
+    } catch {
+      bufferedEnd = 0;
+    }
+
+    const duration = Number.isFinite(audio.duration) ? audio.duration : 0;
+    if (duration > 0) {
+      bufferedEnd = clamp(bufferedEnd, 0, duration);
+    }
+    state.bufferedTime = bufferedEnd;
+  }
+
   audio.addEventListener("timeupdate", () => {
     state.currentTime = audio.currentTime || 0;
+    updateBufferedTime();
     const playbackBucket = Math.floor(state.currentTime / 5);
     if (playbackBucket !== lastPersistedPlaybackBucket) {
       lastPersistedPlaybackBucket = playbackBucket;
@@ -451,12 +407,17 @@ function attachListeners(): void {
 
   audio.addEventListener("loadedmetadata", () => {
     state.duration = Number.isFinite(audio.duration) ? audio.duration : 0;
+    updateBufferedTime();
     if (pendingRestoreTime !== null && Number.isFinite(audio.duration) && audio.duration > 0) {
       const nextTime = clamp(pendingRestoreTime, 0, audio.duration);
       audio.currentTime = nextTime;
       state.currentTime = nextTime;
       pendingRestoreTime = null;
     }
+  });
+
+  audio.addEventListener("progress", () => {
+    updateBufferedTime();
   });
 
   audio.addEventListener("canplay", () => {
@@ -535,6 +496,7 @@ function setQueue(nextQueue: GlobalPlayerQueue): void {
   state.orderPos = 0;
   state.currentTime = 0;
   state.duration = 0;
+  state.bufferedTime = 0;
   state.playing = false;
   state.trackDurations = Object.fromEntries(
     nextQueue.tracks
@@ -559,6 +521,7 @@ function clearPlayer(): void {
   state.playing = false;
   state.currentTime = 0;
   state.duration = 0;
+  state.bufferedTime = 0;
   state.hasStartedPlayback = false;
   state.playOrder = [];
   state.orderPos = 0;

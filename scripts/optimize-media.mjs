@@ -4,22 +4,13 @@ import path from "node:path";
 
 const ROOT = process.cwd();
 const MUSIC_ROOT = path.join(ROOT, "public", "media", "music");
+const BACKGROUND_DIR = path.join(ROOT, "public", "media", "background");
 const TRACK_EXT = new Set([".wav", ".mp3", ".flac", ".ogg", ".m4a", ".aac"]);
 const COVER_EXT = new Set([".jpg", ".jpeg", ".png", ".webp", ".avif"]);
 const LOCK_DIR = path.join(ROOT, ".cache");
 const LOCK_FILE = path.join(LOCK_DIR, "optimize-media.lock");
 const LOCK_WAIT_MS = 500;
 const LOCK_TIMEOUT_MS = 10 * 60 * 1000;
-
-function getDownloadTargets(ext) {
-  const normalized = ext.toLowerCase();
-  if (normalized === ".wav") return ["wav", "flac", "mp3", "ogg"];
-  if (normalized === ".flac") return ["flac", "mp3", "ogg"];
-  if (normalized === ".mp3") return ["mp3", "ogg"];
-  if (normalized === ".ogg") return ["ogg"];
-  if (normalized === ".m4a" || normalized === ".aac") return ["mp3", "ogg"];
-  return ["mp3", "ogg"];
-}
 
 function slugify(value) {
   return value
@@ -97,74 +88,31 @@ async function runFfmpeg(args, cwd) {
   });
 }
 
+async function runFfmpegAvif(args, cwd) {
+  const candidates = [
+    ["-c:v", "libaom-av1"],
+    ["-c:v", "libsvtav1"]
+  ];
+
+  let lastError = null;
+  for (const codecArgs of candidates) {
+    try {
+      await runFfmpeg([...args, ...codecArgs], cwd);
+      return;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError ?? new Error("Unable to encode avif (no supported codec found)");
+}
+
 async function removeIfExists(pathToRemove) {
   try {
     await fs.rm(pathToRemove, { recursive: true, force: true });
   } catch {
     // Ignore cleanup errors.
   }
-}
-
-async function copyFileIfFresh(inputPath, outputPath) {
-  const inputMtime = await statMtime(inputPath);
-  const outputMtime = await statMtime(outputPath);
-  if (outputMtime >= inputMtime && outputMtime > 0) {
-    return false;
-  }
-
-  await fs.mkdir(path.dirname(outputPath), { recursive: true });
-  await fs.copyFile(inputPath, outputPath);
-  return true;
-}
-
-async function buildDownloadFormat(sourceAbs, ext, outputPath, format) {
-  if (format === "wav" && ext === ".wav") {
-    await copyFileIfFresh(sourceAbs, outputPath);
-    return;
-  }
-
-  if (format === "flac" && ext === ".flac") {
-    await copyFileIfFresh(sourceAbs, outputPath);
-    return;
-  }
-
-  if (format === "mp3" && ext === ".mp3") {
-    await copyFileIfFresh(sourceAbs, outputPath);
-    return;
-  }
-
-  if (format === "ogg" && ext === ".ogg") {
-    await copyFileIfFresh(sourceAbs, outputPath);
-    return;
-  }
-
-  const codecArgs =
-    format === "flac"
-      ? ["-c:a", "flac", "-sample_fmt", "s16", "-ar", "44100", outputPath]
-      : format === "mp3"
-        ? ["-c:a", "libmp3lame", "-b:a", "320k", "-ar", "44100", outputPath]
-        : format === "wav"
-          ? ["-c:a", "pcm_s16le", "-ar", "44100", outputPath]
-          : ["-c:a", "libopus", "-b:a", "192k", "-vbr", "on", "-ar", "48000", outputPath];
-
-  await ensureFresh(sourceAbs, outputPath, async () => {
-    await runFfmpeg([
-      "-hide_banner",
-      "-loglevel",
-      "error",
-      "-y",
-      "-i",
-      sourceAbs,
-      "-map_metadata",
-      "-1",
-      "-vn",
-      "-sn",
-      "-dn",
-      "-ac",
-      "2",
-      ...codecArgs
-    ]);
-  });
 }
 
 function isPidRunning(pid) {
@@ -356,17 +304,16 @@ async function optimizeAlbum(albumDirName) {
   const fullPlaylistItems = [];
   const previewPlaylistItems = [];
 
+  await removeIfExists(downloadDir);
+
   for (const fileName of selectedTracks) {
     const sourceAbs = path.join(tracksSourceDir, fileName);
     const stem = toSafeTrackStem(fileName);
-    const ext = path.extname(fileName).toLowerCase();
 
     const previewAbs = path.join(previewDir, `${stem}.ogg`);
     const streamTrackDir = path.join(streamDir, stem);
     const streamPlaylistAbs = path.join(streamTrackDir, "index.m3u8");
     const legacyStreamAbs = path.join(streamDir, `${stem}.ogg`);
-    const downloadTargets = getDownloadTargets(ext);
-
     await ensureFresh(sourceAbs, previewAbs, async () => {
       await runFfmpeg([
         "-hide_banner",
@@ -441,11 +388,6 @@ async function optimizeAlbum(albumDirName) {
 
     await removeIfExists(legacyStreamAbs);
 
-    for (const format of downloadTargets) {
-      const outputAbs = path.join(downloadDir, format, `${stem}.${format}`);
-      await buildDownloadFormat(sourceAbs, ext, outputAbs, format);
-    }
-
     const publicTitle = normalizeTrackTitle(fileName);
     fullPlaylistItems.push({
       title: publicTitle,
@@ -465,10 +407,89 @@ async function optimizeAlbum(albumDirName) {
   await fs.writeFile(path.join(playlistsDir, "preview.m3u8"), buildM3u(previewPlaylistItems), "utf8");
 }
 
+async function optimizeBackground() {
+  const inputJpg = path.join(BACKGROUND_DIR, "bg.jpg");
+  const outputs = [
+    { file: "bg.avif", scale: null },
+    { file: "bg-960.avif", scale: 960 },
+    { file: "bg-1440.avif", scale: 1440 },
+    { file: "bg-960.webp", scale: 960 },
+    { file: "bg-1440.webp", scale: 1440 }
+  ];
+
+  const inputMtime = await statMtime(inputJpg);
+  if (inputMtime === 0) {
+    return;
+  }
+
+  for (const item of outputs) {
+    const outputAbs = path.join(BACKGROUND_DIR, item.file);
+
+    if (item.file.endsWith(".avif")) {
+      await ensureFresh(inputJpg, outputAbs, async () => {
+        const args = [
+          "-hide_banner",
+          "-loglevel",
+          "error",
+          "-y",
+          "-i",
+          inputJpg,
+          "-an",
+          "-sn",
+          "-dn"
+        ];
+
+        if (item.scale) {
+          args.push("-vf", `scale='min(${item.scale},iw)':-2:flags=lanczos`);
+        }
+
+        args.push(
+          "-pix_fmt",
+          "yuv420p",
+          "-crf",
+          "32",
+          "-b:v",
+          "0",
+          "-cpu-used",
+          "6",
+          outputAbs
+        );
+
+        await runFfmpegAvif(args, BACKGROUND_DIR);
+      });
+      continue;
+    }
+
+    await ensureFresh(inputJpg, outputAbs, async () => {
+      const args = [
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-y",
+        "-i",
+        inputJpg,
+        "-an",
+        "-sn",
+        "-dn"
+      ];
+
+      if (item.scale) {
+        args.push("-vf", `scale='min(${item.scale},iw)':-2:flags=lanczos`);
+      }
+
+      args.push("-c:v", "libwebp", "-quality", "78", "-compression_level", "6", outputAbs);
+      await runFfmpeg(args, BACKGROUND_DIR);
+    });
+  }
+}
+
 async function main() {
   const releaseLock = await acquireOptimizeLock();
 
   try {
+    console.log("Optimizing background media");
+    await optimizeBackground();
+
     const dirents = await fs.readdir(MUSIC_ROOT, { withFileTypes: true });
     const albums = dirents.filter((entry) => entry.isDirectory()).map((entry) => entry.name);
 

@@ -10,6 +10,14 @@ const router = createRouter({
       redirect: () => `/${resolvePreferredLanguage()}`
     },
     {
+      path: "/legal",
+      redirect: () => `/${resolvePreferredLanguage()}/legal`
+    },
+    {
+      path: "/contact",
+      redirect: () => `/${resolvePreferredLanguage()}/contact`
+    },
+    {
       path: "/:lang/:pathMatch(.*)*",
       component: LocalizedPage
     },

@@ -11,6 +11,8 @@ export default tseslint.config(
       "OLD/**",
       "node_modules/**",
       "dist/**",
+      "dst/**",
+      "tmp/**",
       "coverage/**",
       "public/media/**",
       "content/mdx/**",
@@ -43,7 +45,7 @@ export default tseslint.config(
     }
   },
   {
-    files: ["server/**/*.{js,mjs}", "scripts/**/*.{js,mjs}", "webpack.config.mjs"],
+    files: ["server/**/*.{js,mjs}", "scripts/**/*.{js,mjs}", "vite.config.ts"],
     languageOptions: {
       globals: globals.node
     }

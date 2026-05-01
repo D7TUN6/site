@@ -63,7 +63,7 @@ export function enforceSameOrigin(req, res, next) {
 
   const sourceOrigin = getSourceOrigin(req);
   if (!sourceOrigin) {
-    return next();
+    return res.status(403).json({ error: "Cross-site requests are not allowed" });
   }
 
   if (sourceOrigin !== expectedOrigin) {

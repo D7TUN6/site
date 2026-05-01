@@ -2,26 +2,26 @@
 
 ## Overview
 
-`site` is a filesystem-driven artist website.
+`site` is a generated-content artist website with MinIO-backed media delivery.
 
 - pages are localized under `/en` and `/ru`
 - static text pages come from `content/mdx/<lang>/base`
 - release pages come from generated JSON manifests
 - audio is streamed as HLS from files generated at build time
-- downloads are transcoded on demand by the Node server
+- track downloads and ZIPs are cached as object artifacts and served from MinIO
 
 ## Runtime Shape
 
 Development:
 
-- webpack dev server: `127.0.0.1:3001`
-- Express API: `127.0.0.1:3002`
-- webpack dev server proxies `/api/*` to the API server
+- Vite dev server: `127.0.0.1:3001` (override with `WEB_PORT`)
+- Express API: `127.0.0.1:3002` (override with `API_PORT`)
+- Vite dev server proxies `/api/*` to the API server
 
 Production:
 
 - `npm run start` serves the built SPA from `dist/`
-- `/api/releases/download` remains dynamic
+- `/api/releases/download` resolves or lazily builds the cached ZIP and redirects to MinIO
 - non-API routes fall back to `dist/index.html`
 
 ## Frontend
@@ -63,6 +63,7 @@ Localization:
 - creates preview `ogg`
 - creates HLS stream output in `tracks/stream/<track>/index.m3u8`
 - creates release playlists in `playlists/`
+- removes legacy persistent `tracks/download` outputs; track downloads are generated lazily
 
 ### 2. Manifest generation
 
@@ -72,6 +73,11 @@ Localization:
 - reads notes, covers, track lists, durations, and optional `links.json`
 - writes frontend and backend manifests
 - keeps release MDX track blocks in sync where those files exist
+
+`scripts/sync-media-storage.mjs`:
+
+- mirrors release music assets to MinIO
+- optionally prewarms ZIP archives when run with `--prewarm`
 
 ## Player
 
@@ -90,4 +96,4 @@ Global player state is in `src/composables/usePlayer.ts`.
 - `GET /api/releases/download?jobId=...`
 - `GET /api/releases/download?jobId=...&download=1`
 
-The server validates the release slug, enforces format allowlists, limits queue pressure, runs `ffmpeg`, and returns a ZIP when done.
+The server validates the release slug, enforces format allowlists, limits queue pressure, builds ZIPs lazily when missing, stores them in MinIO, and redirects to the cached object URL.

@@ -1,17 +1,21 @@
 import type { BlogPostEntry, Lang } from "@/types/content";
 
-type RawBlogModule = string | { default: string };
+type BlogSourceMap = Record<string, string>;
 
-const blogContexts: Record<Lang, __WebpackModuleApi.RequireContext> = {
-  en: require.context("../../content/mdx/en/blog", false, /\.mdx$/),
-  ru: require.context("../../content/mdx/ru/blog", false, /\.mdx$/)
+const blogSourcesByLang: Record<Lang, BlogSourceMap> = {
+  en: import.meta.glob("../../content/mdx/en/blog/*.mdx", {
+    eager: true,
+    query: "?raw",
+    import: "default"
+  }) as BlogSourceMap,
+  ru: import.meta.glob("../../content/mdx/ru/blog/*.mdx", {
+    eager: true,
+    query: "?raw",
+    import: "default"
+  }) as BlogSourceMap
 };
 
 const blogCache = new Map<Lang, BlogPostEntry[]>();
-
-function unwrapRawModule(mod: RawBlogModule): string {
-  return typeof mod === "string" ? mod : mod.default;
-}
 
 function parseFrontmatter(source: string): { data: Record<string, string>; content: string } {
   const normalized = source.replace(/^\uFEFF/, "");
@@ -56,11 +60,9 @@ export function getAllBlogPosts(lang: Lang): BlogPostEntry[] {
   const cached = blogCache.get(lang);
   if (cached) return cached;
 
-  const context = blogContexts[lang];
-  const posts = context
-    .keys()
-    .map((modulePath) => {
-      const source = unwrapRawModule(context(modulePath) as RawBlogModule);
+  const sourcesByPath = blogSourcesByLang[lang];
+  const posts = Object.entries(sourcesByPath)
+    .map(([modulePath, source]) => {
       const { data, content } = parseFrontmatter(source);
       const slug = data.slug?.trim() || getBlogSlugFromPath(modulePath);
       const title = data.title?.trim() || slug;

@@ -2,13 +2,37 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
     <meta name="description" content="d7tun6 official website" />
-    <link rel="icon" type="image/png" href="/media/image/favicon.png" />
-    <link rel="preload" href="/media/fonts/century-gothic.ttf" as="font" type="font/ttf" crossorigin />
+    <link rel="icon" type="image/png" href="/media/image/favicon.png?v=20260425-1" />
+    <link
+      rel="preload"
+      href="/media/fonts/BigBlueTermPlusNerdFont-Regular.woff2?v=20260425-1"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <script>
+      (() => {
+        try {
+          const key = "d7tun6.site.theme.v1";
+          const stored = localStorage.getItem(key);
+          const fallback =
+            window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+          const theme = stored === "light" || stored === "dark" ? stored : fallback;
+          document.documentElement.dataset.theme = theme;
+        } catch {
+          // Ignore theme hydration errors.
+        }
+      })();
+    </script>
     <title>d7tun6.site</title>
   </head>
   <body>
     <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

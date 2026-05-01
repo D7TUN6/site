@@ -1,14 +1,19 @@
-import { createReadStream, existsSync } from "node:fs";
-import { readFile } from "node:fs/promises";
+import { spawn } from "node:child_process";
+import { createReadStream, createWriteStream, existsSync } from "node:fs";
+import { mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
 import path from "node:path";
 import JSZip from "jszip";
+import {
+  buildCachedFileUrl,
+  cachedFileExists,
+  saveToCacheFromFile
+} from "./local-cache-storage.mjs";
 
 const ARTIST_NAME = "D7TUN6";
 const MAX_TRACKS_PER_ARCHIVE = 64;
 const SLUG_RE = /^[a-z0-9-]{1,128}$/;
 const TRACK_INDEX_RE = /^\d{1,3}$/;
 const OUTPUT_FORMATS = new Set(["flac", "mp3", "ogg", "wav"]);
-const MAX_ACTIVE_ARCHIVES = 2;
 
 export class PublicRequestError extends Error {
   constructor(status, message) {
@@ -22,7 +27,8 @@ export class ReleaseDownloadService {
   #root;
   #releaseDataPath;
   #releaseBySlug = new Map();
-  #activeArchives = 0;
+  #archiveBuilds = new Map();
+  #trackBuilds = new Map();
 
   constructor({ root, releaseDataPath }) {
     this.#root = root;
@@ -32,15 +38,12 @@ export class ReleaseDownloadService {
   async bootstrap() {
     const raw = await readFile(this.#releaseDataPath, "utf8");
     const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) {
-      throw new Error("Invalid generated release data format");
-    }
-
+    if (!Array.isArray(parsed)) throw new Error("Invalid generated release data format");
     this.#releaseBySlug = new Map(parsed.map((entry) => [entry.slug, entry]));
   }
 
-  sanitizeFileName(value) {
-    return value.replace(/[\\/:*?"<>|]/g, "-").replace(/\s+/g, " ").trim();
+  async reload() {
+    await this.bootstrap();
   }
 
   formatExt(format) {
@@ -72,9 +75,7 @@ export class ReleaseDownloadService {
 
   getReleaseOrThrow(slug) {
     const release = this.findRelease(slug);
-    if (!release) {
-      throw new PublicRequestError(404, "Release not found");
-    }
+    if (!release) throw new PublicRequestError(404, "Release not found");
     return release;
   }
 
@@ -82,11 +83,9 @@ export class ReleaseDownloadService {
     if (!Array.isArray(release.tracks) || release.tracks.length === 0) {
       throw new PublicRequestError(400, "No tracks found in release");
     }
-
     if (release.tracks.length > MAX_TRACKS_PER_ARCHIVE) {
       throw new PublicRequestError(400, "Too many tracks in release");
     }
-
     if (!Array.isArray(release.availableDownloadFormats) || !release.availableDownloadFormats.includes(format)) {
       throw new PublicRequestError(400, "Format is not available for the whole release");
     }
@@ -95,116 +94,183 @@ export class ReleaseDownloadService {
   getTrackOrThrow(release, trackIndexRaw, format) {
     const trackIndex = Number(trackIndexRaw);
     const track = release.tracks.find((entry) => entry.index === trackIndex);
-    if (!track) {
-      throw new PublicRequestError(404, "Track not found");
-    }
-
+    if (!track) throw new PublicRequestError(404, "Track not found");
     if (!Array.isArray(track.availableDownloadFormats) || !track.availableDownloadFormats.includes(format)) {
       throw new PublicRequestError(400, "Format is not available for this track");
     }
-
     return track;
   }
 
-  resolveTrackAssetPath(release, relative) {
-    const normalized = path.posix.normalize(relative);
-    if (!normalized || normalized === "." || normalized.startsWith("../") || path.posix.isAbsolute(normalized)) {
-      throw new PublicRequestError(400, "Invalid track path");
-    }
-
-    const releaseRoot = path.resolve(this.#root, "public", "media", "music", release.sourceDirName);
-    const resolvedPath = path.resolve(releaseRoot, normalized.split("/").join(path.sep));
-    if (resolvedPath !== releaseRoot && !resolvedPath.startsWith(`${releaseRoot}${path.sep}`)) {
-      throw new PublicRequestError(400, "Invalid track path");
-    }
-
-    return resolvedPath;
+  resolveLocalTrackSourcePath(release, track) {
+    return path.resolve(this.#root, "public", "media", "music", release.sourceDirName, track.sourceFilePath);
   }
 
-  resolveTrackDownloadPath(release, track, format) {
-    return this.resolveTrackAssetPath(release, path.posix.join("tracks", "download", format, `${track.safeStem}.${format}`));
+  #trackObjectKey(release, track, format) {
+    return `music/${release.sourceDirName}/tracks/${format}/${track.safeStem}.${format}`;
   }
 
-  getTrackDownload(release, track, format) {
-    const filePath = this.resolveTrackDownloadPath(release, track, format);
-    if (!existsSync(filePath)) {
-      throw new PublicRequestError(404, "Track file not found");
+  #archiveObjectKey(release, format) {
+    return `music/${release.sourceDirName}/tracks/zips/${release.slug}-${format}.zip`;
+  }
+
+  async #createTempDir(prefix) {
+    const tempRoot = path.join(this.#root, "tmp", "release-downloads");
+    await mkdir(tempRoot, { recursive: true });
+    return mkdtemp(path.join(tempRoot, prefix));
+  }
+
+  async ensureTrackDownloadCached(release, track, format) {
+    const objectKey = this.#trackObjectKey(release, track, format);
+    if (cachedFileExists(objectKey)) return buildCachedFileUrl(objectKey);
+
+    const cacheKey = `${release.slug}:${track.index}:${format}`;
+    if (!this.#trackBuilds.has(cacheKey)) {
+      const promise = this.#buildTrack(release, track, format, objectKey).finally(() => {
+        this.#trackBuilds.delete(cacheKey);
+      });
+      this.#trackBuilds.set(cacheKey, promise);
     }
 
-    return {
-      filePath,
-      fileName: `${String(track.index).padStart(2, "0")} - ${this.sanitizeFileName(track.title)}.${this.formatExt(format)}`
-    };
+    await this.#trackBuilds.get(cacheKey);
+    return buildCachedFileUrl(objectKey);
   }
 
-  async streamReleaseArchive(res, release, format) {
+  async ensureReleaseArchiveCached(release, format) {
     this.ensureReleaseIsDownloadable(release, format);
 
-    if (this.#activeArchives >= MAX_ACTIVE_ARCHIVES) {
-      throw new PublicRequestError(429, "Archive generation is busy, try again shortly");
+    const objectKey = this.#archiveObjectKey(release, format);
+    if (cachedFileExists(objectKey)) return buildCachedFileUrl(objectKey);
+
+    const cacheKey = `${release.slug}:${format}`;
+    if (!this.#archiveBuilds.has(cacheKey)) {
+      const promise = this.#buildArchive(release, format, objectKey).finally(() => {
+        this.#archiveBuilds.delete(cacheKey);
+      });
+      this.#archiveBuilds.set(cacheKey, promise);
     }
 
-    this.#activeArchives += 1;
+    await this.#archiveBuilds.get(cacheKey);
+    return buildCachedFileUrl(objectKey);
+  }
 
+  async #buildTrack(release, track, format, objectKey) {
+    const sourcePath = this.resolveLocalTrackSourcePath(release, track);
+    if (!existsSync(sourcePath)) throw new PublicRequestError(404, "Track source file not found");
+
+    const sameFormat = path.extname(track.sourceFilePath).replace(".", "").toLowerCase() === format;
+    if (sameFormat) {
+      await saveToCacheFromFile(sourcePath, objectKey);
+      return;
+    }
+
+    const tempDir = await this.#createTempDir("track-");
+    const tempFile = path.join(tempDir, `${track.safeStem}.${format}`);
     try {
-      const zip = new JSZip();
-      const extension = this.formatExt(format);
+      await this.#transcode(sourcePath, tempFile, format);
+      await saveToCacheFromFile(tempFile, objectKey);
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  }
 
-      for (const track of release.tracks) {
-        if (!Array.isArray(track.availableDownloadFormats) || !track.availableDownloadFormats.includes(format)) {
-          throw new PublicRequestError(400, `Track "${track.title}" is not available in ${format}`);
-        }
+  async #buildArchive(release, format, objectKey) {
+    const tempDir = await this.#createTempDir("zip-");
+    const tempFile = path.join(tempDir, `${release.slug}-${format}.zip`);
+    try {
+      await this.#writeZip(tempFile, release, format);
+      await saveToCacheFromFile(tempFile, objectKey);
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  }
 
-        const filePath = this.resolveTrackDownloadPath(release, track, format);
-        if (!existsSync(filePath)) {
-          throw new PublicRequestError(404, `Missing source for track ${track.index}`);
-        }
+  async #writeZip(tempFile, release, format) {
+    const zip = new JSZip();
+    const extension = this.formatExt(format);
+    const cleanupDirs = [];
 
-        const zipName = `${String(track.index).padStart(2, "0")} - ${this.sanitizeFileName(track.title)}.${extension}`;
-        zip.file(`tracks/${zipName}`, createReadStream(filePath), { binary: true });
+    for (const track of release.tracks) {
+      if (!Array.isArray(track.availableDownloadFormats) || !track.availableDownloadFormats.includes(format)) {
+        throw new PublicRequestError(400, `Track "${track.title}" is not available in ${format}`);
       }
 
-      const metadataText = [
-        `artist: ${ARTIST_NAME}`,
-        `album: ${release.albumName}`,
-        `release_date: ${release.releaseDate}`,
-        `format: ${format}`,
-        `sample_rate: ${format === "ogg" ? "48000" : "44100"}`,
-        format === "flac"
-          ? "bit_depth: 16"
-          : format === "ogg"
-            ? "codec: opus (vbr), target_bitrate: 320k"
-            : format === "wav"
-              ? "codec: pcm_s16le"
-              : "bitrate: 320k",
-        "",
-        "tracks:",
-        ...release.tracks.map((track) => `${track.index}. ${track.title}`)
-      ].join("\n");
+      const sourcePath = this.resolveLocalTrackSourcePath(release, track);
+      const sameFormat = path.extname(track.sourceFilePath).replace(".", "").toLowerCase() === format;
 
-      zip.file("release-info.txt", metadataText);
+      let trackPath;
+      if (sameFormat) {
+        trackPath = sourcePath;
+      } else {
+        const tempDir = await this.#createTempDir("zt-");
+        cleanupDirs.push(tempDir);
+        trackPath = path.join(tempDir, `${track.safeStem}.${format}`);
+        await this.#transcode(sourcePath, trackPath, format);
+      }
 
-      res.setHeader("Cache-Control", "no-store");
-      res.setHeader("Content-Type", "application/zip");
-      res.setHeader(
-        "Content-Disposition",
-        `attachment; filename="${this.sanitizeFileName(release.albumName)}-${format}.zip"`
-      );
+      const zipName = `${String(track.index).padStart(2, "0")} - ${this.#sanitize(track.title)}.${extension}`;
+      zip.file(`tracks/${zipName}`, createReadStream(trackPath), { binary: true });
+    }
 
+    const metadataText = [
+      `artist: ${ARTIST_NAME}`,
+      `album: ${release.albumName}`,
+      `release_date: ${release.releaseDate}`,
+      `format: ${format}`,
+      `sample_rate: ${format === "ogg" ? "48000" : "44100"}`,
+      format === "flac" ? "bit_depth: 16"
+        : format === "ogg" ? "codec: opus (vbr), target_bitrate: 192k"
+        : format === "wav" ? "codec: pcm_s16le"
+        : "bitrate: 320k",
+      "",
+      "tracks:",
+      ...release.tracks.map((t) => `${t.index}. ${t.title}`)
+    ].join("\n");
+
+    zip.file("release-info.txt", metadataText);
+
+    try {
       await new Promise((resolve, reject) => {
-        const stream = zip.generateNodeStream({
-          streamFiles: true,
-          compression: "DEFLATE",
-          compressionOptions: { level: 6 }
-        });
-
+        const stream = zip.generateNodeStream({ streamFiles: true, compression: "DEFLATE", compressionOptions: { level: 6 } });
+        const fileStream = createWriteStream(tempFile);
         stream.on("error", reject);
-        res.on("close", resolve);
-        res.on("finish", resolve);
-        stream.pipe(res);
+        fileStream.on("error", reject);
+        fileStream.on("finish", resolve);
+        stream.pipe(fileStream);
       });
     } finally {
-      this.#activeArchives = Math.max(0, this.#activeArchives - 1);
+      for (const d of cleanupDirs) {
+        await rm(d, { recursive: true, force: true });
+      }
     }
+  }
+
+  async #transcode(sourcePath, outputPath, format) {
+    const codecArgs =
+      format === "flac" ? ["-c:a", "flac", "-sample_fmt", "s16", "-ar", "44100", outputPath]
+      : format === "mp3"  ? ["-c:a", "libmp3lame", "-b:a", "320k", "-ar", "44100", outputPath]
+      : format === "wav"  ? ["-c:a", "pcm_s16le", "-ar", "44100", outputPath]
+      :                     ["-c:a", "libopus", "-b:a", "192k", "-vbr", "on", "-ar", "48000", outputPath];
+
+    await new Promise((resolve, reject) => {
+      const ffmpeg = spawn("ffmpeg", [
+        "-hide_banner", "-loglevel", "error", "-y",
+        "-i", sourcePath,
+        "-map_metadata", "-1", "-vn", "-sn", "-dn", "-ac", "2",
+        ...codecArgs
+      ]);
+
+      const stderr = [];
+      ffmpeg.stderr.on("data", (chunk) => stderr.push(Buffer.from(chunk)));
+      ffmpeg.on("error", (err) => reject(new Error(`ffmpeg start failed: ${err.message}`)));
+      ffmpeg.on("close", (code) => {
+        if (code === 0) return resolve();
+        const details = Buffer.concat(stderr).toString("utf8").trim();
+        reject(new Error(details || `ffmpeg exited with code ${code}`));
+      });
+    });
+  }
+
+  #sanitize(value) {
+    return value.replace(/[\\/:*?"<>|]/g, "-").replace(/\s+/g, " ").trim();
   }
 }

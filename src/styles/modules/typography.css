@@ -1,0 +1,131 @@
+h1,
+h2,
+h3,
+h4 {
+  color: var(--text-color);
+  font-family: var(--font-display);
+  letter-spacing: 0.02em;
+  margin: 12px 0 8px;
+}
+
+h1 {
+  color: var(--text-color);
+  font-size: 2.35rem;
+  font-weight: 900;
+  text-align: left;
+  line-height: 1.1;
+}
+
+h2 {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+h3 {
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+h4 {
+  font-size: 1.02rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+p {
+  font-size: 1.1rem;
+  font-weight: 400;
+  line-height: 1.55;
+  margin: 12px 0;
+}
+
+.markdown-content img {
+  display: block;
+  width: min(252px, 100%);
+  height: auto;
+  border: 1px solid var(--ui-border);
+  margin: 14px 0 20px;
+}
+
+.music-track {
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  margin: 15px 0;
+  padding: 14px;
+}
+
+audio {
+  border-radius: 0;
+  margin-top: 8px;
+  width: 100%;
+}
+
+ul:not(.main-nav ul) {
+  list-style-position: inside;
+  margin: 12px 0;
+  padding-left: 24px;
+}
+
+li {
+  font-size: 1rem;
+  line-height: 1.55;
+  margin: 6px 0;
+}
+
+a:not(.main-nav a):not(.control-btn):not(.site-title-link):not(.stream-badge-image-link):not(.content-link-plain) {
+  color: var(--accent-color);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+}
+
+.content-link-plain {
+  align-items: center;
+  background: transparent;
+  border: none;
+  border-bottom: none;
+  color: var(--muted-color);
+  display: inline-flex;
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  font-style: normal;
+  gap: 8px;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  margin: 2px 0 14px;
+  min-height: auto;
+  padding: 0;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition:
+    color var(--transition-speed),
+    transform var(--transition-speed);
+}
+
+.content-link-plain::before {
+  background: var(--ui-border);
+  content: "";
+  display: block;
+  flex: 0 0 auto;
+  height: 1px;
+  width: 18px;
+}
+
+.content-link-plain:hover,
+.content-link-plain:focus-visible {
+  color: var(--text-color);
+  outline: none;
+  transform: translateX(2px);
+}
+
+.content-link-plain:hover::before,
+.content-link-plain:focus-visible::before {
+  background: var(--ui-border-strong);
+}
+

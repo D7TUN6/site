@@ -5,11 +5,16 @@ import { normalizeInternalHref, renderMarkdown } from "@/lib/markdown";
 
 const props = defineProps<{
   source: string;
+  openExternalLinksInNewTab?: boolean;
 }>();
 
 const router = useRouter();
 
-const html = computed(() => renderMarkdown(props.source || ""));
+const html = computed(() =>
+  renderMarkdown(props.source || "", {
+    openExternalLinksInNewTab: props.openExternalLinksInNewTab ?? false
+  })
+);
 
 function onClick(event: MouseEvent) {
   const target = event.target as HTMLElement | null;

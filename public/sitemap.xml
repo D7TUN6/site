@@ -2,67 +2,89 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://d7tun6.site/en</loc>
-    <lastmod>2026-03-08</lastmod>
+    <lastmod>2026-04-25</lastmod>
   </url>
   <url>
     <loc>https://d7tun6.site/en/bio</loc>
-    <lastmod>2026-03-08</lastmod>
+    <lastmod>2026-04-25</lastmod>
   </url>
   <url>
     <loc>https://d7tun6.site/en/music</loc>
-    <lastmod>2026-03-08</lastmod>
   </url>
   <url>
     <loc>https://d7tun6.site/en/news</loc>
-    <lastmod>2026-03-08</lastmod>
+    <lastmod>2026-04-25</lastmod>
   </url>
   <url>
     <loc>https://d7tun6.site/en/blog</loc>
-    <lastmod>2026-03-08</lastmod>
+    <lastmod>2026-04-25</lastmod>
+  </url>
+  <url>
+    <loc>https://d7tun6.site/en/shop</loc>
+    <lastmod>2026-04-25</lastmod>
   </url>
   <url>
     <loc>https://d7tun6.site/en/links</loc>
-    <lastmod>2026-03-08</lastmod>
+    <lastmod>2026-04-25</lastmod>
+  </url>
+  <url>
+    <loc>https://d7tun6.site/en/legal</loc>
+    <lastmod>2026-04-25</lastmod>
+  </url>
+  <url>
+    <loc>https://d7tun6.site/en/contact</loc>
+    <lastmod>2026-04-25</lastmod>
   </url>
   <url>
     <loc>https://d7tun6.site/en/blog/building-the-player</loc>
-    <lastmod>2026-03-08</lastmod>
+    <lastmod>2026-04-25</lastmod>
   </url>
   <url>
     <loc>https://d7tun6.site/en/blog/notes-on-release-design</loc>
-    <lastmod>2026-03-08</lastmod>
+    <lastmod>2026-04-25</lastmod>
   </url>
   <url>
     <loc>https://d7tun6.site/ru</loc>
-    <lastmod>2026-03-08</lastmod>
+    <lastmod>2026-04-25</lastmod>
   </url>
   <url>
     <loc>https://d7tun6.site/ru/bio</loc>
-    <lastmod>2026-03-08</lastmod>
+    <lastmod>2026-04-25</lastmod>
   </url>
   <url>
     <loc>https://d7tun6.site/ru/music</loc>
-    <lastmod>2026-03-08</lastmod>
   </url>
   <url>
     <loc>https://d7tun6.site/ru/news</loc>
-    <lastmod>2026-03-08</lastmod>
+    <lastmod>2026-04-25</lastmod>
   </url>
   <url>
     <loc>https://d7tun6.site/ru/blog</loc>
-    <lastmod>2026-03-08</lastmod>
+    <lastmod>2026-04-25</lastmod>
+  </url>
+  <url>
+    <loc>https://d7tun6.site/ru/shop</loc>
+    <lastmod>2026-04-25</lastmod>
   </url>
   <url>
     <loc>https://d7tun6.site/ru/links</loc>
-    <lastmod>2026-03-08</lastmod>
+    <lastmod>2026-04-25</lastmod>
+  </url>
+  <url>
+    <loc>https://d7tun6.site/ru/legal</loc>
+    <lastmod>2026-04-25</lastmod>
+  </url>
+  <url>
+    <loc>https://d7tun6.site/ru/contact</loc>
+    <lastmod>2026-04-25</lastmod>
   </url>
   <url>
     <loc>https://d7tun6.site/ru/blog/building-the-player</loc>
-    <lastmod>2026-03-08</lastmod>
+    <lastmod>2026-04-25</lastmod>
   </url>
   <url>
     <loc>https://d7tun6.site/ru/blog/notes-on-release-design</loc>
-    <lastmod>2026-03-08</lastmod>
+    <lastmod>2026-04-25</lastmod>
   </url>
   <url>
     <loc>https://d7tun6.site/en/music/a-path-of-static-snow</loc>
@@ -79,6 +101,14 @@
   <url>
     <loc>https://d7tun6.site/ru/music/a-path-of-static-snow-deluxe-analog-edition</loc>
     <lastmod>2026-03-05</lastmod>
+  </url>
+  <url>
+    <loc>https://d7tun6.site/en/music/b-twin</loc>
+    <lastmod>2026-04-04</lastmod>
+  </url>
+  <url>
+    <loc>https://d7tun6.site/ru/music/b-twin</loc>
+    <lastmod>2026-04-04</lastmod>
   </url>
   <url>
     <loc>https://d7tun6.site/en/music/wh1te-hous3</loc>

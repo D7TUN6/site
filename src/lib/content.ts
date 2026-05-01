@@ -1,4 +1,26 @@
 import type { BaseRoute, BlogPostEntry, Lang, ReleaseEntry, RouteKey } from "@/types/content";
+import type { ShopProduct, ShopProductDetails } from "@/types/shop";
+import { getAllBlogPosts, getBlogPostBySlug } from "@/lib/blog";
+import { compareReleasesByDateDesc } from "@/lib/music";
+import { fetchLiveManifest, getAllReleases, getReleaseBySlug } from "@/lib/releaseManifest";
+import { getAllShopProducts, getShopProductDetails } from "@/lib/shop";
+
+import enMainSource from "../../content/mdx/en/base/main.mdx?raw";
+import enBioSource from "../../content/mdx/en/base/bio.mdx?raw";
+import enNewsSource from "../../content/mdx/en/base/news.mdx?raw";
+import enBlogSource from "../../content/mdx/en/base/blog.mdx?raw";
+import enShopSource from "../../content/mdx/en/base/shop.mdx?raw";
+import enLegalSource from "../../content/mdx/en/base/legal.mdx?raw";
+import enContactSource from "../../content/mdx/en/base/contact.mdx?raw";
+import enLinksSource from "../../content/mdx/en/base/links.mdx?raw";
+import ruMainSource from "../../content/mdx/ru/base/main.mdx?raw";
+import ruBioSource from "../../content/mdx/ru/base/bio.mdx?raw";
+import ruNewsSource from "../../content/mdx/ru/base/news.mdx?raw";
+import ruBlogSource from "../../content/mdx/ru/base/blog.mdx?raw";
+import ruShopSource from "../../content/mdx/ru/base/shop.mdx?raw";
+import ruLegalSource from "../../content/mdx/ru/base/legal.mdx?raw";
+import ruContactSource from "../../content/mdx/ru/base/contact.mdx?raw";
+import ruLinksSource from "../../content/mdx/ru/base/links.mdx?raw";
 
 export type RoutePayload =
   | {
@@ -20,54 +42,53 @@ export type RoutePayload =
   | {
       kind: "blog-post";
       post: BlogPostEntry;
+    }
+  | {
+      kind: "shop-index";
+      products: ShopProduct[];
+    }
+  | {
+      kind: "shop-product";
+      product: ShopProductDetails;
+    }
+  | {
+      kind: "cart";
+    }
+  | {
+      kind: "account";
+    }
+  | {
+      kind: "admin";
     };
 
-type RawContentModule = {
-  default: string;
-};
-
-const baseRoutes = ["bio", "music", "news", "blog", "links"] as const;
+const baseRoutes = ["bio", "music", "news", "blog", "shop", "links", "legal", "contact"] as const;
 
 function isBaseRoute(value: string): value is (typeof baseRoutes)[number] {
   return baseRoutes.includes(value as (typeof baseRoutes)[number]);
 }
 
-type ReleaseManifestModule = typeof import("@/lib/releaseManifest");
-let releaseManifestModulePromise: Promise<ReleaseManifestModule> | null = null;
-
-function loadReleaseManifestModule(): Promise<ReleaseManifestModule> {
-  if (!releaseManifestModulePromise) {
-    releaseManifestModulePromise = import("@/lib/releaseManifest");
-  }
-  return releaseManifestModulePromise;
-}
-
-type BlogModule = typeof import("@/lib/blog");
-let blogModulePromise: Promise<BlogModule> | null = null;
-
-function loadBlogModule(): Promise<BlogModule> {
-  if (!blogModulePromise) {
-    blogModulePromise = import("@/lib/blog");
-  }
-  return blogModulePromise;
-}
-
-const baseContentModuleMap: Record<Lang, Record<BaseRoute, () => Promise<RawContentModule>>> = {
+const baseMarkdownByLang: Record<Lang, Record<BaseRoute, string>> = {
   en: {
-    main: () => import("../../content/mdx/en/base/main.mdx"),
-    bio: () => import("../../content/mdx/en/base/bio.mdx"),
-    music: () => import("../../content/mdx/en/base/music.mdx"),
-    news: () => import("../../content/mdx/en/base/news.mdx"),
-    blog: () => import("../../content/mdx/en/base/blog.mdx"),
-    links: () => import("../../content/mdx/en/base/links.mdx")
+    main: enMainSource,
+    bio: enBioSource,
+    music: "",
+    news: enNewsSource,
+    blog: enBlogSource,
+    shop: enShopSource,
+    legal: enLegalSource,
+    contact: enContactSource,
+    links: enLinksSource
   },
   ru: {
-    main: () => import("../../content/mdx/ru/base/main.mdx"),
-    bio: () => import("../../content/mdx/ru/base/bio.mdx"),
-    music: () => import("../../content/mdx/ru/base/music.mdx"),
-    news: () => import("../../content/mdx/ru/base/news.mdx"),
-    blog: () => import("../../content/mdx/ru/base/blog.mdx"),
-    links: () => import("../../content/mdx/ru/base/links.mdx")
+    main: ruMainSource,
+    bio: ruBioSource,
+    music: "",
+    news: ruNewsSource,
+    blog: ruBlogSource,
+    shop: ruShopSource,
+    legal: ruLegalSource,
+    contact: ruContactSource,
+    links: ruLinksSource
   }
 };
 
@@ -85,6 +106,10 @@ export function resolveRoute(slugParts: string[]): RouteKey | null {
   }
 
   const value = slugParts.join("/");
+  if (value === "cart" || value === "account" || value === "admin") {
+    return value as RouteKey;
+  }
+
   if (isBaseRoute(value)) {
     return value;
   }
@@ -101,6 +126,12 @@ export function resolveRoute(slugParts: string[]): RouteKey | null {
     return value as RouteKey;
   }
 
+  if (value.startsWith("shop/")) {
+    const slug = value.replace("shop/", "").trim();
+    if (!slug) return null;
+    return value as RouteKey;
+  }
+
   return null;
 }
 
@@ -111,18 +142,54 @@ function cleanupBaseMarkdown(source: string): string {
     .trim();
 }
 
+const mainMarkdownByLang: Record<Lang, string> = {
+  en: cleanupBaseMarkdown(enMainSource),
+  ru: cleanupBaseMarkdown(ruMainSource)
+};
+
 export async function getRoutePayload(lang: Lang, route: RouteKey): Promise<RoutePayload | null> {
+  if (route === "cart") {
+    return {
+      kind: "cart"
+    };
+  }
+
+  if (route === "account") {
+    return {
+      kind: "account"
+    };
+  }
+
+  if (route === "admin") {
+    return {
+      kind: "admin"
+    };
+  }
+
+  if (route === "main") {
+    return {
+      kind: "markdown",
+      source: mainMarkdownByLang[lang]
+    };
+  }
+
   if (route === "music") {
-    const { getAllReleases } = await loadReleaseManifestModule();
+    const manifest = await fetchLiveManifest().catch(() => null);
+    const releases = manifest
+      ? manifest.releases.slice().sort(compareReleasesByDateDesc)
+      : getAllReleases();
     return {
       kind: "music-index",
-      releases: getAllReleases()
+      releases
     };
   }
 
   if (route.startsWith("music/")) {
-    const { getReleaseBySlug } = await loadReleaseManifestModule();
-    const release = getReleaseBySlug(route.replace("music/", ""));
+    const slug = route.replace("music/", "");
+    const manifest = await fetchLiveManifest().catch(() => null);
+    const release = manifest
+      ? (manifest.releases.find((r) => r.slug === slug) ?? null)
+      : getReleaseBySlug(slug);
     if (!release) return null;
 
     return {
@@ -132,7 +199,6 @@ export async function getRoutePayload(lang: Lang, route: RouteKey): Promise<Rout
   }
 
   if (route === "blog") {
-    const { getAllBlogPosts } = await loadBlogModule();
     return {
       kind: "blog-index",
       posts: getAllBlogPosts(lang)
@@ -140,7 +206,6 @@ export async function getRoutePayload(lang: Lang, route: RouteKey): Promise<Rout
   }
 
   if (route.startsWith("blog/")) {
-    const { getBlogPostBySlug } = await loadBlogModule();
     const post = getBlogPostBySlug(lang, route.replace("blog/", ""));
     if (!post) return null;
 
@@ -150,12 +215,30 @@ export async function getRoutePayload(lang: Lang, route: RouteKey): Promise<Rout
     };
   }
 
-  const moduleLoader = baseContentModuleMap[lang][route as BaseRoute];
-  if (!moduleLoader) return null;
+  if (route === "shop") {
+    return {
+      kind: "shop-index",
+      products: getAllShopProducts()
+    };
+  }
 
-  const mod = await moduleLoader();
+  if (route.startsWith("shop/")) {
+    const slug = route.replace("shop/", "").trim();
+    if (!slug) return null;
+    const product = getShopProductDetails(lang, slug);
+    if (!product) return null;
+
+    return {
+      kind: "shop-product",
+      product
+    };
+  }
+
+  const source = baseMarkdownByLang[lang][route as BaseRoute];
+  if (!source) return null;
+
   return {
     kind: "markdown",
-    source: cleanupBaseMarkdown(mod.default)
+    source: cleanupBaseMarkdown(source)
   };
 }

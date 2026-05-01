@@ -1,0 +1,193 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  max-width: none;
+  min-height: calc(100vh - 56px);
+  min-height: calc(100dvh - 56px);
+  width: 100%;
+  padding: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.controls {
+  display: flex;
+  gap: 6px;
+  position: fixed;
+  right: 14px;
+  right: max(14px, env(safe-area-inset-right));
+  top: 12px;
+  top: max(12px, env(safe-area-inset-top));
+  z-index: 1000;
+}
+
+.control-btn {
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  color: var(--text-color);
+  cursor: var(--cursor-link-select);
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  letter-spacing: 0.12em;
+  padding: 6px 10px;
+  text-decoration: none;
+  text-transform: uppercase;
+  box-shadow: var(--ui-shadow);
+  transition: background-color var(--transition-speed), border-color var(--transition-speed), color var(--transition-speed);
+}
+
+.control-btn:hover {
+  background: var(--invert-bg);
+  border-color: var(--invert-border);
+  color: var(--invert-text);
+}
+
+.control-btn:focus-visible {
+  outline: none;
+  border-color: var(--accent-hot);
+  box-shadow: 0 0 0 2px rgba(0, 255, 106, 0.24);
+}
+
+.site-header {
+  margin-bottom: 16px;
+  padding: 0;
+  text-align: left;
+}
+
+.site-header h1 {
+  color: var(--text-color);
+  display: block;
+  font-family: var(--font-display);
+  font-size: 2.15rem;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  line-height: 1.05;
+  margin: 0;
+  padding: 0;
+  text-shadow: 0 0 16px var(--text-glow-soft);
+  text-transform: uppercase;
+}
+
+.site-title-link {
+  color: inherit;
+  text-decoration: none;
+  transition: color var(--transition-speed), text-shadow var(--transition-speed);
+}
+
+.site-title-link:hover,
+.site-title-link:focus-visible {
+  color: var(--text-color);
+  text-shadow: 0 0 18px var(--text-glow-hard);
+  outline: none;
+}
+
+.main-nav {
+  margin: 0 0 16px;
+  text-align: left;
+}
+
+.main-nav ul {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  list-style: none;
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  scrollbar-width: thin;
+}
+
+.main-nav a,
+.nav-active {
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  color: var(--text-color);
+  display: block;
+  font-family: var(--font-ui);
+  font-size: 0.95rem;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  line-height: 1;
+  padding: 8px 10px;
+  text-decoration: none;
+  text-shadow: none;
+  text-transform: uppercase;
+  box-shadow: var(--ui-shadow);
+  transition: background-color var(--transition-speed), border-color var(--transition-speed), color var(--transition-speed);
+}
+
+.main-nav a:hover {
+  background: var(--invert-bg);
+  border-color: var(--invert-border);
+  color: var(--invert-text);
+}
+
+.main-nav a:focus-visible {
+  outline: none;
+  border-color: var(--accent-hot);
+  box-shadow: 0 0 0 2px rgba(0, 255, 106, 0.24);
+}
+
+.nav-active {
+  cursor: var(--cursor-link-select);
+  border-color: var(--ui-border-strong);
+  box-shadow: var(--ui-shadow), inset 0 0 0 1px rgba(0, 255, 106, 0.36);
+}
+
+.content {
+  backdrop-filter: none;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  flex: 1 0 auto;
+  margin: 0;
+  max-width: 100%;
+  padding: 0;
+}
+
+.content > :first-child {
+  margin-top: 0;
+}
+
+.markdown-content > :first-child {
+  margin-top: 0;
+}
+
+.main-requisites {
+  border-top: 1px solid var(--ui-border);
+  color: var(--muted-color);
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  line-height: 1.35;
+  margin-top: auto;
+  padding-top: 10px;
+  text-transform: none;
+}
+
+.main-requisites-title {
+  color: var(--text-color);
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.main-requisites-line {
+  margin: 2px 0;
+}
+
+.main-requisites a {
+  color: var(--accent-color);
+  text-decoration: underline;
+  text-decoration-color: currentColor;
+  text-underline-offset: 0.2em;
+}
+
+.main-requisites a:hover,
+.main-requisites a:focus-visible {
+  color: var(--text-color);
+  text-decoration-color: currentColor;
+}

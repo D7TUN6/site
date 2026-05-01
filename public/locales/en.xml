@@ -9,6 +9,7 @@
     <news>News</news>
     <blog>Blog</blog>
     <links>Links</links>
+    <shop>Shop</shop>
   </nav>
   <loader>
     <detecting>detecting language...</detecting>

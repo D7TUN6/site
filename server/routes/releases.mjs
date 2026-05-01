@@ -1,6 +1,14 @@
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import express from "express";
 import { enforceSameOrigin } from "../lib/request-origin.mjs";
 import { PublicRequestError } from "../lib/release-download-service.mjs";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const ROOT = path.resolve(__dirname, "..", "..");
+const MANIFEST_PATH = path.join(ROOT, "src", "generated", "release-manifest.json");
 
 function isClientError(error) {
   return error instanceof PublicRequestError;
@@ -9,13 +17,27 @@ function isClientError(error) {
 export function createReleaseRouter({ service }) {
   const router = express.Router();
 
+  router.get("/manifest", async (_req, res) => {
+    try {
+      const raw = await readFile(MANIFEST_PATH, "utf-8");
+      res.setHeader("Cache-Control", "no-store");
+      res.setHeader("Content-Type", "application/json");
+      return res.status(200).send(raw);
+    } catch (err) {
+      console.error("releases manifest read failed", err);
+      return res.status(500).json({ error: "Unable to read manifest" });
+    }
+  });
+
   router.post("/download", enforceSameOrigin, async (req, res) => {
     try {
       const slug = typeof req.body?.slug === "string" ? req.body.slug : null;
       const format = typeof req.body?.format === "string" ? req.body.format : null;
       service.validateReleaseRequest(slug, format);
       const release = service.getReleaseOrThrow(slug);
-      await service.streamReleaseArchive(res, release, format);
+      const downloadUrl = await service.ensureReleaseArchiveCached(release, format);
+      res.setHeader("Cache-Control", "no-store");
+      return res.redirect(302, downloadUrl);
     } catch (error) {
       if (isClientError(error)) {
         return res.status(error.status).json({ error: error.message });
@@ -40,11 +62,9 @@ export function createReleaseRouter({ service }) {
       service.validateTrackRequest(slug, trackIndexRaw, format);
       const release = service.getReleaseOrThrow(slug);
       const track = service.getTrackOrThrow(release, trackIndexRaw, format);
-      const download = service.getTrackDownload(release, track, format);
-
+      const downloadUrl = await service.ensureTrackDownloadCached(release, track, format);
       res.setHeader("Cache-Control", "no-store");
-      res.setHeader("Content-Disposition", `attachment; filename="${download.fileName}"`);
-      return res.download(download.filePath, download.fileName);
+      return res.redirect(302, downloadUrl);
     } catch (error) {
       if (isClientError(error)) {
         return res.status(error.status).json({ error: error.message });
