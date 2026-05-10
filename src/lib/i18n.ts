@@ -1,7 +1,7 @@
 import type { Lang, LocaleDictionary } from "@/types/content";
 
-import enLocaleSource from "../../public/locales/en.xml?raw";
-import ruLocaleSource from "../../public/locales/ru.xml?raw";
+import enLocaleSource from "@/locales/en.xml?raw";
+import ruLocaleSource from "@/locales/ru.xml?raw";
 
 const localeCache = new Map<Lang, Promise<LocaleDictionary>>();
 

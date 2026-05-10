@@ -435,6 +435,75 @@
   margin-bottom: 10px;
 }
 
+.ui-select {
+  position: relative;
+}
+
+.ui-select-button {
+  align-items: center;
+  background: var(--ui-surface-2);
+  border: 1px solid var(--ui-border-strong);
+  color: var(--text-color);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  min-height: 38px;
+  padding: 10px 12px;
+  text-align: left;
+  width: 100%;
+}
+
+.ui-select-label {
+  color: inherit;
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  letter-spacing: 0.04em;
+}
+
+.ui-select-caret {
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 8px solid currentColor;
+  display: inline-block;
+  height: 0;
+  margin-left: 10px;
+  width: 0;
+}
+
+.ui-select-menu {
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border-strong);
+  left: 0;
+  margin-top: 4px;
+  max-height: 240px;
+  overflow: auto;
+  position: absolute;
+  right: 0;
+  top: 100%;
+  z-index: 30;
+}
+
+.ui-select-option {
+  background: transparent;
+  border: 0;
+  color: var(--text-color);
+  cursor: pointer;
+  display: block;
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  letter-spacing: 0.04em;
+  padding: 10px 12px;
+  text-align: left;
+  width: 100%;
+}
+
+.ui-select-option.is-selected,
+.ui-select-option.is-highlighted,
+.ui-select-option:hover {
+  background: var(--invert-bg);
+  color: var(--invert-text);
+}
+
 .release-download-btn {
   background: var(--ui-surface-2);
   border: 1px solid var(--ui-border-strong);
@@ -462,12 +531,14 @@
 }
 
 .release-download-btn-secondary {
-  background: rgba(0, 0, 0, 0.7);
+  background: var(--ui-surface-2);
   border-style: dashed;
+  color: var(--text-color);
 }
 
 .release-download-btn-secondary:hover {
   background: var(--invert-bg);
+  color: var(--invert-text);
 }
 
 .release-download-btn:disabled {

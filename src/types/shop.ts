@@ -1,27 +1,32 @@
-import type { Lang } from "@/types/content";
+import type { Lang } from '@/types/content'
 
-export type ShopCurrency = "RUB";
+export type ShopCurrency = 'RUB'
 
 export type ShopMoney = {
-  currency: ShopCurrency;
-  value: number;
-};
+  currency: ShopCurrency
+  value: number
+}
 
-export type ShopProductStatus = "available" | "sold_out" | "coming_soon";
+export type ShopProductStatus = 'available' | 'sold_out' | 'coming_soon'
 
 export type ShopProduct = {
-  slug: string;
-  title: string;
-  category: string;
-  price: ShopMoney;
-  status: ShopProductStatus;
-  quantity: number;
-  images: string[];
-  coverUrl: string | null;
-  coverPreviewUrl: string | null;
-};
+  slug: string
+  title: string
+  category: string
+  price: ShopMoney
+  status: ShopProductStatus
+  quantity: number
+  images: string[]
+  coverUrl: string | null
+  coverPreviewUrl: string | null
+}
 
 export type ShopProductDetails = ShopProduct & {
-  lang: Lang;
-  descriptionMarkdown: string;
-};
+  lang: Lang
+  descriptionMarkdown: string
+}
+
+export type CartItem = {
+  slug: string
+  quantity: number
+}

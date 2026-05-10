@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-Disallow: /api/
-Sitemap: https://d7tun6.site/sitemap.xml

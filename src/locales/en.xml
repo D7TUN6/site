@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<locale>
+  <site>
+    <title>D7TUN6.site</title>
+  </site>
+  <nav>
+    <main>home</main>
+    <bio>bio</bio>
+    <music>music</music>
+    <news>news</news>
+    <blog>blog</blog>
+    <links>links</links>
+    <shop>shop</shop>
+    <projects>projects</projects>
+  </nav>
+  <loader>
+    <detecting>detecting language...</detecting>
+    <fallback>if redirect failed, open:</fallback>
+    <english>english version</english>
+    <russian>русская версия</russian>
+  </loader>
+</locale>
