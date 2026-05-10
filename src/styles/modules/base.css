@@ -13,10 +13,10 @@ html {
 }
 
 :root {
-  --cursor-default: url("/media/image/cursor.png?v=20260425-1") 10 10, auto;
-  --cursor-text: url("/media/image/text.png?v=20260425-1") 4 4, text;
-  --cursor-unavailable: url("/media/image/unavailable.png?v=20260425-1") 4 6, not-allowed;
-  --cursor-link-select: url("/media/image/precision.png?v=20260425-1") 0 2, pointer;
+  --cursor-default: url("/media/image/cursor.png?v=20260425-1") 0 0, auto;
+  --cursor-text: url("/media/image/text.png?v=20260425-1") 0 0, text;
+  --cursor-unavailable: url("/media/image/unavailable.png?v=20260425-1") 0 0, not-allowed;
+  --cursor-link-select: url("/media/image/precision.png?v=20260425-1") 0 0, pointer;
 }
 
 * {
@@ -52,8 +52,7 @@ textarea,
   cursor: var(--cursor-text);
 }
 
-body :is(a, button, [role="button"], [type="button"], [type="submit"], [type="reset"], summary, .cursor-link-select, [data-cursor="link-select"]),
-body :is(a, button, [role="button"], [type="button"], [type="submit"], [type="reset"], summary, .cursor-link-select, [data-cursor="link-select"]) * {
+body :is(button, [role="button"], [type="button"], [type="submit"], [type="reset"], summary, .cursor-link-select, [data-cursor="link-select"], .control-btn, .main-nav a, .nav-active, .site-title-link, .content-link-plain, .release-card, .blog-card, .shop-card-link, .shop-btn, .cart-remove, .cart-line-title a) {
   cursor: var(--cursor-link-select);
 }
 
@@ -100,6 +99,7 @@ input[type="range"],
 [data-cursor="precision"] {
   cursor: var(--cursor-link-select);
 }
+
 
 @supports selector(::-webkit-scrollbar) {
 

@@ -1,35 +1,32 @@
-import manifest from "@/generated/release-manifest.json";
-import { compareReleasesByDateDesc } from "@/lib/music";
-import type { ReleaseEntry } from "@/types/content";
+import manifest from '@/generated/release-manifest.json'
+import { compareReleasesByDateDesc } from '@/lib/music'
+import type { ReleaseEntry } from '@/types/content'
 
-type ReleaseManifest = {
-  generatedAt: string;
-  releases: ReleaseEntry[];
-};
+export type ReleaseManifest = {
+  generatedAt: string
+  releases: ReleaseEntry[]
+}
 
-const typedManifest = manifest as ReleaseManifest;
+const typedManifest = manifest as ReleaseManifest
 
-const releaseBySlug = new Map<string, ReleaseEntry>(
-  typedManifest.releases.map((release) => [release.slug, release])
-);
+const releaseBySlug = new Map<string, ReleaseEntry>(typedManifest.releases.map((release) => [release.slug, release]))
 
-export const releaseManifest = typedManifest;
+export const releaseManifest = typedManifest
 
 export function getReleaseRoutes(): string[] {
-  return typedManifest.releases.map((release) => `music/${release.slug}`);
+  return typedManifest.releases.map((release) => `music/${release.slug}`)
 }
 
 export function getAllReleases(): ReleaseEntry[] {
-  return typedManifest.releases.slice().sort(compareReleasesByDateDesc);
+  return typedManifest.releases.slice().sort(compareReleasesByDateDesc)
 }
 
 export function getReleaseBySlug(slug: string): ReleaseEntry | null {
-  return releaseBySlug.get(slug) ?? null;
+  return releaseBySlug.get(slug) ?? null
 }
 
-// Fetch live manifest from server at runtime (bypasses the build-time static JSON)
 export async function fetchLiveManifest(): Promise<ReleaseManifest> {
-  const res = await fetch("/api/releases/manifest");
-  if (!res.ok) throw new Error(`Failed to fetch manifest: ${res.status}`);
-  return res.json() as Promise<ReleaseManifest>;
+  const res = await fetch('/api/releases/manifest')
+  if (!res.ok) throw new Error(`Failed to fetch manifest: ${res.status}`)
+  return res.json() as Promise<ReleaseManifest>
 }

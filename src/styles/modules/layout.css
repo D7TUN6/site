@@ -135,7 +135,22 @@
 .nav-active {
   cursor: var(--cursor-link-select);
   border-color: var(--ui-border-strong);
-  box-shadow: var(--ui-shadow), inset 0 0 0 1px var(--accent-hot-inset);
+  background: rgba(0, 0, 0, 0.82);
+  color: rgba(255, 255, 255, 0.94);
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 255, 255, 0.08),
+    inset -1px -1px 0 rgba(0, 0, 0, 0.52),
+    0 0 0 1px rgba(0, 0, 0, 0.2);
+}
+
+:root[data-theme="light"] .nav-active {
+  background: rgba(58, 55, 72, 0.92);
+  border-color: rgba(0, 0, 0, 0.62);
+  color: rgba(248, 248, 252, 0.96);
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 255, 255, 0.22),
+    inset -1px -1px 0 rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(0, 0, 0, 0.12);
 }
 
 .content {
@@ -161,7 +176,7 @@
   border-top: 1px solid var(--ui-border);
   color: var(--muted-color);
   font-family: var(--font-ui);
-  font-size: 0.82rem;
+  font-size: 0.95rem;
   letter-spacing: 0.04em;
   line-height: 1.35;
   margin-top: auto;
@@ -190,4 +205,25 @@
 .main-requisites a:focus-visible {
   color: var(--text-color);
   text-decoration-color: currentColor;
+}
+
+
+.control-btn:visited {
+  color: var(--text-color);
+}
+
+.control-btn.control-active {
+  border-color: var(--ui-border-strong);
+  background: rgba(0, 0, 0, 0.82);
+  color: rgba(255, 255, 255, 0.94);
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 255, 255, 0.08),
+    inset -1px -1px 0 rgba(0, 0, 0, 0.52),
+    0 0 0 1px rgba(0, 0, 0, 0.2);
+}
+
+:root[data-theme='light'] .control-btn.control-active {
+  background: rgba(58, 55, 72, 0.92);
+  border-color: rgba(0, 0, 0, 0.62);
+  color: rgba(248, 248, 252, 0.96);
 }

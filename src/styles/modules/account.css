@@ -140,6 +140,27 @@
   gap: 10px;
 }
 
+.auth-tabs .shop-btn.is-active {
+  background: var(--ui-surface);
+  border-color: var(--ui-border-strong);
+  color: var(--text-color);
+  box-shadow: var(--ui-shadow);
+}
+
+:root[data-theme="light"] .auth-tabs .shop-btn.is-active {
+  background: rgba(248, 248, 250, 0.94);
+  color: var(--text-color);
+}
+
+:root[data-theme="light"] .auth-tabs .shop-btn-secondary {
+  background: rgba(0, 0, 0, 0.12);
+  border-color: rgba(0, 0, 0, 0.32);
+  color: rgba(10, 10, 14, 0.78);
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 255, 255, 0.42),
+    inset -1px -1px 0 rgba(0, 0, 0, 0.16);
+}
+
 .auth-form {
   background: var(--ui-surface);
   border: 1px solid var(--ui-border);
@@ -187,4 +208,21 @@
 
 .admin-order-edit .form-field-full {
   grid-column: 1 / -1;
+}
+
+
+.admin > h1,
+main.content > h1 {
+  line-height: 1.05;
+  letter-spacing: 0.08em;
+  text-rendering: geometricPrecision;
+}
+
+.admin .auth-tabs .shop-btn {
+  min-height: 34px;
+}
+
+.account-head .shop-btn,
+.auth-actions .shop-btn {
+  white-space: nowrap;
 }

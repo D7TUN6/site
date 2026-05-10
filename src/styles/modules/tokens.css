@@ -100,14 +100,14 @@
   --invert-border: rgba(0, 0, 0, 0.88);
   --invert-text: rgba(255, 255, 255, 0.92);
 
-  --bg-image-opacity: 0.18;
-  --bg-image-filter: grayscale(0.08) brightness(1.14) contrast(0.92);
+  --bg-image-opacity: 0.45;
+  --bg-image-filter: grayscale(0.08) brightness(1.04) contrast(0.94);
   --scanline-color: rgba(0, 0, 0, 0.045);
   --overlay-gradient: linear-gradient(
     180deg,
-    rgba(255, 255, 255, 0.78) 0%,
-    rgba(255, 255, 255, 0.42) 55%,
-    rgba(0, 0, 0, 0.12) 100%
+    rgba(235, 232, 242, 0.62) 0%,
+    rgba(222, 214, 232, 0.34) 55%,
+    rgba(0, 0, 0, 0.14) 100%
   );
   --fullscreen-overlay: linear-gradient(180deg, rgba(246, 246, 248, 0.96) 0%, rgba(214, 214, 218, 0.96) 100%);
 
