@@ -1,5 +1,5 @@
 <div align="center">
-  <img src=".github/assets/d7tun6-avatar.png" alt="D7TUN6 avatar" width="120" />
+  <img src=".github/assets/d7tun6-avatar.jpg" alt="D7TUN6 avatar" width="120" />
 
   <h1>d7tun6.site</h1>
   <p>Personal artist website for D7TUN6.</p>
@@ -169,4 +169,3 @@ Set `APP_ORIGIN` to the public origin, for example:
 ```bash
 APP_ORIGIN=https://d7tun6.site
 ```
-
