@@ -72,6 +72,7 @@
 
 .release-player-main {
   min-width: 0;
+  overflow: hidden;
   padding-top: 4px;
 }
 
@@ -306,7 +307,7 @@
 
 .release-player-list li.is-active .release-player-track {
   border-color: var(--accent-hot);
-  box-shadow: inset 0 0 0 1px rgba(0, 255, 106, 0.28);
+  box-shadow: inset 0 0 0 1px rgba(var(--accent-hot-rgb), 0.28);
 }
 
 .release-player-thumb-wrap {
@@ -398,6 +399,7 @@
   font-weight: 700;
   letter-spacing: 0.04em;
   line-height: 1.2;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -489,8 +491,6 @@
 }
 
 .release-notes {
-  content-visibility: auto;
-  contain-intrinsic-size: 1px 900px;
 }
 
 .release-notes code {

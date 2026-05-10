@@ -25,6 +25,7 @@ function isLocaleDictionary(input: unknown): input is LocaleDictionary {
       candidate.nav?.blog &&
       candidate.nav?.links &&
       candidate.nav?.shop &&
+      candidate.nav?.projects &&
       candidate.loader?.detecting &&
       candidate.loader?.fallback &&
       candidate.loader?.english &&
@@ -54,7 +55,8 @@ async function loadLocale(lang: Lang): Promise<LocaleDictionary> {
         news: text("nav > news"),
         blog: text("nav > blog"),
         links: text("nav > links"),
-        shop: text("nav > shop")
+        shop: text("nav > shop"),
+        projects: text("nav > projects")
       },
       loader: {
         detecting: text("loader > detecting"),

@@ -29,8 +29,8 @@ function tryReloadOnce(): void {
       return;
     }
     window.sessionStorage.setItem(CHUNK_RELOAD_KEY, "1");
-  } catch {
-    // Ignore storage errors; still attempt a reload below.
+  } catch (error) {
+    void error;
   }
 
   window.location.reload();
@@ -50,7 +50,35 @@ function installChunkLoadAutoReload(): void {
   });
 }
 
+import { fetchAndApplyBg } from "@/lib/background";
+
 installChunkLoadAutoReload();
+
+void fetchAndApplyBg();
+
+fetch("/api/palette/active", { cache: "no-store" })
+  .then((r) => r.json())
+  .then((data: { vars?: Record<string, string> | null }) => {
+    const keys = [
+      "--accent-hot",
+      "--accent-hot-rgb",
+      "--accent-hot-glow",
+      "--accent-hot-glow-soft",
+      "--accent-hot-inset",
+      "--accent-hot-status-bg"
+    ];
+
+    if (data?.vars) {
+      for (const [k, v] of Object.entries(data.vars)) {
+        document.documentElement.style.setProperty(k, v);
+      }
+    } else {
+      for (const key of keys) {
+        document.documentElement.style.removeProperty(key);
+      }
+    }
+  })
+  .catch(() => {});
 
 const app = createApp(App);
 app.use(router);

@@ -3,18 +3,13 @@
     padding: 17px 17px 20px;
   }
 
-  .container {
-    min-height: calc(100vh - 37px);
-    min-height: calc(100dvh - 37px);
-  }
-
   .controls {
     flex-wrap: wrap;
     justify-content: flex-start;
     margin-bottom: 12px;
     position: relative;
-    right: auto;
-    top: auto;
+    inset: auto;
+    z-index: 1;
   }
 
   .control-btn {
@@ -75,19 +70,32 @@
     width: 100%;
   }
 
+  .release-player-list li {
+    min-width: 0;
+  }
+
   .release-player-content {
     grid-template-columns: 1fr;
     row-gap: 10px;
   }
 
   .release-player-head {
-    grid-template-columns: auto 1fr;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: flex-start;
+  }
+
+  .release-player-meta {
+    flex: 1 1 0;
+    min-width: 0;
   }
 
   .release-player-side {
-    grid-column: 1 / -1;
-    justify-content: space-between;
+    display: flex;
+    flex: 0 0 100%;
     flex-direction: row;
+    justify-content: space-between;
     text-align: left;
   }
 

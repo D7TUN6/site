@@ -109,3 +109,52 @@ async function exists(pathToCheck) {
     return false;
   }
 }
+
+const LOCALE_LABELS = {
+  en: { back: "[← Back to Discography](/en/music)", notes: "Notes", genre: "Electronic" },
+  ru: { back: "[← Назад к дискографии](/ru/music)", notes: "Заметки", genre: "Электроника" }
+};
+
+export async function generateReleaseMdx(album) {
+  const langs = ["en", "ru"];
+
+  for (const lang of langs) {
+    const releasesDir = path.join(RELEASE_MDX_ROOT, lang, "releases");
+    const filePath = path.join(releasesDir, `${album.slug}.mdx`);
+
+    // Don't overwrite existing MDX files
+    if (await exists(filePath)) continue;
+
+    const labels = LOCALE_LABELS[lang];
+    const genre = labels.genre;
+    const tracksValue = buildMdxTrackListValue(album.tracks);
+
+    const playerProps = [
+      `albumSlug={"${album.slug}"}`,
+      `artist="D7TUN6"`,
+      `albumTitle={"${album.albumName}"}`,
+      `coverUrl={"${album.coverUrl}"}`,
+      `releaseDate={"${album.releaseDate ?? ""}"}`,
+      `genre={"${genre}"}`,
+      tracksValue
+    ].join(" ");
+
+    const notesSection = album.notes
+      ? `\n<div class="release-notes">\n\n## ${labels.notes}\n\n\`\`\`text\n${album.notes}\n\`\`\`\n\n</div>`
+      : "";
+
+    const content = [
+      `import ReleasePlayer from "@/components/ReleasePlayer.vue";`,
+      ``,
+      `${labels.back}`,
+      ``,
+      `# ${album.albumName}`,
+      ``,
+      `<ReleasePlayer ${playerProps} />`,
+      notesSection
+    ].join("\n");
+
+    await fs.mkdir(releasesDir, { recursive: true });
+    await fs.writeFile(filePath, content, "utf8");
+  }
+}

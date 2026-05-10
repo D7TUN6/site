@@ -20,6 +20,10 @@ body.has-now-playing-fullscreen {
   padding: 6px 10px 8px;
   position: fixed;
   right: 0;
+  transform: translateZ(0);
+  -webkit-transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
   z-index: 1500;
 }
 
@@ -81,7 +85,7 @@ body.has-now-playing-fullscreen {
 .now-playing-btn:focus-visible {
   background: var(--ui-surface);
   border-color: var(--accent-hot);
-  box-shadow: 0 0 0 2px rgba(0, 255, 106, 0.2);
+  box-shadow: 0 0 0 2px var(--accent-hot-glow-soft);
   outline: none;
 }
 
@@ -510,7 +514,7 @@ body.has-now-playing-fullscreen {
   position: absolute;
   inset: 0 0 auto 0;
   height: 2px;
-  background: rgba(0, 255, 106, 0.62);
+  background: var(--accent-hot-status-bg);
 }
 
 .now-playing-fullscreen-art {
@@ -701,7 +705,7 @@ body.has-now-playing-fullscreen {
 
 .now-playing-fullscreen-tracklist li.is-active button {
   border-color: var(--accent-hot);
-  box-shadow: inset 0 0 0 1px rgba(0, 255, 106, 0.28);
+  box-shadow: inset 0 0 0 1px rgba(var(--accent-hot-rgb), 0.28);
 }
 
 .now-playing-fullscreen-track-index,
@@ -731,8 +735,7 @@ body.has-now-playing-fullscreen {
 }
 
 .now-playing-fullscreen .now-playing-btn-small.is-active {
-  border-color: rgba(0, 255, 106, 0.72);
-  color: rgba(0, 255, 106, 0.92);
+  border-color: rgba(var(--accent-hot-rgb), 0.72);
+  color: rgba(var(--accent-hot-rgb), 0.92);
   opacity: 1;
 }
-

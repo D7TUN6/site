@@ -1,8 +1,8 @@
 export type Lang = "en" | "ru";
 
-export type BaseRoute = "main" | "bio" | "music" | "news" | "blog" | "links" | "shop" | "legal" | "contact";
+export type BaseRoute = "main" | "bio" | "music" | "news" | "blog" | "links" | "shop" | "legal" | "contact" | "projects";
 
-export type RouteKey = BaseRoute | "cart" | "account" | "admin" | `music/${string}` | `blog/${string}` | `shop/${string}`;
+export type RouteKey = BaseRoute | "cart" | "account" | "admin" | `music/${string}` | `blog/${string}` | `news/${string}` | `shop/${string}` | `projects/${string}`;
 
 export type LocaleDictionary = {
   site: {
@@ -16,6 +16,7 @@ export type LocaleDictionary = {
     blog: string;
     links: string;
     shop: string;
+    projects: string;
   };
   loader: {
     detecting: string;
@@ -76,4 +77,42 @@ export type BlogPostEntry = {
   publishedAt: string;
   content: string;
   lang: Lang;
+};
+
+export type ProjectEntry = {
+  slug: string;
+  title: Record<Lang, string>;
+  description: Record<Lang, string>;
+  icon: string;
+};
+
+export type OssQuestionOption = {
+  id: string;
+  label: Record<Lang, string>;
+  weight: number;
+  profile?: string[];
+  software?: string[];
+};
+
+export type OssQuestion = {
+  id: string;
+  question: Record<Lang, string>;
+  options: OssQuestionOption[];
+};
+
+export type OssAlternative = {
+  proprietary: string;
+  openSource: string;
+  category: string;
+  difficulty: number;
+  url: string;
+};
+
+export type OssResult = {
+  readinessScore: number;
+  profile: string;
+  recommendedDistro: { name: string; url: string };
+  recommendedAudio: { name: string; url: string }[];
+  alternatives: Array<{ from: string; to: string; url: string }>;
+  communities: Array<{ name: string; url: string; lang: Lang }>;
 };

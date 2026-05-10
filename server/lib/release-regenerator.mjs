@@ -25,3 +25,15 @@ export async function regenerateManifests() {
 
   return albums;
 }
+
+export async function generateReleaseMdx(album) {
+  const { generateReleaseMdx: _gen } = await import(`${ROOT}/scripts/release-pipeline/writer.mjs`);
+  return _gen(album);
+}
+
+export async function regenerateContentManifest() {
+  const { buildContentManifest, GENERATED_CONTENT_MANIFEST } = await import(`${ROOT}/scripts/generate-content.mjs`);
+  const manifest = await buildContentManifest();
+  await fs.mkdir(path.dirname(GENERATED_CONTENT_MANIFEST), { recursive: true });
+  await fs.writeFile(GENERATED_CONTENT_MANIFEST, JSON.stringify(manifest, null, 2));
+}

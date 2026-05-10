@@ -22,6 +22,7 @@ import { createShippingRouter } from "./routes/shipping.mjs";
 import { createConfigRouter } from "./routes/config.mjs";
 import { createYooKassaRouter } from "./routes/payments-yookassa.mjs";
 import { createAdminRouter } from "./routes/admin.mjs";
+import { createShopRouter } from "./routes/shop.mjs";
 import { cleanupExpiredSessions } from "./lib/sessions.mjs";
 import { installApiErrorHandler } from "./middleware/api-error-handler.mjs";
 import { installRequestIdMiddleware } from "./middleware/request-id.mjs";
@@ -121,7 +122,7 @@ await releaseDownloadService.bootstrap();
 
 const { db } = openAppDb({ rootDir: ROOT });
 cleanupExpiredSessions(db);
-const mailer = createMailer();
+void createMailer();
 const orderHub = createOrderHub();
 startTrackingJob({ db, hub: orderHub });
 
@@ -208,6 +209,8 @@ app.use(
       if (req.path.endsWith(".zip")) return false;
       if (req.path.endsWith("/stream")) return false;
       if (String(req.get("accept") || "").includes("text/event-stream")) return false;
+      // Don't compress responses that will be served from precompressed .br/.gz files
+      if (STATIC_PRECOMPRESSED_EXT_RE.test(req.path)) return false;
       return compression.filter(req, res);
     }
   })
@@ -277,6 +280,8 @@ app.use(
 
 app.use("/api/config", createConfigRouter());
 
+app.use("/api/shop", createShopRouter());
+
 app.use(
   "/api/admin",
   apiRateLimit({
@@ -312,6 +317,63 @@ app.use(
 
 app.get("/api/health", (_req, res) => {
   res.status(200).json({ ok: true });
+});
+
+app.get("/api/background/version", async (_req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  try {
+    const { readFile } = await import("node:fs/promises");
+    const data = JSON.parse(await readFile(path.join(ROOT, "data", "bg-version.json"), "utf8"));
+    return res.json({ ok: true, version: data.version ?? "20260425-1" });
+  } catch {
+    return res.json({ ok: true, version: "20260425-1" });
+  }
+});
+
+app.get("/api/content/manifest", async (_req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  try {
+    const { readFile } = await import("node:fs/promises");
+    const raw = await readFile(path.join(ROOT, "src", "generated", "content-manifest.json"), "utf8");
+    res.setHeader("Content-Type", "application/json");
+    return res.send(raw);
+  } catch {
+    return res.status(404).json({ error: "Not found" });
+  }
+});
+
+const PALETTE_VAR_ALLOWLIST = new Set([
+  "--accent-hot",
+  "--accent-hot-rgb",
+  "--accent-hot-glow",
+  "--accent-hot-glow-soft",
+  "--accent-hot-inset",
+  "--accent-hot-status-bg"
+]);
+
+function filterPaletteVars(input) {
+  if (!input || typeof input !== "object") return null;
+  const out = {};
+  for (const [key, value] of Object.entries(input)) {
+    if (!PALETTE_VAR_ALLOWLIST.has(key)) continue;
+    if (typeof value !== "string") continue;
+    out[key] = value;
+  }
+  return Object.keys(out).length ? out : null;
+}
+
+app.get("/api/palette/active", async (_req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  try {
+    const { readFile } = await import("node:fs/promises");
+    const data = JSON.parse(await readFile(path.join(ROOT, "data", "palettes.json"), "utf8"));
+    if (data.enabled !== true) return res.json({ ok: true, vars: null });
+    if (!data.active) return res.json({ ok: true, vars: null });
+    const palette = data.palettes.find(p => p.id === data.active);
+    return res.json({ ok: true, vars: filterPaletteVars(palette?.vars ?? null) });
+  } catch {
+    return res.json({ ok: true, vars: null });
+  }
 });
 
 app.use("/api", (req, res) => sendApiNotFound(req, res));

@@ -19,6 +19,7 @@ const navItems: Array<{ id: BaseRoute; key: keyof LocaleDictionary["nav"] }> = [
   { id: "music", key: "music" },
   { id: "news", key: "news" },
   { id: "blog", key: "blog" },
+  { id: "projects", key: "projects" },
   { id: "shop", key: "shop" },
   { id: "links", key: "links" }
 ];
@@ -45,6 +46,7 @@ const switchLabel = computed(() => (isRu.value ? "EN" : "RU"));
 const switchHref = computed(() => `/${switchLang.value}${switchRouteTarget(props.route)}`);
 const isMusicRoute = computed(() => props.route === "music" || props.route.startsWith("music/"));
 const isBlogRoute = computed(() => props.route === "blog" || props.route.startsWith("blog/"));
+const isProjectsRoute = computed(() => props.route === "projects" || props.route.startsWith("projects/"));
 const isShopRoute = computed(() => props.route === "shop" || props.route.startsWith("shop/") || props.route === "cart");
 
 const cart = useCart();
@@ -66,16 +68,15 @@ const themeAriaLabel = computed(() => (isRu.value ? "переключить те
 </script>
 
 <template>
-  <div class="controls">
-    <RouterLink :to="accountHref" class="control-btn">{{ accountLabel }}</RouterLink>
-    <RouterLink :to="cartHref" class="control-btn">{{ cartLabel }} ({{ cart.totalItems }})</RouterLink>
-    <button type="button" class="control-btn" :aria-label="themeAriaLabel" @click="toggleTheme">
-      {{ themeLabel }}
-    </button>
-    <LanguageToggle :to="switchHref" :label="switchLabel" :lang-to-save="switchLang" />
-  </div>
-
   <div :class="`container lang-${lang}`">
+    <div class="controls">
+      <RouterLink :to="accountHref" class="control-btn">{{ accountLabel }}</RouterLink>
+      <RouterLink :to="cartHref" class="control-btn">{{ cartLabel }} ({{ cart.totalItems }})</RouterLink>
+      <button type="button" class="control-btn" :aria-label="themeAriaLabel" @click="toggleTheme">
+        {{ themeLabel }}
+      </button>
+      <LanguageToggle :to="switchHref" :label="switchLabel" :lang-to-save="switchLang" />
+    </div>
     <header class="site-header">
       <h1>
         <RouterLink :to="`/${lang}`" class="site-title-link">
@@ -95,7 +96,9 @@ const themeAriaLabel = computed(() => (isRu.value ? "переключить те
                   ? isBlogRoute
                   : item.id === 'shop'
                     ? isShopRoute
-                    : route === item.id
+                    : item.id === 'projects'
+                      ? isProjectsRoute
+                      : route === item.id
             "
             class="nav-active"
           >

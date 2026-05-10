@@ -1,0 +1,16 @@
+{
+  "projects": [
+    {
+      "slug": "oss-migrator",
+      "title": {
+        "ru": "OSS Migration Wizard",
+        "en": "OSS Migration Wizard"
+      },
+      "description": {
+        "ru": "Интерактивный мастер перехода на свободное ПО: профиль, сложность миграции, стек замен и сообщества поддержки.",
+        "en": "Interactive open-source migration wizard: profile, migration difficulty, replacement stack, and support communities."
+      },
+      "icon": "/media/image/oss-wizard.png"
+    }
+  ]
+}

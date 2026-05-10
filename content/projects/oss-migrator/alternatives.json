@@ -1,0 +1,122 @@
+[
+  {
+    "proprietary": "Microsoft Office",
+    "openSource": "LibreOffice",
+    "category": "Office",
+    "difficulty": 2,
+    "url": "https://www.libreoffice.org/"
+  },
+  {
+    "proprietary": "Microsoft Outlook",
+    "openSource": "Thunderbird",
+    "category": "Office",
+    "difficulty": 2,
+    "url": "https://www.thunderbird.net/"
+  },
+  {
+    "proprietary": "Adobe Photoshop",
+    "openSource": "GIMP / Krita",
+    "category": "Adobe Suite",
+    "difficulty": 4,
+    "url": "https://www.gimp.org/"
+  },
+  {
+    "proprietary": "Adobe Illustrator",
+    "openSource": "Inkscape",
+    "category": "Adobe Suite",
+    "difficulty": 4,
+    "url": "https://inkscape.org/"
+  },
+  {
+    "proprietary": "Adobe Lightroom",
+    "openSource": "darktable / RawTherapee",
+    "category": "Adobe Suite",
+    "difficulty": 4,
+    "url": "https://www.darktable.org/"
+  },
+  {
+    "proprietary": "Adobe After Effects",
+    "openSource": "Blender / Natron",
+    "category": "Adobe Suite",
+    "difficulty": 5,
+    "url": "https://www.blender.org/"
+  },
+  {
+    "proprietary": "Adobe Premiere Pro",
+    "openSource": "Kdenlive / Shotcut",
+    "category": "Adobe Suite",
+    "difficulty": 4,
+    "url": "https://kdenlive.org/"
+  },
+  {
+    "proprietary": "Adobe Audition",
+    "openSource": "Audacity",
+    "category": "Adobe Suite",
+    "difficulty": 3,
+    "url": "https://www.audacityteam.org/"
+  },
+  {
+    "proprietary": "AutoCAD",
+    "openSource": "FreeCAD",
+    "category": "CAD",
+    "difficulty": 5,
+    "url": "https://www.freecad.org/"
+  },
+  {
+    "proprietary": "SolidWorks",
+    "openSource": "FreeCAD",
+    "category": "CAD",
+    "difficulty": 5,
+    "url": "https://www.freecad.org/"
+  },
+  {
+    "proprietary": "SketchUp",
+    "openSource": "Blender",
+    "category": "CAD",
+    "difficulty": 4,
+    "url": "https://www.blender.org/"
+  },
+  {
+    "proprietary": "Windows",
+    "openSource": "Linux (Ubuntu / Fedora / Mint)",
+    "category": "OS",
+    "difficulty": 3,
+    "url": "https://www.linuxfoundation.org/"
+  },
+  {
+    "proprietary": "macOS",
+    "openSource": "Linux (Fedora / Ubuntu)",
+    "category": "OS",
+    "difficulty": 4,
+    "url": "https://www.linuxfoundation.org/"
+  },
+  {
+    "proprietary": "Steam (Windows-only games)",
+    "openSource": "Steam + Proton",
+    "category": "Gaming",
+    "difficulty": 3,
+    "url": "https://www.protondb.com/"
+  },
+  {
+    "proprietary": "EA App / Origin",
+    "openSource": "Lutris / Heroic + Proton",
+    "category": "Gaming",
+    "difficulty": 4,
+    "url": "https://lutris.net/"
+  },
+  {
+    "proprietary": "Epic Games Launcher",
+    "openSource": "Heroic Games Launcher",
+    "category": "Gaming",
+    "difficulty": 3,
+    "url": "https://heroicgameslauncher.com/"
+  },
+  {
+    "proprietary": "Google Drive Desktop",
+    "openSource": "rclone",
+    "category": "Cloud",
+    "difficulty": 3,
+    "url": "https://rclone.org/"
+  }
+]
+

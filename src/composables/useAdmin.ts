@@ -1,5 +1,6 @@
 import { computed, onBeforeUnmount, reactive, watchEffect } from "vue";
 import { apiFetchJson } from "@/lib/api";
+import { applyBgVersion } from "@/lib/background";
 
 export type AdminOrder = {
   id: string;
@@ -41,12 +42,55 @@ export type AdminRelease = {
   releaseType: string;
 };
 
+export type OldBackground = {
+  id: string;
+  previewUrl: string;
+};
+
+export type PaletteEntry = {
+  id: string;
+  name: string;
+  colors: Array<{ r: number; g: number; b: number; hex: string }>;
+  vars: Record<string, string>;
+  createdAt: string;
+};
+
+export type AdminShopProduct = {
+  slug: string;
+  title: string;
+  category: string;
+  price: number; // kopeks
+  status: "available" | "sold_out" | "coming_soon";
+  quantity: number;
+  images: string[]; // filenames (not URLs)
+  coverImage: string | null;
+  description: { en: string; ru: string };
+};
+
+export type ContentPost = {
+  slug: string;
+  title: string;
+  excerpt: string;
+  publishedAt: string;
+  content: string;
+  lang: string;
+  kind: string;
+};
+
 const state = reactive({
   status: "idle" as "idle" | "loading" | "ready" | "error",
   isAdmin: false,
   message: "",
   orders: [] as AdminOrder[],
-  releases: [] as AdminRelease[]
+  releases: [] as AdminRelease[],
+  bgVersion: "",
+  oldBackgrounds: [] as OldBackground[],
+  palettes: [] as PaletteEntry[],
+  palettesEnabled: false,
+  activePaletteId: null as string | null,
+  blogPosts: { en: [] as ContentPost[], ru: [] as ContentPost[] },
+  newsPosts: { en: [] as ContentPost[], ru: [] as ContentPost[] },
+  shopProducts: [] as AdminShopProduct[]
 });
 
 let stream: EventSource | null = null;
@@ -54,7 +98,8 @@ let stream: EventSource | null = null;
 function closeStream() {
   try {
     stream?.close();
-  } catch {
+  } catch (error) {
+    void error;
   }
   stream = null;
 }
@@ -93,6 +138,42 @@ async function loadReleases() {
   }
 }
 
+async function loadBackground() {
+  if (!state.isAdmin) return;
+  try {
+    const payload = await apiFetchJson<{ ok: boolean; version: string; oldBackgrounds: OldBackground[] }>("/api/admin/background", { method: "GET" });
+    state.bgVersion = payload.version ?? "";
+    state.oldBackgrounds = Array.isArray(payload.oldBackgrounds) ? payload.oldBackgrounds : [];
+  } catch { /* ignore */ }
+}
+
+async function loadPalettes() {
+  if (!state.isAdmin) return;
+  try {
+    const payload = await apiFetchJson<{ ok: boolean; enabled?: boolean; active: string | null; palettes: PaletteEntry[] }>("/api/admin/palette", { method: "GET" });
+    state.palettes = Array.isArray(payload.palettes) ? payload.palettes : [];
+    state.activePaletteId = payload.active ?? null;
+    state.palettesEnabled = Boolean(payload.enabled) && state.palettes.length > 0;
+  } catch { /* ignore */ }
+}
+
+async function loadShopProducts() {
+  if (!state.isAdmin) return;
+  try {
+    const payload = await apiFetchJson<{ ok: boolean; products: AdminShopProduct[] }>("/api/admin/shop", { method: "GET" });
+    state.shopProducts = Array.isArray(payload.products) ? payload.products : [];
+  } catch { /* ignore */ }
+}
+
+async function loadContent(kind: "blog" | "news") {
+  if (!state.isAdmin) return;
+  try {
+    const payload = await apiFetchJson<{ ok: boolean; posts: { en: ContentPost[]; ru: ContentPost[] } }>(`/api/admin/content/${kind}`, { method: "GET" });
+    if (kind === "blog") state.blogPosts = payload.posts ?? { en: [], ru: [] };
+    else state.newsPosts = payload.posts ?? { en: [], ru: [] };
+  } catch { /* ignore */ }
+}
+
 export function useAdmin() {
   watchEffect(() => {
     if (state.status === "idle") {
@@ -100,6 +181,11 @@ export function useAdmin() {
         if (state.isAdmin) {
           void loadOrders();
           void loadReleases();
+          void loadBackground();
+          void loadPalettes();
+          void loadContent("blog");
+          void loadContent("news");
+          void loadShopProducts();
         }
       });
     }
@@ -108,11 +194,8 @@ export function useAdmin() {
   watchEffect(() => {
     closeStream();
     if (!state.isAdmin) return;
-
     stream = new EventSource("/api/admin/stream", { withCredentials: true });
-    stream.addEventListener("order", () => {
-      void loadOrders();
-    });
+    stream.addEventListener("order", () => { void loadOrders(); });
   });
 
   onBeforeUnmount(() => closeStream());
@@ -124,6 +207,11 @@ export function useAdmin() {
     await loadMe();
     await loadOrders();
     await loadReleases();
+    await loadBackground();
+    await loadPalettes();
+    await loadContent("blog");
+    await loadContent("news");
+    await loadShopProducts();
   }
 
   async function logout() {
@@ -131,6 +219,13 @@ export function useAdmin() {
     state.isAdmin = false;
     state.orders = [];
     state.releases = [];
+    state.oldBackgrounds = [];
+    state.palettes = [];
+    state.palettesEnabled = false;
+    state.activePaletteId = null;
+    state.blogPosts = { en: [], ru: [] };
+    state.newsPosts = { en: [], ru: [] };
+    state.shopProducts = [];
     closeStream();
   }
 
@@ -169,10 +264,7 @@ export function useAdmin() {
       if (hasNewTracks) {
         for (const f of patch.newTracks!) formData.append("tracks[]", f);
       }
-      const resp = await fetch(`/api/admin/releases/${encodeURIComponent(slug)}`, {
-        method: "PATCH",
-        body: formData
-      });
+      const resp = await fetch(`/api/admin/releases/${encodeURIComponent(slug)}`, { method: "PATCH", body: formData });
       if (!resp.ok) {
         const err = await resp.json().catch(() => ({ error: "Update failed" }));
         throw new Error(err.error || "Update failed");
@@ -202,6 +294,128 @@ export function useAdmin() {
     await loadReleases();
   }
 
+  // ── Background ──────────────────────────────────────────────────────────────
+  async function uploadBackground(file: File) {
+    const fd = new FormData();
+    fd.append("file", file);
+    const resp = await fetch("/api/admin/background/upload", { method: "POST", body: fd });
+    if (!resp.ok) { const e = await resp.json().catch(() => ({ error: "Upload failed" })); throw new Error(e.error); }
+    const data = await resp.json() as { version?: string };
+    if (data.version) applyBgVersion(data.version);
+    await loadBackground();
+  }
+
+  async function activateBackground(id: string) {
+    const data = await apiFetchJson<{ ok: boolean; version?: string }>(`/api/admin/background/activate/${encodeURIComponent(id)}`, { method: "POST", body: JSON.stringify({}) });
+    if (data.version) applyBgVersion(data.version);
+    await loadBackground();
+  }
+
+  async function deleteOldBackground(id: string) {
+    await apiFetchJson<{ ok: boolean }>(`/api/admin/background/old/${encodeURIComponent(id)}`, { method: "DELETE", body: JSON.stringify({}) });
+    await loadBackground();
+  }
+
+  // ── Palette ─────────────────────────────────────────────────────────────────
+  async function generatePalette(name: string, bgId?: string) {
+    const payload = await apiFetchJson<{ ok: boolean; palette: PaletteEntry }>("/api/admin/palette/generate", {
+      method: "POST",
+      body: JSON.stringify({ name, bgId })
+    });
+    await loadPalettes();
+    return payload.palette;
+  }
+
+  async function activatePalette(id: string) {
+    await apiFetchJson<{ ok: boolean }>(`/api/admin/palette/activate/${encodeURIComponent(id)}`, { method: "POST", body: JSON.stringify({}) });
+    await loadPalettes();
+  }
+
+  async function updatePalette(id: string, patch: { name?: string; vars?: Record<string, string> }) {
+    await apiFetchJson<{ ok: boolean }>(`/api/admin/palette/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: JSON.stringify(patch)
+    });
+    await loadPalettes();
+  }
+
+  async function deletePalette(id: string) {
+    await apiFetchJson<{ ok: boolean }>(`/api/admin/palette/${encodeURIComponent(id)}`, { method: "DELETE", body: JSON.stringify({}) });
+    await loadPalettes();
+  }
+
+  async function setPalettesEnabled(enabled: boolean) {
+    await apiFetchJson<{ ok: boolean; enabled: boolean; active: string | null }>("/api/admin/palette/enabled", {
+      method: "POST",
+      body: JSON.stringify({ enabled })
+    });
+    await loadPalettes();
+  }
+
+  // ── Content (blog / news) ───────────────────────────────────────────────────
+  async function createPost(kind: "blog" | "news", post: { slug: string; title: string; publishedAt: string; excerpt: string; content: string; lang: string }) {
+    await apiFetchJson<{ ok: boolean }>(`/api/admin/content/${kind}`, { method: "POST", body: JSON.stringify(post) });
+    await loadContent(kind);
+  }
+
+  async function updatePost(kind: "blog" | "news", lang: string, slug: string, patch: { title?: string; publishedAt?: string; excerpt?: string; content?: string }) {
+    await apiFetchJson<{ ok: boolean }>(`/api/admin/content/${kind}/${lang}/${encodeURIComponent(slug)}`, {
+      method: "PATCH",
+      body: JSON.stringify(patch)
+    });
+    await loadContent(kind);
+  }
+
+  async function deletePost(kind: "blog" | "news", lang: string, slug: string) {
+    await apiFetchJson<{ ok: boolean }>(`/api/admin/content/${kind}/${lang}/${encodeURIComponent(slug)}`, { method: "DELETE", body: JSON.stringify({}) });
+    await loadContent(kind);
+  }
+
+  async function uploadPostMedia(kind: "blog" | "news", lang: string, slug: string, files: File[]) {
+    const fd = new FormData();
+    for (const f of files) fd.append("file", f);
+    const resp = await fetch(`/api/admin/content/${kind}/${lang}/${encodeURIComponent(slug)}/media`, { method: "POST", body: fd });
+    if (!resp.ok) { const e = await resp.json().catch(() => ({ error: "Upload failed" })); throw new Error(e.error); }
+    return (await resp.json()) as { ok: boolean; files: Array<{ name: string; url: string; ext: string }> };
+  }
+
+  async function deletePostMedia(kind: "blog" | "news", lang: string, slug: string, filename: string) {
+    await apiFetchJson<{ ok: boolean }>(`/api/admin/content/${kind}/${lang}/${encodeURIComponent(slug)}/media/${encodeURIComponent(filename)}`, {
+      method: "DELETE",
+      body: JSON.stringify({})
+    });
+  }
+
+  // ── Shop products ────────────────────────────────────────────────────────────
+  async function createShopProduct(data: { title: string; category: string; price: number; status: "available" | "sold_out" | "coming_soon"; quantity: number; descriptionEn: string; descriptionRu: string }) {
+    const result = await apiFetchJson<{ ok: boolean; slug: string }>("/api/admin/shop", { method: "POST", body: JSON.stringify(data) });
+    await loadShopProducts();
+    return result.slug;
+  }
+
+  async function updateShopProduct(slug: string, patch: Partial<{ title: string; category: string; price: number; status: "available" | "sold_out" | "coming_soon"; quantity: number; descriptionEn: string; descriptionRu: string; coverImage: string; images: string[] }>) {
+    await apiFetchJson<{ ok: boolean }>(`/api/admin/shop/${encodeURIComponent(slug)}`, { method: "PATCH", body: JSON.stringify(patch) });
+    await loadShopProducts();
+  }
+
+  async function deleteShopProduct(slug: string) {
+    await apiFetchJson<{ ok: boolean }>(`/api/admin/shop/${encodeURIComponent(slug)}`, { method: "DELETE", body: JSON.stringify({}) });
+    await loadShopProducts();
+  }
+
+  async function uploadShopImages(slug: string, files: File[]) {
+    const fd = new FormData();
+    for (const f of files) fd.append("file", f);
+    const resp = await fetch(`/api/admin/shop/${encodeURIComponent(slug)}/images`, { method: "POST", body: fd });
+    if (!resp.ok) { const e = await resp.json().catch(() => ({ error: "Upload failed" })); throw new Error(e.error); }
+    await loadShopProducts();
+  }
+
+  async function deleteShopImage(slug: string, filename: string) {
+    await apiFetchJson<{ ok: boolean }>(`/api/admin/shop/${encodeURIComponent(slug)}/images/${encodeURIComponent(filename)}`, { method: "DELETE", body: JSON.stringify({}) });
+    await loadShopProducts();
+  }
+
   return {
     state,
     canManage,
@@ -209,8 +423,30 @@ export function useAdmin() {
     logout,
     loadOrders,
     loadReleases,
+    loadBackground,
+    loadPalettes,
+    loadContent,
     updateOrder,
     updateRelease,
-    deleteRelease
+    deleteRelease,
+    uploadBackground,
+    activateBackground,
+    deleteOldBackground,
+    generatePalette,
+    activatePalette,
+    updatePalette,
+    deletePalette,
+    setPalettesEnabled,
+    createPost,
+    updatePost,
+    deletePost,
+    uploadPostMedia,
+    deletePostMedia,
+    loadShopProducts,
+    createShopProduct,
+    updateShopProduct,
+    deleteShopProduct,
+    uploadShopImages,
+    deleteShopImage
   };
 }

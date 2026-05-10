@@ -76,8 +76,10 @@ export async function apiFetchJson<T>(input: string, init: ApiRequestInit = {}):
       signal: init.signal ?? controller?.signal,
       headers: {
         "Content-Type": "application/json",
+        "X-Requested-With": "fetch",
         ...headersToObject(init.headers)
       },
+      referrerPolicy: "same-origin",
       credentials: "include"
     });
   } catch (error) {

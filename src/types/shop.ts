@@ -7,14 +7,17 @@ export type ShopMoney = {
   value: number;
 };
 
-export type ShopProductCategory = "cd";
+export type ShopProductStatus = "available" | "sold_out" | "coming_soon";
 
 export type ShopProduct = {
   slug: string;
   title: string;
-  category: ShopProductCategory;
+  category: string;
   price: ShopMoney;
-  coverUrl: string;
+  status: ShopProductStatus;
+  quantity: number;
+  images: string[];
+  coverUrl: string | null;
   coverPreviewUrl: string | null;
 };
 

@@ -1,19 +1,20 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useRouter } from "vue-router";
-import { normalizeInternalHref, renderMarkdown } from "@/lib/markdown";
+import { normalizeInternalHref, renderMarkdown, renderMarkdownHtml } from "@/lib/markdown";
 
 const props = defineProps<{
   source: string;
   openExternalLinksInNewTab?: boolean;
+  allowHtml?: boolean;
 }>();
 
 const router = useRouter();
 
 const html = computed(() =>
-  renderMarkdown(props.source || "", {
-    openExternalLinksInNewTab: props.openExternalLinksInNewTab ?? false
-  })
+  props.allowHtml
+    ? renderMarkdownHtml(props.source || "")
+    : renderMarkdown(props.source || "", { openExternalLinksInNewTab: props.openExternalLinksInNewTab ?? false })
 );
 
 function onClick(event: MouseEvent) {

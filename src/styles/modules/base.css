@@ -133,14 +133,7 @@ input[type="range"],
 
 body::before {
   background-attachment: scroll;
-  background-image: url("/media/background/bg.jpg?v=20260425-1");
-  background-image: image-set(
-    url("/media/background/bg-960.avif?v=20260425-1") 1x type("image/avif"),
-    url("/media/background/bg-1440.avif?v=20260425-1") 2x type("image/avif"),
-    url("/media/background/bg-960.webp?v=20260425-1") 1x type("image/webp"),
-    url("/media/background/bg-1440.webp?v=20260425-1") 2x type("image/webp"),
-    url("/media/background/bg.jpg?v=20260425-1") 1x type("image/jpeg")
-  );
+  background-image: var(--bg-image, url("/media/background/bg.jpg?v=20260507-1"));
   background-position: center;
   background-repeat: no-repeat;
   background-size: cover;
@@ -155,6 +148,9 @@ body::before {
   width: 100%;
   z-index: 0;
   pointer-events: none;
+  /* iOS Safari: force GPU compositing layer so fixed pseudo-elements render */
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
 }
 
 body::after {
@@ -166,10 +162,12 @@ body::after {
       0deg,
       var(--scanline-color) 0,
       var(--scanline-color) 1px,
-      rgba(0, 0, 0, 0) 2px,
-      rgba(0, 0, 0, 0) 4px
+      transparent 2px,
+      transparent 4px
     ),
     var(--overlay-gradient);
   z-index: 0;
   pointer-events: none;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
 }

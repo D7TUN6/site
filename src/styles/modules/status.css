@@ -23,7 +23,7 @@
   position: absolute;
   inset: 0 0 auto 0;
   height: 2px;
-  background: rgba(0, 255, 106, 0.62);
+  background: var(--accent-hot-status-bg);
 }
 
 .loader p {
@@ -122,4 +122,3 @@
     transform: rotate(360deg);
   }
 }
-

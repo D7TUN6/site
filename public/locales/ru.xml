@@ -10,6 +10,7 @@
     <blog>блог</blog>
     <links>ссылки</links>
     <shop>магазин</shop>
+    <projects>проекты</projects>
   </nav>
   <loader>
     <detecting>определяю язык...</detecting>

@@ -84,8 +84,8 @@
 
 .shop-badge {
   background: transparent;
-  border: 1px solid rgba(0, 255, 106, 0.55);
-  color: rgba(0, 255, 106, 0.86);
+  border: 1px solid rgba(var(--accent-hot-rgb), 0.55);
+  color: rgba(var(--accent-hot-rgb), 0.86);
   display: inline-flex;
   font-family: var(--font-ui);
   font-size: 0.8em;
@@ -441,6 +441,13 @@
   box-shadow: var(--ui-shadow);
 }
 
+.form-checkbox {
+  accent-color: var(--accent-hot);
+  cursor: var(--cursor-link-select);
+  height: 18px;
+  width: 18px;
+}
+
 @media (max-width: 768px) {
   .form-input,
   .form-select,
@@ -543,7 +550,7 @@
 .form-textarea:focus-visible {
   outline: none;
   border-color: var(--accent-hot);
-  box-shadow: 0 0 0 2px rgba(0, 255, 106, 0.2);
+  box-shadow: 0 0 0 2px var(--accent-hot-glow-soft);
 }
 
 .form-textarea {
@@ -648,7 +655,7 @@
 
 .pickup-item.is-active {
   border-color: var(--accent-hot);
-  box-shadow: 0 0 0 2px rgba(0, 255, 106, 0.2);
+  box-shadow: 0 0 0 2px var(--accent-hot-glow-soft);
 }
 
 .pickup-name {
@@ -702,4 +709,277 @@
   font-size: 0.9rem;
   letter-spacing: 0.04em;
   margin: 8px 0 0;
+}
+
+/* ── Status badges ─────────────────────────────────────────────────────────── */
+.shop-status-badge {
+  display: inline-flex;
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
+  line-height: 1;
+  padding: 4px 8px;
+  text-transform: uppercase;
+}
+
+.shop-status-available {
+  border: 1px solid rgba(var(--accent-hot-rgb), 0.55);
+  color: rgba(var(--accent-hot-rgb), 0.86);
+}
+
+.shop-status-sold_out {
+  border: 1px solid rgba(255, 45, 85, 0.55);
+  color: rgba(255, 45, 85, 0.86);
+}
+
+.shop-status-coming_soon {
+  border: 1px solid rgba(255, 212, 0, 0.55);
+  color: rgba(255, 212, 0, 0.86);
+}
+
+/* ── Shop card cover wrap ──────────────────────────────────────────────────── */
+.shop-cover-wrap {
+  position: relative;
+}
+
+.shop-cover-empty {
+  aspect-ratio: 1 / 1;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid var(--ui-border);
+  display: block;
+  width: 100%;
+}
+
+.shop-card-status {
+  bottom: 6px;
+  left: 6px;
+  position: absolute;
+}
+
+/* ── Product meta row ──────────────────────────────────────────────────────── */
+.shop-product-meta {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.shop-product-qty-hint {
+  color: var(--muted-color);
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* ── Gallery ───────────────────────────────────────────────────────────────── */
+.shop-gallery {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 280px;
+  flex-shrink: 0;
+}
+
+.shop-gallery-main {
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid var(--ui-border);
+  cursor: zoom-in;
+  overflow: hidden;
+  position: relative;
+}
+
+.shop-gallery-img {
+  aspect-ratio: 1 / 1;
+  display: block;
+  object-fit: cover;
+  width: 100%;
+}
+
+.shop-gallery-empty {
+  aspect-ratio: 1 / 1;
+}
+
+.shop-gallery-status {
+  bottom: 8px;
+  left: 8px;
+  position: absolute;
+}
+
+.shop-gallery-zoom {
+  bottom: 8px;
+  color: rgba(246, 246, 255, 0.6);
+  font-size: 1.1rem;
+  position: absolute;
+  right: 8px;
+}
+
+.shop-gallery-thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.shop-gallery-thumb-btn {
+  background: transparent;
+  border: 1px solid var(--ui-border);
+  cursor: var(--cursor-link-select);
+  height: 56px;
+  overflow: hidden;
+  padding: 0;
+  width: 56px;
+  transition: border-color var(--transition-speed);
+}
+
+.shop-gallery-thumb-btn.is-active {
+  border-color: var(--accent-hot);
+}
+
+.shop-gallery-thumb {
+  display: block;
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
+.shop-gallery-nav {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.shop-gallery-arrow {
+  background: var(--ui-surface-2);
+  border: 1px solid var(--ui-border);
+  color: var(--text-color);
+  cursor: var(--cursor-link-select);
+  font-size: 1.4rem;
+  line-height: 1;
+  padding: 4px 12px;
+}
+
+.shop-gallery-arrow:hover {
+  background: var(--invert-bg);
+  color: var(--invert-text);
+}
+
+.shop-gallery-counter {
+  color: var(--muted-color);
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  letter-spacing: 0.1em;
+  min-width: 40px;
+  text-align: center;
+}
+
+/* ── Lightbox ──────────────────────────────────────────────────────────────── */
+.shop-lightbox {
+  align-items: center;
+  background: rgba(0, 0, 0, 0.94);
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  left: 0;
+  position: fixed;
+  right: 0;
+  top: 0;
+  z-index: 9000;
+}
+
+.shop-lightbox-img {
+  max-height: 90vh;
+  max-width: 90vw;
+  object-fit: contain;
+}
+
+.shop-lightbox-close {
+  background: transparent;
+  border: 1px solid var(--ui-border);
+  color: var(--text-color);
+  cursor: var(--cursor-link-select);
+  font-size: 1.2rem;
+  line-height: 1;
+  padding: 8px 12px;
+  position: absolute;
+  right: 16px;
+  top: 16px;
+}
+
+.shop-lightbox-close:hover {
+  background: var(--invert-bg);
+  color: var(--invert-text);
+}
+
+.shop-lightbox-arrow {
+  background: transparent;
+  border: 1px solid var(--ui-border);
+  color: var(--text-color);
+  cursor: var(--cursor-link-select);
+  font-size: 2.5rem;
+  line-height: 1;
+  padding: 8px 16px;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.shop-lightbox-arrow:hover {
+  background: var(--invert-bg);
+  color: var(--invert-text);
+}
+
+.shop-lightbox-prev { left: 16px; }
+.shop-lightbox-next { right: 16px; }
+
+.shop-lightbox-counter {
+  bottom: 20px;
+  color: var(--muted-color);
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  letter-spacing: 0.1em;
+  position: absolute;
+}
+
+/* ── Admin shop UI ─────────────────────────────────────────────────────────── */
+.shop-admin-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.shop-admin-img-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100px;
+}
+
+.shop-admin-img-thumb {
+  aspect-ratio: 1 / 1;
+  border: 1px solid var(--ui-border);
+  display: block;
+  object-fit: cover;
+  width: 100%;
+}
+
+.shop-admin-img-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.shop-admin-list-thumb {
+  border: 1px solid var(--ui-border);
+  height: 48px;
+  object-fit: cover;
+  width: 48px;
+}
+
+@media (max-width: 600px) {
+  .shop-gallery {
+    width: 100%;
+  }
 }

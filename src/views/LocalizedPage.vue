@@ -7,6 +7,8 @@ import BlogIndex from "@/components/BlogIndex.vue";
 import CartPage from "@/components/CartPage.vue";
 import MarkdownContent from "@/components/MarkdownContent.vue";
 import MusicGrid from "@/components/MusicGrid.vue";
+import OssMigrationWizard from "@/components/OssMigrationWizard.vue";
+import ProjectsIndex from "@/components/ProjectsIndex.vue";
 import ReleasePlayer from "@/components/ReleasePlayer.vue";
 import ShopIndex from "@/components/ShopIndex.vue";
 import ShopProduct from "@/components/ShopProduct.vue";
@@ -79,6 +81,12 @@ function reloadPage() {
 
     <BlogIndex v-else-if="state.payload.kind === 'blog-index'" :lang="lang" :posts="state.payload.posts" />
 
+    <BlogIndex v-else-if="state.payload.kind === 'news-index'" :lang="lang" :posts="state.payload.posts" :kind="'news'" />
+
+    <ProjectsIndex v-else-if="state.payload.kind === 'projects-index'" :lang="lang" :projects="state.payload.projects" />
+
+    <OssMigrationWizard v-else-if="state.payload.kind === 'oss-migrator'" :lang="lang" />
+
     <ShopIndex v-else-if="state.payload.kind === 'shop-index'" :lang="lang" :products="state.payload.products" />
 
     <ShopProduct v-else-if="state.payload.kind === 'shop-product'" :lang="lang" :product="state.payload.product" />
@@ -109,7 +117,20 @@ function reloadPage() {
           <p v-if="state.payload.post.excerpt" class="blog-post-excerpt">{{ state.payload.post.excerpt }}</p>
         </header>
 
-        <MarkdownContent :source="state.payload.post.content" />
+        <MarkdownContent :source="state.payload.post.content" :allow-html="true" />
+      </article>
+    </template>
+
+    <template v-else-if="state.payload.kind === 'news-post'">
+      <RouterLink :to="`/${lang}/news`" class="content-link-plain">← {{ lang === 'ru' ? 'Назад к новостям' : 'Back to News' }}</RouterLink>
+      <article class="blog-post">
+        <header class="blog-post-head">
+          <div class="blog-post-date">{{ state.payload.post.publishedAt }}</div>
+          <h1>{{ state.payload.post.title }}</h1>
+          <p v-if="state.payload.post.excerpt" class="blog-post-excerpt">{{ state.payload.post.excerpt }}</p>
+        </header>
+
+        <MarkdownContent :source="state.payload.post.content" :allow-html="true" />
       </article>
     </template>
   </SiteFrame>

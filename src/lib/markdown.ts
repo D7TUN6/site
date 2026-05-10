@@ -6,6 +6,13 @@ const markdown = new MarkdownIt({
   breaks: true
 });
 
+// HTML-enabled renderer for blog/news posts (allows <video>, <audio>, <img>)
+const markdownHtml = new MarkdownIt({
+  html: true,
+  linkify: true,
+  breaks: true
+});
+
 const INTERNAL_PROTOCOL_RE = /^[a-zA-Z][a-zA-Z\d+\-.]*:/;
 const SAFE_LINK_RE = /^(?:(?:https?|mailto|tel):|\/|#)/i;
 
@@ -52,6 +59,10 @@ markdown.renderer.rules.link_open = (tokens, idx, options, env, self) => {
 
 export function renderMarkdown(source: string, env?: { openExternalLinksInNewTab?: boolean }): string {
   return markdown.render(source, env);
+}
+
+export function renderMarkdownHtml(source: string): string {
+  return markdownHtml.render(source);
 }
 
 export function normalizeInternalHref(href: string): string | null {

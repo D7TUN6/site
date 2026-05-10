@@ -17,7 +17,6 @@ const title = computed(() => (props.lang === "ru" ? "личный кабинет
 const loginTitle = computed(() => (props.lang === "ru" ? "вход" : "login"));
 const registerTitle = computed(() => (props.lang === "ru" ? "регистрация" : "register"));
 const logoutLabel = computed(() => (props.lang === "ru" ? "выйти" : "logout"));
-const adminHref = computed(() => `/${props.lang}/admin`);
 
 const mode = ref<"login" | "register">("login");
 const email = ref("");

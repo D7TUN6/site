@@ -10,6 +10,14 @@ const router = createRouter({
       redirect: () => `/${resolvePreferredLanguage()}`
     },
     {
+      path: "/projects",
+      redirect: () => `/${resolvePreferredLanguage()}/projects`
+    },
+    {
+      path: "/projects/oss-migrator",
+      redirect: () => `/${resolvePreferredLanguage()}/projects/oss-migrator`
+    },
+    {
       path: "/legal",
       redirect: () => `/${resolvePreferredLanguage()}/legal`
     },

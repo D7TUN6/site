@@ -1,0 +1,256 @@
+[
+  {
+    "id": "role",
+    "question": {
+      "ru": "Кто вы по задачам чаще всего?",
+      "en": "What best describes your primary use?"
+    },
+    "options": [
+      {
+        "id": "role_gamer",
+        "label": { "ru": "Геймер", "en": "Gamer" },
+        "weight": 3,
+        "profile": ["gamer"],
+        "software": ["Steam (Windows-only games)", "Epic Games Launcher"]
+      },
+      {
+        "id": "role_designer",
+        "label": { "ru": "Дизайнер / монтажёр", "en": "Designer / editor" },
+        "weight": 4,
+        "profile": ["designer"],
+        "software": ["Adobe Photoshop", "Adobe Premiere Pro"]
+      },
+      {
+        "id": "role_artist",
+        "label": { "ru": "Художник / иллюстратор", "en": "Artist / illustrator" },
+        "weight": 4,
+        "profile": ["artist"],
+        "software": ["Adobe Photoshop", "Adobe Illustrator", "Adobe Lightroom"]
+      },
+      {
+        "id": "role_office",
+        "label": { "ru": "Офис / учёба", "en": "Office / study" },
+        "weight": 2,
+        "profile": ["office"],
+        "software": ["Microsoft Office", "Microsoft Outlook"]
+      },
+      {
+        "id": "role_teacher",
+        "label": { "ru": "Учитель / преподаватель", "en": "Teacher / educator" },
+        "weight": 2,
+        "profile": ["teacher"],
+        "software": ["Microsoft Office"]
+      },
+      {
+        "id": "role_dev",
+        "label": { "ru": "Разработчик", "en": "Developer" },
+        "weight": 1,
+        "profile": ["developer"]
+      },
+      {
+        "id": "role_dev_pro",
+        "label": { "ru": "Программист (проф. стек)", "en": "Programmer (pro stack)" },
+        "weight": 2,
+        "profile": ["developer"],
+        "software": ["Windows"]
+      },
+      {
+        "id": "role_music",
+        "label": { "ru": "Музыкант / продюсер", "en": "Musician / producer" },
+        "weight": 4,
+        "profile": ["musician"]
+      },
+      {
+        "id": "role_casual",
+        "label": { "ru": "Рядовой пользователь", "en": "Casual user" },
+        "weight": 1,
+        "profile": ["casual"]
+      },
+      {
+        "id": "role_advanced",
+        "label": { "ru": "Продвинутый пользователь ПК", "en": "Advanced PC user" },
+        "weight": 2,
+        "profile": ["developer", "casual"]
+      }
+    ]
+  },
+  {
+    "id": "os",
+    "question": {
+      "ru": "Какая ОС у вас сейчас основная?",
+      "en": "What is your primary OS today?"
+    },
+    "options": [
+      { "id": "windows", "label": { "ru": "Windows", "en": "Windows" }, "weight": 1, "software": ["Windows"] },
+      { "id": "macos", "label": { "ru": "macOS", "en": "macOS" }, "weight": 1, "software": ["macOS"] },
+      { "id": "linux", "label": { "ru": "Linux", "en": "Linux" }, "weight": 0, "profile": ["developer", "casual"] }
+    ]
+  },
+  {
+    "id": "advanced_user",
+    "question": {
+      "ru": "Вы считаете себя продвинутым пользователем ПК?",
+      "en": "Do you consider yourself an advanced PC user?"
+    },
+    "options": [
+      { "id": "adv_no", "label": { "ru": "Не особо", "en": "Not really" }, "weight": 0 },
+      { "id": "adv_yes", "label": { "ru": "Да", "en": "Yes" }, "weight": 2, "profile": ["developer", "casual"] }
+    ]
+  },
+  {
+    "id": "linux_skill",
+    "question": {
+      "ru": "Если у вас уже Linux: насколько хорошо вы в нём разбираетесь?",
+      "en": "If you already use Linux: how advanced are you?"
+    },
+    "options": [
+      { "id": "linux_skill_new", "label": { "ru": "Только базовый опыт", "en": "Basic experience" }, "weight": 0, "profile": ["casual"] },
+      { "id": "linux_skill_mid", "label": { "ru": "Уверенный пользователь", "en": "Confident user" }, "weight": 1, "profile": ["developer", "casual"] },
+      { "id": "linux_skill_adv", "label": { "ru": "Продвинутый, настраиваю сам", "en": "Advanced, I tune it myself" }, "weight": 3, "profile": ["developer"] }
+    ]
+  },
+  {
+    "id": "system_stability",
+    "question": {
+      "ru": "Насколько для вас важна стабильность системы?",
+      "en": "How important is system stability to you?"
+    },
+    "options": [
+      { "id": "stability_low", "label": { "ru": "Не критично", "en": "Not critical" }, "weight": 0 },
+      { "id": "stability_medium", "label": { "ru": "Хотелось бы", "en": "Prefer it" }, "weight": 2 },
+      { "id": "stability_high", "label": { "ru": "Очень важно", "en": "Very important" }, "weight": 4 }
+    ]
+  },
+  {
+    "id": "pc_power",
+    "question": {
+      "ru": "У вас мощный ПК?",
+      "en": "Do you have a powerful PC?"
+    },
+    "options": [
+      { "id": "pc_power_no", "label": { "ru": "Нет", "en": "No" }, "weight": 0 },
+      { "id": "pc_power_yes", "label": { "ru": "Да", "en": "Yes" }, "weight": 2 }
+    ]
+  },
+  {
+    "id": "office_suite",
+    "question": {
+      "ru": "Насколько вы зависите от Microsoft Office форматов/макросов?",
+      "en": "How dependent are you on Microsoft Office formats/macros?"
+    },
+    "options": [
+      { "id": "office_none", "label": { "ru": "Почти не использую", "en": "Barely use it" }, "weight": 0 },
+      { "id": "office_light", "label": { "ru": "Документы без макросов", "en": "Docs without macros" }, "weight": 1, "software": ["Microsoft Office"] },
+      { "id": "office_heavy", "label": { "ru": "Шаблоны, макросы, сложные таблицы", "en": "Templates, macros, complex sheets" }, "weight": 4, "software": ["Microsoft Office"] }
+    ]
+  },
+  {
+    "id": "adobe",
+    "question": {
+      "ru": "Используете ли вы Adobe Suite?",
+      "en": "Do you use Adobe Suite?"
+    },
+    "options": [
+      { "id": "adobe_no", "label": { "ru": "Нет", "en": "No" }, "weight": 0 },
+      { "id": "adobe_ps_ai", "label": { "ru": "Photoshop / Illustrator", "en": "Photoshop / Illustrator" }, "weight": 3, "profile": ["designer"], "software": ["Adobe Photoshop", "Adobe Illustrator"] },
+      { "id": "adobe_video", "label": { "ru": "Premiere / After Effects", "en": "Premiere / After Effects" }, "weight": 5, "profile": ["designer"], "software": ["Adobe Premiere Pro", "Adobe After Effects"] },
+      { "id": "adobe_photo", "label": { "ru": "Lightroom", "en": "Lightroom" }, "weight": 4, "profile": ["designer"], "software": ["Adobe Lightroom"] }
+    ]
+  },
+  {
+    "id": "teacher_stack",
+    "question": {
+      "ru": "Если вы учите/преподаёте: что критичнее всего?",
+      "en": "If you teach: what is most critical?"
+    },
+    "options": [
+      { "id": "teach_present", "label": { "ru": "Презентации и печать (PDF/PPTX)", "en": "Slides & printing (PDF/PPTX)" }, "weight": 2, "profile": ["office"], "software": ["Microsoft Office"] },
+      { "id": "teach_lms", "label": { "ru": "LMS/видеосвязь в браузере", "en": "LMS/video calls in browser" }, "weight": 1, "profile": ["casual"] },
+      { "id": "teach_tools", "label": { "ru": "Доски/планшет/маркерные инструменты", "en": "Whiteboard/tablet tools" }, "weight": 2, "profile": ["office"] }
+    ]
+  },
+  {
+    "id": "dev_dependencies",
+    "question": {
+      "ru": "Если вы программируете: что у вас наиболее чувствительно?",
+      "en": "If you code: what is most sensitive in your setup?"
+    },
+    "options": [
+      { "id": "dev_web", "label": { "ru": "Веб/IDE, всё кроссплатформенно", "en": "Web/IDE, mostly cross-platform" }, "weight": 0, "profile": ["developer"] },
+      { "id": "dev_docker", "label": { "ru": "Docker/VM/WSL и окружения", "en": "Docker/VM/WSL and environments" }, "weight": 2, "profile": ["developer"], "software": ["Windows"] },
+      { "id": "dev_drivers", "label": { "ru": "Драйверы/железо/низкий уровень", "en": "Drivers/hardware/low-level" }, "weight": 3, "profile": ["developer"] }
+    ]
+  },
+  {
+    "id": "music_priority",
+    "question": {
+      "ru": "Если вы делаете музыку: что для вас критичнее?",
+      "en": "If you make music: what matters more?"
+    },
+    "options": [
+      { "id": "music_tools", "label": { "ru": "Свободные инструменты и workflow", "en": "Libre tools and workflow" }, "weight": 1, "software": ["Music: Libre tools"] },
+      { "id": "music_system", "label": { "ru": "Аудиоподсистема/ядро/низкая задержка", "en": "Audio stack/kernel/low latency" }, "weight": 3, "software": ["Music: Low latency stack"] },
+      { "id": "music_not_me", "label": { "ru": "Музыка не про меня", "en": "Not my case" }, "weight": 0 }
+    ]
+  },
+  {
+    "id": "cad",
+    "question": {
+      "ru": "Есть ли у вас CAD/3D задачи с проприетарным софтом?",
+      "en": "Do you rely on proprietary CAD/3D tools?"
+    },
+    "options": [
+      { "id": "cad_no", "label": { "ru": "Нет", "en": "No" }, "weight": 0 },
+      { "id": "cad_light", "label": { "ru": "Иногда (просмотр/простые правки)", "en": "Sometimes (viewing/simple edits)" }, "weight": 3, "profile": ["designer"], "software": ["AutoCAD"] },
+      { "id": "cad_heavy", "label": { "ru": "Да, профессионально", "en": "Yes, professionally" }, "weight": 6, "profile": ["designer"], "software": ["SolidWorks", "AutoCAD"] }
+    ]
+  },
+  {
+    "id": "gaming",
+    "question": {
+      "ru": "Как вы играете на ПК?",
+      "en": "How do you game on PC?"
+    },
+    "options": [
+      { "id": "game_no", "label": { "ru": "Не играю", "en": "I don't" }, "weight": 0 },
+      { "id": "game_steam_ok", "label": { "ru": "Steam, большинство игр идут в Proton", "en": "Steam, most games work on Proton" }, "weight": 2, "profile": ["gamer"], "software": ["Steam (Windows-only games)"] },
+      { "id": "game_anti_cheat", "label": { "ru": "Есть игры с античитом/лаунчерами", "en": "Anti-cheat / launcher-dependent games" }, "weight": 5, "profile": ["gamer"], "software": ["EA App / Origin", "Epic Games Launcher"] }
+    ]
+  },
+  {
+    "id": "workflow",
+    "question": {
+      "ru": "Насколько для вас критична совместимость с конкретными плагинами/драйверами?",
+      "en": "How critical are specific plugins/drivers to your workflow?"
+    },
+    "options": [
+      { "id": "workflow_ok", "label": { "ru": "Почти не критично", "en": "Not critical" }, "weight": 0 },
+      { "id": "workflow_some", "label": { "ru": "Есть пара важных", "en": "A few are important" }, "weight": 2 },
+      { "id": "workflow_hard", "label": { "ru": "Критично, без них нельзя", "en": "Critical, can't work without them" }, "weight": 5 }
+    ]
+  },
+  {
+    "id": "cloud",
+    "question": {
+      "ru": "Какие облака/синхронизацию вы используете на десктопе?",
+      "en": "Which cloud sync do you use on desktop?"
+    },
+    "options": [
+      { "id": "cloud_none", "label": { "ru": "Ничего", "en": "None" }, "weight": 0 },
+      { "id": "cloud_drive", "label": { "ru": "Google Drive Desktop", "en": "Google Drive Desktop" }, "weight": 3, "software": ["Google Drive Desktop"] },
+      { "id": "cloud_web", "label": { "ru": "Только веб-версии", "en": "Web only" }, "weight": 1 }
+    ]
+  },
+  {
+    "id": "willingness",
+    "question": {
+      "ru": "Готовы ли вы поставить Linux как основную ОС (или dual-boot)?",
+      "en": "Are you ready to try Linux as primary OS (or dual-boot)?"
+    },
+    "options": [
+      { "id": "no_linux", "label": { "ru": "Пока нет", "en": "Not yet" }, "weight": 2 },
+      { "id": "ready_for_linux", "label": { "ru": "Да, могу попробовать", "en": "Yes, I can try" }, "weight": 0, "profile": ["developer", "casual"] },
+      { "id": "wants_linux", "label": { "ru": "Да, хочу перейти", "en": "Yes, I want to migrate" }, "weight": 0, "profile": ["developer", "office", "casual", "designer", "gamer"] }
+    ]
+  }
+]

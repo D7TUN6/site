@@ -194,7 +194,7 @@ function onPaymentError(message: string) {
       <div v-for="line in lines" :key="line.slug" class="cart-line">
         <RouterLink v-if="line.product" :to="`/${lang}/shop/${line.product.slug}`" class="cart-line-cover-link">
           <img
-            :src="line.product.coverPreviewUrl || line.product.coverUrl"
+            :src="(line.product.coverPreviewUrl || line.product.coverUrl) ?? ''"
             :alt="line.product.title"
             class="cart-line-cover"
             width="86"

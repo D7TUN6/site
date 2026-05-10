@@ -284,7 +284,7 @@ export function createOrdersRouter({ db, hub }) {
     });
   });
 
-  router.post("/", enforceSameOrigin, requireUser, (req, res) => {
+  router.post("/", enforceSameOrigin, requireUser, async (req, res) => {
     res.setHeader("Cache-Control", "no-store");
 
     const provider = normalizeProvider(req.body?.shippingProvider);
@@ -321,7 +321,7 @@ export function createOrdersRouter({ db, hub }) {
     const orderItems = [];
 
     for (const item of normalizedItems) {
-      const product = getProductBySlug(item.slug);
+      const product = await getProductBySlug(item.slug);
       if (!product) {
         return res.status(400).json({ error: `Unknown product: ${item.slug}` });
       }

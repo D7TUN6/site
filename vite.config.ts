@@ -129,6 +129,7 @@ export default defineConfig(async ({ mode }) => {
       host: webHost,
       port: webPort,
       strictPort: true,
+      allowedHosts: true,
       proxy: {
         "/api": {
           target: `http://127.0.0.1:${apiPort}`,
@@ -141,6 +142,7 @@ export default defineConfig(async ({ mode }) => {
       emptyOutDir: true,
       sourcemap: !isProd,
       copyPublicDir: false,
+      chunkSizeWarningLimit: 1000, // Увеличиваем лимит с 500 до 1000 КБ
       rollupOptions: {
         output: {
           entryFileNames: `assets/[name]-[hash]-${buildTag}.js`,

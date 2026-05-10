@@ -61,7 +61,7 @@
 
 .order-card.is-active {
   border-color: var(--accent-hot);
-  box-shadow: 0 0 0 2px rgba(0, 255, 106, 0.2);
+  box-shadow: 0 0 0 2px var(--accent-hot-glow-soft);
 }
 
 .order-card-top {

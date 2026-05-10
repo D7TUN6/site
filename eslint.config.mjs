@@ -9,6 +9,7 @@ export default tseslint.config(
     ignores: [
       "example/**",
       "OLD/**",
+      "old/**",
       "node_modules/**",
       "dist/**",
       "dst/**",
