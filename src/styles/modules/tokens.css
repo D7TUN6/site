@@ -1,0 +1,122 @@
+@font-face {
+  font-family: "BigBlueTerm";
+  src:
+    local("BigBlueTerm"),
+    local("BigBlueTermPlusNerdFont-Regular"),
+    local("Big Blue Term"),
+    url("/media/fonts/BigBlueTermPlusNerdFont-Regular.woff2?v=20260425-1") format("woff2");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 400;
+}
+
+:root {
+  --font-body: "BigBlueTerm", monospace;
+  --font-ui: "BigBlueTerm", monospace;
+  --font-display: "BigBlueTerm", monospace;
+
+  --bg-color: #07070c;
+  --text-color: rgba(246, 246, 255, 0.94);
+  --muted-color: rgba(246, 246, 255, 0.72);
+
+  --accent-color: #b7a6ff;
+  --accent-hot: #00ff6a;
+  --danger-color: #ff2d55;
+  --warning-color: #ffd400;
+
+  --ui-surface: rgba(0, 0, 0, 0.84);
+  --ui-surface-2: rgba(10, 8, 18, 0.9);
+  --ui-border: rgba(246, 246, 255, 0.4);
+  --ui-border-strong: rgba(246, 246, 255, 0.78);
+
+  --invert-bg: rgba(255, 255, 255, 0.92);
+  --invert-border: rgba(255, 255, 255, 0.92);
+  --invert-text: rgba(0, 0, 0, 0.92);
+
+  --bg-image-opacity: 0.66;
+  --bg-image-filter: none;
+  --scanline-color: rgba(255, 255, 255, 0.028);
+  --overlay-gradient: linear-gradient(
+    180deg,
+    rgba(10, 9, 19, 0.44) 0%,
+    rgba(42, 37, 82, 0.3) 55%,
+    rgba(0, 0, 0, 0.58) 100%
+  );
+  --fullscreen-overlay: linear-gradient(180deg, rgba(0, 0, 0, 0.86) 0%, rgba(10, 8, 18, 0.94) 100%);
+
+  --scrollbar-color-thumb: rgba(246, 246, 255, 0.32);
+  --scrollbar-color-track: rgba(0, 0, 0, 0.42);
+  --scrollbar-track-bg: rgba(16, 26, 48, 0.18);
+  --scrollbar-thumb-bg: rgba(246, 246, 255, 0.22);
+  --scrollbar-thumb-border: rgba(246, 246, 255, 0.18);
+  --scrollbar-thumb-hover-bg: rgba(246, 246, 255, 0.32);
+
+  --spinner-border: rgba(246, 246, 255, 0.24);
+
+  --ui-shadow: none;
+
+  --transition-speed: 0.16s;
+  --fallback-bg: linear-gradient(180deg, #0a0913 0%, #2a2552 100%);
+  --text-glow-soft: rgba(183, 166, 255, 0.22);
+  --text-glow-hard: rgba(183, 166, 255, 0.36);
+  --text-fog-1: rgba(183, 166, 255, 0.28);
+  --text-fog-2: rgba(0, 255, 106, 0.22);
+  --text-fog-3: rgba(255, 212, 0, 0.18);
+  --text-fog-4: rgba(255, 45, 85, 0.16);
+}
+
+:root {
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --bg-color: #d7d7d9;
+  --text-color: rgba(10, 10, 14, 0.92);
+  --muted-color: rgba(10, 10, 14, 0.68);
+
+  --accent-color: #3f51ff;
+  --accent-hot: #00b85c;
+  --danger-color: #c0002d;
+  --warning-color: #b38f00;
+
+  --ui-surface: rgba(248, 248, 250, 0.92);
+  --ui-surface-2: rgba(229, 229, 233, 0.94);
+  --ui-border: rgba(0, 0, 0, 0.22);
+  --ui-border-strong: rgba(0, 0, 0, 0.46);
+
+  --invert-bg: rgba(0, 0, 0, 0.88);
+  --invert-border: rgba(0, 0, 0, 0.88);
+  --invert-text: rgba(255, 255, 255, 0.92);
+
+  --bg-image-opacity: 0.18;
+  --bg-image-filter: grayscale(0.08) brightness(1.14) contrast(0.92);
+  --scanline-color: rgba(0, 0, 0, 0.045);
+  --overlay-gradient: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.78) 0%,
+    rgba(255, 255, 255, 0.42) 55%,
+    rgba(0, 0, 0, 0.12) 100%
+  );
+  --fullscreen-overlay: linear-gradient(180deg, rgba(246, 246, 248, 0.96) 0%, rgba(214, 214, 218, 0.96) 100%);
+
+  --scrollbar-color-thumb: rgba(0, 0, 0, 0.28);
+  --scrollbar-color-track: rgba(0, 0, 0, 0.12);
+  --scrollbar-track-bg: rgba(0, 0, 0, 0.08);
+  --scrollbar-thumb-bg: rgba(0, 0, 0, 0.22);
+  --scrollbar-thumb-border: rgba(0, 0, 0, 0.18);
+  --scrollbar-thumb-hover-bg: rgba(0, 0, 0, 0.32);
+
+  --spinner-border: rgba(0, 0, 0, 0.18);
+
+  --fallback-bg: linear-gradient(180deg, #f2f2f4 0%, #c9c9cb 100%);
+  --text-glow-soft: rgba(0, 0, 0, 0.1);
+  --text-glow-hard: rgba(0, 0, 0, 0.16);
+  --text-fog-1: rgba(63, 81, 255, 0.18);
+  --text-fog-2: rgba(0, 184, 92, 0.16);
+  --text-fog-3: rgba(179, 143, 0, 0.14);
+  --text-fog-4: rgba(192, 0, 45, 0.12);
+
+  --ui-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.8), inset -1px -1px 0 rgba(0, 0, 0, 0.18);
+}

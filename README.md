@@ -31,6 +31,10 @@
 - fullscreen now-playing player
 - release ZIP downloads via queued server-side transcoding
 - blog index + per-post routes from local MDX files
+- shop: product pages, cart, checkout + YooKassa widget payments
+- email+password auth with email code verification
+- user account page with order status + tracking
+- admin panel for managing orders / tracking
 - automatic cover extraction from embedded track artwork when no cover file exists
 
 ## Quick Start
@@ -41,31 +45,45 @@ Requirements:
 - npm 10+
 - `ffmpeg` and `ffprobe` in `PATH`
 
-Install and run development:
+Install and run development inside `nix-shell`:
 
 ```bash
-npm install
-npm run dev
+nix-shell --run "cp .env.example .env"
+# edit .env before running (APP_SECRET + SMTP + admin creds at minimum)
+nix-shell --run "npm install"
+nix-shell --run "npm run dev"
 ```
 
 Open:
 
-- web: `http://127.0.0.1:3001`
-- api in dev: `http://127.0.0.1:3002`
+- web: `http://127.0.0.1:3001` (override with `WEB_PORT`)
+- api in dev: `http://127.0.0.1:3002` (override with `API_PORT`)
 
 ## Production
 
 ```bash
-npm install
-npm run build
-npm run start
+nix-shell --run "cp .env.example .env"
+# edit .env before running (APP_SECRET + SMTP + admin creds at minimum)
+nix-shell --run "npm install"
+nix-shell --run "npm run build"
+nix-shell --run "npm run start"
 ```
 
 The production server serves the built SPA from `dist/` and the release download API from `/api/releases/download`.
 
+### Shop configuration
+
+- Env vars live in `.env` (see `.env.example`).
+- YooKassa webhook URL: `/api/payments/yookassa/webhook`
+- Pickup point lookup uses Yandex Maps Search API (set `YANDEX_MAPS_API_KEY`).
+
+Note: for real sales in РФ you may need to configure receipts / fiscalization (54‑ФЗ) in YooKassa. This project currently creates payments without receipt data.
+
 ## Main Scripts
 
 - `npm run prepare:media` rebuild cover previews, HLS streams, previews, and release manifests
+- `npm run generate:seo` generate `public/robots.txt` + `public/sitemap.xml` (set `SITE_ORIGIN` to override the default origin)
+- `npm run stats:vite` build + write bundle report to `tmp/vite-bundle-report.html` (override with `STATS_PATH`)
 - `npm run dev` run site + API locally
 - `npm run build` rebuild media and create production bundle
 - `npm run start` run production server

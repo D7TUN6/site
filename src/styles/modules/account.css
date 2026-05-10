@@ -1,0 +1,190 @@
+.account {
+  display: grid;
+  gap: 14px;
+  max-width: 980px;
+  margin-top: 10px;
+}
+
+.account-head {
+  align-items: center;
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+  padding: 16px;
+}
+
+.account-email {
+  color: var(--text-color);
+  font-family: var(--font-ui);
+  font-size: 0.95rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.account-orders h2,
+.account-order h2 {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  margin: 0 0 10px;
+  text-transform: uppercase;
+}
+
+.order-list {
+  display: grid;
+  gap: 10px;
+}
+
+.order-card {
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  color: var(--text-color);
+  cursor: var(--cursor-link-select);
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  text-align: left;
+  box-shadow: var(--ui-shadow);
+}
+
+.order-card:hover,
+.order-card:focus-visible {
+  border-color: var(--invert-border);
+  background: var(--invert-bg);
+  color: var(--invert-text);
+  outline: none;
+}
+
+.order-card.is-active {
+  border-color: var(--accent-hot);
+  box-shadow: 0 0 0 2px rgba(0, 255, 106, 0.2);
+}
+
+.order-card-top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.order-status {
+  color: currentColor;
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.order-card-meta {
+  color: currentColor;
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+  opacity: 0.72;
+}
+
+.order-details {
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+}
+
+.order-details-row {
+  display: grid;
+  gap: 6px;
+}
+
+.order-details-value {
+  color: var(--text-color);
+  font-family: var(--font-ui);
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
+}
+
+.order-items,
+.order-events {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.order-items li,
+.order-events li {
+  color: var(--text-color);
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  letter-spacing: 0.04em;
+  line-height: 1.45;
+  margin: 4px 0;
+}
+
+.auth {
+  display: grid;
+  gap: 12px;
+  max-width: 540px;
+  margin-top: 10px;
+}
+
+.auth-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.auth-form {
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.auth-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.auth-code {
+  display: grid;
+  gap: 10px;
+}
+
+.admin {
+  display: grid;
+  gap: 14px;
+  max-width: 980px;
+  margin-top: 10px;
+}
+
+.admin-orders {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-order-card {
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+}
+
+.admin-order-edit {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr 1fr;
+}
+
+.admin-order-edit .form-field-full {
+  grid-column: 1 / -1;
+}

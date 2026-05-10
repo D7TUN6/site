@@ -1,13 +1,14 @@
-import { XMLParser } from "fast-xml-parser";
 import type { Lang, LocaleDictionary } from "@/types/content";
 
-const parser = new XMLParser({
-  ignoreAttributes: false,
-  parseTagValue: true,
-  trimValues: true
-});
+import enLocaleSource from "../../public/locales/en.xml?raw";
+import ruLocaleSource from "../../public/locales/ru.xml?raw";
 
 const localeCache = new Map<Lang, Promise<LocaleDictionary>>();
+
+const localeSourceByLang: Record<Lang, string> = {
+  en: enLocaleSource,
+  ru: ruLocaleSource
+};
 
 function isLocaleDictionary(input: unknown): input is LocaleDictionary {
   if (!input || typeof input !== "object") {
@@ -23,6 +24,7 @@ function isLocaleDictionary(input: unknown): input is LocaleDictionary {
       candidate.nav?.news &&
       candidate.nav?.blog &&
       candidate.nav?.links &&
+      candidate.nav?.shop &&
       candidate.loader?.detecting &&
       candidate.loader?.fallback &&
       candidate.loader?.english &&
@@ -31,16 +33,37 @@ function isLocaleDictionary(input: unknown): input is LocaleDictionary {
 }
 
 async function loadLocale(lang: Lang): Promise<LocaleDictionary> {
-  const response = await fetch(`/locales/${lang}.xml`, {
-    cache: "no-store"
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to load locale ${lang}`);
+  const source = localeSourceByLang[lang];
+  const document = new DOMParser().parseFromString(source, "application/xml");
+  const parserError = document.querySelector("parsererror");
+  if (parserError) {
+    throw new Error(`Invalid locale XML for ${lang}`);
   }
 
-  const source = await response.text();
-  const parsed = parser.parse(source) as { locale?: unknown };
+  const localeNode = document.querySelector("locale");
+  const text = (selector: string) => localeNode?.querySelector(selector)?.textContent?.trim() ?? "";
+  const parsed = {
+    locale: {
+      site: {
+        title: text("site > title")
+      },
+      nav: {
+        main: text("nav > main"),
+        bio: text("nav > bio"),
+        music: text("nav > music"),
+        news: text("nav > news"),
+        blog: text("nav > blog"),
+        links: text("nav > links"),
+        shop: text("nav > shop")
+      },
+      loader: {
+        detecting: text("loader > detecting"),
+        fallback: text("loader > fallback"),
+        english: text("loader > english"),
+        russian: text("loader > russian")
+      }
+    }
+  } as const;
 
   if (!isLocaleDictionary(parsed.locale)) {
     throw new Error(`Invalid locale schema for ${lang}`);
@@ -53,7 +76,10 @@ export function getLocaleDictionary(lang: Lang): Promise<LocaleDictionary> {
   const cached = localeCache.get(lang);
   if (cached) return cached;
 
-  const promise = loadLocale(lang);
+  const promise = loadLocale(lang).catch((error) => {
+    localeCache.delete(lang);
+    throw error;
+  });
   localeCache.set(lang, promise);
   return promise;
 }

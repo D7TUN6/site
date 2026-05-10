@@ -9,6 +9,7 @@
     <news>новости</news>
     <blog>блог</blog>
     <links>ссылки</links>
+    <shop>магазин</shop>
   </nav>
   <loader>
     <detecting>определяю язык...</detecting>

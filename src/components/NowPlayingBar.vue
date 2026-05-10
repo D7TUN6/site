@@ -38,8 +38,11 @@ const {
 
 const nextUpOpen = ref(false);
 const fullscreenOpen = ref(false);
+const volumeOpen = ref(false);
 const panelRef = ref<HTMLDivElement | null>(null);
 const nextUpButtonRef = ref<HTMLButtonElement | null>(null);
+const volumeBoxRef = ref<HTMLDivElement | null>(null);
+let volumeCloseTimer: number | null = null;
 
 const shouldShow = computed(() => {
   return Boolean(state.queue && currentTrack.value && (props.isMusicRoute || state.hasStartedPlayback));
@@ -48,6 +51,23 @@ const shouldShow = computed(() => {
 const progress = computed(() => {
   if (state.duration <= 0) return 0;
   return Math.max(0, Math.min(100, (state.currentTime / state.duration) * 100));
+});
+
+const buffered = computed(() => {
+  if (state.duration <= 0) return 0;
+  const value = (state.bufferedTime / state.duration) * 100;
+  return Math.max(0, Math.min(100, value));
+});
+
+const seekDragRatio = ref<number | null>(null);
+const displayProgress = computed(() => {
+  if (seekDragRatio.value == null) return progress.value;
+  return Math.max(0, Math.min(100, seekDragRatio.value * 100));
+});
+
+const displayCurrentTime = computed(() => {
+  if (seekDragRatio.value == null) return fmtTime(state.currentTime);
+  return fmtTime(state.duration * seekDragRatio.value);
 });
 
 const volumeSlider = computed({
@@ -72,13 +92,49 @@ function fmtTime(seconds: number | null): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-function seekFromClick(event: MouseEvent) {
-  const target = event.currentTarget as HTMLElement;
-  const rect = target.getBoundingClientRect();
-  if (rect.width <= 0) return;
+function clamp01(value: number): number {
+  return Math.max(0, Math.min(1, value));
+}
 
-  const ratio = (event.clientX - rect.left) / rect.width;
+function ratioFromPointer(event: PointerEvent, target: HTMLElement): number {
+  const rect = target.getBoundingClientRect();
+  if (rect.width <= 0) return 0;
+  return (event.clientX - rect.left) / rect.width;
+}
+
+function onSeekPointerDown(event: PointerEvent) {
+  if (state.duration <= 0) return;
+  if (typeof event.button === "number" && event.button !== 0) return;
+
+  const target = event.currentTarget as HTMLElement;
+  try {
+    target.setPointerCapture(event.pointerId);
+  } catch {
+    // ignore
+  }
+
+  const ratio = clamp01(ratioFromPointer(event, target));
+  seekDragRatio.value = ratio;
   seekByRatio(ratio);
+}
+
+function onSeekPointerMove(event: PointerEvent) {
+  if (seekDragRatio.value == null) return;
+  const target = event.currentTarget as HTMLElement;
+  const ratio = clamp01(ratioFromPointer(event, target));
+  seekDragRatio.value = ratio;
+  seekByRatio(ratio);
+}
+
+function onSeekPointerUp(event: PointerEvent) {
+  if (seekDragRatio.value == null) return;
+  const target = event.currentTarget as HTMLElement;
+  try {
+    target.releasePointerCapture(event.pointerId);
+  } catch {
+    // ignore
+  }
+  seekDragRatio.value = null;
 }
 
 function onPointerDown(event: MouseEvent) {
@@ -96,14 +152,38 @@ function onPointerDown(event: MouseEvent) {
 function onBarClick(event: MouseEvent) {
   const target = event.target as HTMLElement | null;
   if (!target) return;
-  if (
-    target.closest(
-      "button, input, a, .now-playing-progress, .now-playing-progress-wrap, .now-playing-volume-box, .now-playing-nextup"
-    )
-  ) {
+  if (target.closest("[data-no-fullscreen]")) {
     return;
   }
   fullscreenOpen.value = true;
+}
+
+function clearVolumeCloseTimer() {
+  if (volumeCloseTimer === null) return;
+  window.clearTimeout(volumeCloseTimer);
+  volumeCloseTimer = null;
+}
+
+function openVolumePopup() {
+  clearVolumeCloseTimer();
+  volumeOpen.value = true;
+}
+
+function scheduleVolumePopupClose() {
+  clearVolumeCloseTimer();
+  volumeCloseTimer = window.setTimeout(() => {
+    volumeOpen.value = false;
+    volumeCloseTimer = null;
+  }, 180);
+}
+
+function onVolumeFocusOut(event: FocusEvent) {
+  const nextTarget = event.relatedTarget as Node | null;
+  if (nextTarget && volumeBoxRef.value?.contains(nextTarget)) {
+    return;
+  }
+
+  scheduleVolumePopupClose();
 }
 
 watch(
@@ -113,6 +193,8 @@ watch(
     if (!value) {
       fullscreenOpen.value = false;
       nextUpOpen.value = false;
+      volumeOpen.value = false;
+      clearVolumeCloseTimer();
     }
   },
   { immediate: true }
@@ -134,6 +216,7 @@ onBeforeUnmount(() => {
   document.body.classList.remove("has-now-playing-bar");
   document.body.classList.remove("has-now-playing-fullscreen");
   window.removeEventListener("mousedown", onPointerDown);
+  clearVolumeCloseTimer();
 });
 </script>
 
@@ -202,7 +285,7 @@ onBeforeUnmount(() => {
                 target="_blank"
                 rel="noreferrer"
               >
-                <img class="stream-badge-image" src="/media/image/spotify-badge.png" alt="Spotify" />
+                <img class="stream-badge-image" src="/media/image/spotify-badge.png?v=20260425-1" alt="Spotify" />
               </a>
               <a
                 v-if="currentTrack.links?.yandexMusic"
@@ -211,7 +294,7 @@ onBeforeUnmount(() => {
                 target="_blank"
                 rel="noreferrer"
               >
-                <img class="stream-badge-image" src="/media/image/yandex-badge.png" alt="Yandex Music" />
+                <img class="stream-badge-image" src="/media/image/yandex-badge.png?v=20260425-1" alt="Yandex Music" />
               </a>
               <a
                 v-if="currentTrack.links?.bandcamp"
@@ -220,7 +303,7 @@ onBeforeUnmount(() => {
                 target="_blank"
                 rel="noreferrer"
               >
-                <img class="stream-badge-image" src="/media/image/bandcamp-badge.png" alt="Bandcamp" />
+                <img class="stream-badge-image" src="/media/image/bandcamp-badge.png?v=20260425-1" alt="Bandcamp" />
               </a>
               <a
                 v-if="currentTrack.links?.soundcloud"
@@ -231,7 +314,7 @@ onBeforeUnmount(() => {
               >
                 <img
                   class="stream-badge-image stream-badge-image-soundcloud"
-                  src="/media/image/soundcloud-badge.webp"
+                  src="/media/image/soundcloud-badge.webp?v=20260425-1"
                   alt="SoundCloud"
                 />
               </a>
@@ -264,17 +347,23 @@ onBeforeUnmount(() => {
 
           <div class="now-playing-fullscreen-playback">
             <div class="now-playing-fullscreen-progress">
-              <div class="now-playing-time">{{ fmtTime(state.currentTime) }}</div>
+              <div class="now-playing-time">{{ displayCurrentTime }}</div>
               <div
                 class="now-playing-progress"
                 role="slider"
+                :class="{ 'is-dragging': seekDragRatio !== null }"
                 :aria-valuemin="0"
                 :aria-valuemax="Math.max(state.duration, 1)"
-                :aria-valuenow="state.currentTime"
+                :aria-valuenow="seekDragRatio == null ? state.currentTime : state.duration * seekDragRatio"
                 aria-label="Playback position"
-                @click="seekFromClick"
+                @pointerdown.prevent="onSeekPointerDown"
+                @pointermove.prevent="onSeekPointerMove"
+                @pointerup.prevent="onSeekPointerUp"
+                @pointercancel.prevent="onSeekPointerUp"
               >
-                <span class="now-playing-progress-fill" :style="{ width: `${progress}%` }" />
+                <span class="now-playing-progress-buffer" :style="{ width: `${buffered}%` }" />
+                <span class="now-playing-progress-fill" :style="{ width: `${displayProgress}%` }" />
+                <span class="now-playing-progress-knob" :style="{ left: `${displayProgress}%` }" />
               </div>
               <div class="now-playing-time">{{ fmtTime(state.duration) }}</div>
             </div>
@@ -319,109 +408,136 @@ onBeforeUnmount(() => {
     </div>
 
     <div class="now-playing-bar" role="region" aria-label="Now playing" @click="onBarClick">
-      <div class="now-playing-controls">
-        <button type="button" class="now-playing-btn" aria-label="Previous track" @click="prevTrack">
-          <SkipBack class="now-playing-icon" aria-hidden="true" />
-        </button>
-        <button
-          type="button"
-          class="now-playing-btn now-playing-btn-main"
-          :aria-label="state.playing ? 'Pause' : 'Play'"
-          @click="togglePlayPause"
-        >
-          <Pause v-if="state.playing" class="now-playing-icon now-playing-icon-pause" aria-hidden="true" />
-          <Play v-else class="now-playing-icon now-playing-icon-play" aria-hidden="true" />
-        </button>
-        <button type="button" class="now-playing-btn" aria-label="Next track" @click="nextTrack">
-          <SkipForward class="now-playing-icon" aria-hidden="true" />
-        </button>
-        <button
-          type="button"
-          :class="`now-playing-btn now-playing-btn-small${state.shuffleEnabled ? ' is-active' : ''}`"
-          aria-label="Shuffle"
-          @click="toggleShuffle"
-        >
-          <Shuffle class="now-playing-icon" aria-hidden="true" />
-        </button>
-        <button
-          type="button"
-          :class="`now-playing-btn now-playing-btn-small${state.repeatMode !== 'off' ? ' is-active' : ''}`"
-          aria-label="Repeat"
-          @click="cycleRepeatMode"
-        >
-          <Repeat1 v-if="state.repeatMode === 'one'" class="now-playing-icon" aria-hidden="true" />
-          <Repeat v-else class="now-playing-icon" aria-hidden="true" />
-        </button>
-      </div>
-
-      <div class="now-playing-progress-wrap">
-        <div class="now-playing-time">{{ fmtTime(state.currentTime) }}</div>
-        <div
-          class="now-playing-progress"
-          role="slider"
-          :aria-valuemin="0"
-          :aria-valuemax="Math.max(state.duration, 1)"
-          :aria-valuenow="state.currentTime"
-          aria-label="Playback position"
-          @click="seekFromClick"
-        >
-          <span class="now-playing-progress-fill" :style="{ width: `${progress}%` }" />
-        </div>
-        <div class="now-playing-time">{{ fmtTime(state.duration) }}</div>
-      </div>
-
-      <div class="now-playing-right">
-        <div class="now-playing-volume-box">
+      <div class="now-playing-bar-top">
+        <div class="now-playing-controls" data-no-fullscreen @click.stop>
+          <button type="button" class="now-playing-btn" aria-label="Previous track" @click.stop="prevTrack">
+            <SkipBack class="now-playing-icon" aria-hidden="true" />
+          </button>
           <button
             type="button"
-            :class="`now-playing-btn now-playing-btn-small${state.muted || state.volume <= 0 ? ' is-muted' : ''}`"
-            :aria-label="state.muted || state.volume <= 0 ? 'Unmute' : 'Mute'"
-            @click="toggleMute"
+            class="now-playing-btn now-playing-btn-main"
+            :aria-label="state.playing ? 'Pause' : 'Play'"
+            @click.stop="togglePlayPause"
           >
-            <VolumeX v-if="state.muted || state.volume <= 0" class="now-playing-icon" aria-hidden="true" />
-            <Volume2 v-else class="now-playing-icon" aria-hidden="true" />
+            <Pause v-if="state.playing" class="now-playing-icon now-playing-icon-pause" aria-hidden="true" />
+            <Play v-else class="now-playing-icon now-playing-icon-play" aria-hidden="true" />
           </button>
+          <button type="button" class="now-playing-btn" aria-label="Next track" @click.stop="nextTrack">
+            <SkipForward class="now-playing-icon" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            :class="`now-playing-btn now-playing-btn-small${state.shuffleEnabled ? ' is-active' : ''}`"
+            aria-label="Shuffle"
+            @click.stop="toggleShuffle"
+          >
+            <Shuffle class="now-playing-icon" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            :class="`now-playing-btn now-playing-btn-small${state.repeatMode !== 'off' ? ' is-active' : ''}`"
+            aria-label="Repeat"
+            @click.stop="cycleRepeatMode"
+          >
+            <Repeat1 v-if="state.repeatMode === 'one'" class="now-playing-icon" aria-hidden="true" />
+            <Repeat v-else class="now-playing-icon" aria-hidden="true" />
+          </button>
+        </div>
 
-          <div class="now-playing-volume-popup">
-            <input
-              class="now-playing-volume-slider"
-              type="range"
-              min="0"
-              max="1"
-              step="0.01"
-              v-model.number="volumeSlider"
-              aria-label="Volume"
-            />
+        <div class="now-playing-info">
+          <img
+            :src="state.queue.coverUrl"
+            alt=""
+            class="now-playing-cover"
+            width="32"
+            height="32"
+            loading="lazy"
+            decoding="async"
+          />
+
+          <div class="now-playing-meta">
+            <div class="now-playing-title" :title="currentTrack.title">{{ currentTrack.title }}</div>
+            <div class="now-playing-artist">{{ state.queue.artist }}</div>
           </div>
         </div>
 
-        <img
-          :src="state.queue.coverUrl"
-          alt=""
-          class="now-playing-cover"
-          width="44"
-          height="44"
-          loading="lazy"
-          decoding="async"
-        />
+        <div class="now-playing-actions" data-no-fullscreen @click.stop>
+          <div
+            ref="volumeBoxRef"
+            :class="`now-playing-volume-box${volumeOpen ? ' is-open' : ''}`"
+            data-no-fullscreen
+            @click.stop
+            @mouseenter="openVolumePopup"
+            @mouseleave="scheduleVolumePopupClose"
+            @focusin="openVolumePopup"
+            @focusout="onVolumeFocusOut"
+          >
+            <button
+              type="button"
+              :class="`now-playing-btn now-playing-btn-small${state.muted || state.volume <= 0 ? ' is-muted' : ''}`"
+              :aria-label="state.muted || state.volume <= 0 ? 'Unmute' : 'Mute'"
+              @click.stop="toggleMute"
+            >
+              <VolumeX v-if="state.muted || state.volume <= 0" class="now-playing-icon" aria-hidden="true" />
+              <Volume2 v-else class="now-playing-icon" aria-hidden="true" />
+            </button>
 
-        <div class="now-playing-meta">
-          <div class="now-playing-artist">{{ state.queue.artist }}</div>
-          <div class="now-playing-title" :title="currentTrack.title">{{ currentTrack.title }}</div>
+            <div class="now-playing-volume-popup">
+              <input
+                class="now-playing-volume-slider"
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                v-model.number="volumeSlider"
+                aria-label="Volume"
+                @click.stop
+              />
+            </div>
+          </div>
+
+          <button
+            ref="nextUpButtonRef"
+            type="button"
+            :class="`now-playing-btn now-playing-btn-small${nextUpOpen ? ' is-active' : ''}`"
+            aria-label="Next up"
+            data-no-fullscreen
+            @click.stop="nextUpOpen = !nextUpOpen"
+          >
+            <ListMusic class="now-playing-icon" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            class="now-playing-btn now-playing-btn-small"
+            aria-label="Close player"
+            data-no-fullscreen
+            @click.stop="clearPlayer"
+          >
+            <X class="now-playing-icon" aria-hidden="true" />
+          </button>
         </div>
+      </div>
 
-        <button
-          ref="nextUpButtonRef"
-          type="button"
-          :class="`now-playing-btn now-playing-btn-small${nextUpOpen ? ' is-active' : ''}`"
-          aria-label="Next up"
-          @click="nextUpOpen = !nextUpOpen"
+      <div class="now-playing-progress-wrap" data-no-fullscreen @click.stop>
+        <div class="now-playing-time">{{ displayCurrentTime }}</div>
+        <div
+          class="now-playing-progress"
+          role="slider"
+          :class="{ 'is-dragging': seekDragRatio !== null }"
+          :aria-valuemin="0"
+          :aria-valuemax="Math.max(state.duration, 1)"
+          :aria-valuenow="seekDragRatio == null ? state.currentTime : state.duration * seekDragRatio"
+          aria-label="Playback position"
+          @pointerdown.prevent="onSeekPointerDown"
+          @pointermove.prevent="onSeekPointerMove"
+          @pointerup.prevent="onSeekPointerUp"
+          @pointercancel.prevent="onSeekPointerUp"
         >
-          <ListMusic class="now-playing-icon" aria-hidden="true" />
-        </button>
-        <button type="button" class="now-playing-btn now-playing-btn-small" aria-label="Close player" @click="clearPlayer">
-          <X class="now-playing-icon" aria-hidden="true" />
-        </button>
+          <span class="now-playing-progress-buffer" :style="{ width: `${buffered}%` }" />
+          <span class="now-playing-progress-fill" :style="{ width: `${displayProgress}%` }" />
+          <span class="now-playing-progress-knob" :style="{ left: `${displayProgress}%` }" />
+        </div>
+        <div class="now-playing-time">{{ fmtTime(state.duration) }}</div>
       </div>
     </div>
   </template>

@@ -1,4 +1,5 @@
 import manifest from "@/generated/release-manifest.json";
+import { compareReleasesByDateDesc } from "@/lib/music";
 import type { ReleaseEntry } from "@/types/content";
 
 type ReleaseManifest = {
@@ -7,6 +8,7 @@ type ReleaseManifest = {
 };
 
 const typedManifest = manifest as ReleaseManifest;
+const sortedReleases = typedManifest.releases.slice().sort(compareReleasesByDateDesc);
 
 const releaseBySlug = new Map<string, ReleaseEntry>(
   typedManifest.releases.map((release) => [release.slug, release])
@@ -19,7 +21,7 @@ export function getReleaseRoutes(): string[] {
 }
 
 export function getAllReleases(): ReleaseEntry[] {
-  return typedManifest.releases;
+  return sortedReleases.slice();
 }
 
 export function getReleaseBySlug(slug: string): ReleaseEntry | null {

@@ -1,31 +1,16 @@
-import Hls from "hls.js";
 import { computed, reactive, readonly, watch } from "vue";
+import { buildPlayerQueueFromRelease, type GlobalPlayerQueue, type GlobalPlayerTrack } from "@/player/queue";
+import { buildSequentialOrder, buildShuffledOrder, clamp } from "@/player/order";
+import {
+  clearPersistedPlayerState,
+  readPersistedPlayerState,
+  type PersistedPlayerState,
+  writePersistedPlayerState
+} from "@/player/storage";
 import { getReleaseBySlug } from "@/lib/releaseManifest";
 
-export type GlobalPlayerTrack = {
-  title: string;
-  url: string;
-  streamUrl?: string | null;
-  fallbackUrl?: string | null;
-  duration?: number | null;
-  links?: {
-    spotify: string | null;
-    yandexMusic: string | null;
-    bandcamp: string | null;
-    soundcloud: string | null;
-  };
-};
-
-export type GlobalPlayerQueue = {
-  queueKey: string;
-  albumSlug: string;
-  albumTitle: string;
-  artist: string;
-  coverUrl: string;
-  releaseDate: string;
-  genre: string;
-  tracks: GlobalPlayerTrack[];
-};
+type HlsModule = typeof import("hls.js/light");
+type HlsInstance = InstanceType<HlsModule["default"]>;
 
 export type RepeatMode = "off" | "all" | "one";
 
@@ -35,28 +20,13 @@ export type UpcomingTrack = {
   duration: number | null;
 };
 
-type PersistedPlayerState = {
-  queueKey: string;
-  currentIndex: number;
-  currentTime: number;
-  volume: number;
-  muted: boolean;
-  shuffleEnabled: boolean;
-  repeatMode: RepeatMode;
-  hasStartedPlayback: boolean;
-  playOrder: number[];
-  orderPos: number;
-  wasPlaying: boolean;
-};
-
-const PLAYER_STORAGE_KEY = "site-player-state";
-
 const state = reactive({
   queue: null as GlobalPlayerQueue | null,
   currentIndex: 0,
   playing: false,
   currentTime: 0,
   duration: 0,
+  bufferedTime: 0,
   volume: 1,
   muted: false,
   shuffleEnabled: false,
@@ -71,19 +41,23 @@ const audio = new Audio();
 audio.preload = "metadata";
 const supportsOggOpus = audio.canPlayType('audio/ogg; codecs="opus"') !== "";
 const supportsNativeHls = audio.canPlayType("application/vnd.apple.mpegurl") !== "";
-let hls: Hls | null = null;
+let hls: HlsInstance | null = null;
+let hlsModule: HlsModule | null = null;
+let hlsModulePromise: Promise<HlsModule> | null = null;
 let pendingAutoplay = false;
 let playRequestInFlight = false;
 let pendingRestoreTime: number | null = null;
 let hasRestoredState = false;
+let persistTimer: number | null = null;
+let lastPersistedPlaybackBucket = -1;
+let sourceLoadToken = 0;
+let restoreLoadToken = 0;
 
 let listenersAttached = false;
 
 function persistState(): void {
-  if (typeof window === "undefined") return;
-
   if (!state.queue) {
-    window.localStorage.removeItem(PLAYER_STORAGE_KEY);
+    clearPersistedPlayerState();
     return;
   }
 
@@ -101,113 +75,83 @@ function persistState(): void {
     wasPlaying: state.playing
   };
 
-  window.localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(payload));
+  writePersistedPlayerState(payload);
 }
 
-function buildQueueFromReleaseSlug(slug: string): GlobalPlayerQueue | null {
+function schedulePersist(): void {
+  if (typeof window === "undefined") return;
+  if (persistTimer !== null) return;
+
+  persistTimer = window.setTimeout(() => {
+    persistTimer = null;
+    persistState();
+  }, 1000);
+}
+
+async function buildQueueFromReleaseSlug(slug: string): Promise<GlobalPlayerQueue | null> {
   const release = getReleaseBySlug(slug);
   if (!release) return null;
-
-  return {
-    queueKey: release.slug,
-    albumSlug: release.slug,
-    albumTitle: release.albumName,
-    artist: "D7TUN6",
-    coverUrl: release.coverPreviewUrl || release.coverUrl,
-    releaseDate: release.releaseDate,
-    genre: release.genre.en,
-    tracks: release.tracks.map((track) => ({
-      title: track.title,
-      url: track.url,
-      streamUrl: track.streamUrl,
-      fallbackUrl: track.sourceUrl,
-      duration: track.duration,
-      links: track.links
-    }))
-  };
+  return buildPlayerQueueFromRelease(release, "en");
 }
 
 function restorePersistedState(): void {
   if (typeof window === "undefined" || hasRestoredState) return;
   hasRestoredState = true;
 
-  const raw = window.localStorage.getItem(PLAYER_STORAGE_KEY);
-  if (!raw) return;
+  const persisted = readPersistedPlayerState();
+  if (!persisted?.queueKey) return;
 
-  try {
-    const persisted = JSON.parse(raw) as PersistedPlayerState;
-    if (!persisted?.queueKey) return;
+  const token = ++restoreLoadToken;
+  void buildQueueFromReleaseSlug(persisted.queueKey)
+    .then((queue) => {
+      if (token !== restoreLoadToken) return;
+      if (!queue || queue.tracks.length === 0) return;
+      if (state.queue) return;
 
-    const queue = buildQueueFromReleaseSlug(persisted.queueKey);
-    if (!queue || queue.tracks.length === 0) return;
+      state.queue = queue;
+      state.currentIndex = clamp(persisted.currentIndex ?? 0, 0, Math.max(queue.tracks.length - 1, 0));
+      state.currentTime = Math.max(0, persisted.currentTime || 0);
+      state.duration =
+        typeof queue.tracks[state.currentIndex]?.duration === "number"
+          ? (queue.tracks[state.currentIndex]?.duration as number)
+          : 0;
+      state.volume = clamp(persisted.volume ?? 1, 0, 1);
+      state.muted = Boolean(persisted.muted);
+      state.shuffleEnabled = Boolean(persisted.shuffleEnabled);
+      state.repeatMode =
+        persisted.repeatMode === "all" || persisted.repeatMode === "one" ? persisted.repeatMode : "off";
+      state.hasStartedPlayback = Boolean(persisted.hasStartedPlayback);
 
-    state.queue = queue;
-    state.currentIndex = clamp(persisted.currentIndex ?? 0, 0, Math.max(queue.tracks.length - 1, 0));
-    state.currentTime = Math.max(0, persisted.currentTime || 0);
-    state.duration =
-      typeof queue.tracks[state.currentIndex]?.duration === "number" ? (queue.tracks[state.currentIndex]?.duration as number) : 0;
-    state.volume = clamp(persisted.volume ?? 1, 0, 1);
-    state.muted = Boolean(persisted.muted);
-    state.shuffleEnabled = Boolean(persisted.shuffleEnabled);
-    state.repeatMode =
-      persisted.repeatMode === "all" || persisted.repeatMode === "one" ? persisted.repeatMode : "off";
-    state.hasStartedPlayback = Boolean(persisted.hasStartedPlayback);
+      const validOrder =
+        Array.isArray(persisted.playOrder) &&
+        persisted.playOrder.length === queue.tracks.length &&
+        persisted.playOrder.every((value) => Number.isInteger(value) && value >= 0 && value < queue.tracks.length);
 
-    const validOrder =
-      Array.isArray(persisted.playOrder) &&
-      persisted.playOrder.length === queue.tracks.length &&
-      persisted.playOrder.every((value) => Number.isInteger(value) && value >= 0 && value < queue.tracks.length);
+      state.playOrder = validOrder
+        ? [...persisted.playOrder]
+        : state.shuffleEnabled
+          ? buildShuffledOrder(queue.tracks.length, state.currentIndex)
+          : buildSequentialOrder(queue.tracks.length);
 
-    state.playOrder = validOrder
-      ? [...persisted.playOrder]
-      : state.shuffleEnabled
-        ? buildShuffledOrder(queue.tracks.length, state.currentIndex)
-        : buildSequentialOrder(queue.tracks.length);
+      state.orderPos = clamp(
+        validOrder
+          ? persisted.orderPos ?? state.playOrder.indexOf(state.currentIndex)
+          : state.playOrder.indexOf(state.currentIndex),
+        0,
+        Math.max(state.playOrder.length - 1, 0)
+      );
+      state.trackDurations = Object.fromEntries(
+        queue.tracks
+          .map((track) => [getTrackPlaybackUrl(track), track.duration])
+          .filter((entry): entry is [string, number] => typeof entry[1] === "number")
+      );
 
-    state.orderPos = clamp(
-      validOrder ? persisted.orderPos ?? state.playOrder.indexOf(state.currentIndex) : state.playOrder.indexOf(state.currentIndex),
-      0,
-      Math.max(state.playOrder.length - 1, 0)
-    );
-    state.trackDurations = Object.fromEntries(
-      queue.tracks
-        .map((track) => [getTrackPlaybackUrl(track), track.duration])
-        .filter((entry): entry is [string, number] => typeof entry[1] === "number")
-    );
-
-    pendingRestoreTime = state.currentTime;
-    attachTrackSource(queue.tracks[state.currentIndex], Boolean(persisted.wasPlaying));
-  } catch {
-    window.localStorage.removeItem(PLAYER_STORAGE_KEY);
-  }
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
-}
-
-function buildSequentialOrder(total: number): number[] {
-  return Array.from({ length: total }, (_, index) => index);
-}
-
-function shuffleArray(values: number[]): number[] {
-  const next = [...values];
-  for (let index = next.length - 1; index > 0; index -= 1) {
-    const randomIndex = Math.floor(Math.random() * (index + 1));
-    [next[index], next[randomIndex]] = [next[randomIndex], next[index]];
-  }
-  return next;
-}
-
-function buildShuffledOrder(total: number, firstIndex?: number): number[] {
-  if (total <= 0) return [];
-
-  if (typeof firstIndex === "number" && firstIndex >= 0 && firstIndex < total) {
-    const rest = Array.from({ length: total }, (_, index) => index).filter((index) => index !== firstIndex);
-    return [firstIndex, ...shuffleArray(rest)];
-  }
-
-  return shuffleArray(Array.from({ length: total }, (_, index) => index));
+      pendingRestoreTime = state.currentTime;
+      attachTrackSource(queue.tracks[state.currentIndex], Boolean(persisted.wasPlaying));
+    })
+    .catch(() => {
+      clearPersistedPlayerState();
+    });
 }
 
 function syncOrderPosition(index: number): void {
@@ -248,12 +192,21 @@ function destroyHls(): void {
   playRequestInFlight = false;
 }
 
-function canUseHlsJs(track: GlobalPlayerTrack): boolean {
-  return Boolean(track.streamUrl && Hls.isSupported());
-}
-
 function canUseNativeHls(track: GlobalPlayerTrack): boolean {
   return Boolean(track.streamUrl && supportsNativeHls);
+}
+
+async function loadHlsModule(): Promise<HlsModule> {
+  if (hlsModule) return hlsModule;
+
+  if (!hlsModulePromise) {
+    hlsModulePromise = import("hls.js/light").then((module) => {
+      hlsModule = module;
+      return module;
+    });
+  }
+
+  return hlsModulePromise;
 }
 
 function flushPendingAutoplay(): void {
@@ -277,51 +230,76 @@ function requestImmediatePlayback(): void {
     });
 }
 
-function attachTrackSource(track: GlobalPlayerTrack, autoplay: boolean): void {
-  const playbackUrl = getTrackPlaybackUrl(track);
-  const targetUrl = new URL(playbackUrl, window.location.origin).toString();
-  pendingAutoplay = autoplay;
+function applyTrackSource(playbackUrl: string, targetUrl: string, autoplay: boolean): void {
+  destroyHls();
+  if (audio.src !== targetUrl) {
+    audio.src = playbackUrl;
+    audio.load();
+  }
+  if (autoplay) {
+    requestImmediatePlayback();
+  }
+  flushPendingAutoplay();
+}
 
-  if (track.streamUrl) {
-    if (canUseHlsJs(track)) {
-      destroyHls();
-      hls = new Hls({
-        startPosition: -1,
-        enableWorker: true
-      });
+async function attachHlsTrack(track: GlobalPlayerTrack, autoplay: boolean, requestToken: number): Promise<void> {
+  const module = await loadHlsModule();
 
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        flushPendingAutoplay();
-      });
+  if (requestToken !== sourceLoadToken || !track.streamUrl) {
+    return;
+  }
 
-      hls.on(Hls.Events.ERROR, (_event, data) => {
-        if (!data.fatal) return;
+  if (!module.default.isSupported()) {
+    if (track.fallbackUrl) {
+      const fallbackUrl = track.fallbackUrl;
+      applyTrackSource(fallbackUrl, new URL(fallbackUrl, window.location.origin).toString(), autoplay);
+    }
+    return;
+  }
 
-        if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
-          hls?.recoverMediaError();
-          return;
-        }
+  destroyHls();
+  hls = new module.default({
+    startPosition: -1,
+    enableWorker: true
+  });
 
-        destroyHls();
-        if (track.fallbackUrl) {
-          audio.src = track.fallbackUrl;
-          audio.load();
-          flushPendingAutoplay();
-        }
-      });
+  hls.on(module.default.Events.MANIFEST_PARSED, () => {
+    flushPendingAutoplay();
+  });
 
-      if (audio.src) {
-        audio.removeAttribute("src");
-      }
+  hls.on(module.default.Events.ERROR, (_event, data) => {
+    if (!data.fatal) return;
 
-      hls.attachMedia(audio);
-      hls.loadSource(track.streamUrl);
-      if (autoplay) {
-        requestImmediatePlayback();
-      }
+    if (data.type === module.default.ErrorTypes.MEDIA_ERROR) {
+      hls?.recoverMediaError();
       return;
     }
 
+    destroyHls();
+    if (track.fallbackUrl) {
+      const fallbackUrl = track.fallbackUrl;
+      applyTrackSource(fallbackUrl, new URL(fallbackUrl, window.location.origin).toString(), autoplay);
+    }
+  });
+
+  if (audio.src) {
+    audio.removeAttribute("src");
+  }
+
+  hls.attachMedia(audio);
+  hls.loadSource(track.streamUrl);
+  if (autoplay) {
+    requestImmediatePlayback();
+  }
+}
+
+function attachTrackSource(track: GlobalPlayerTrack, autoplay: boolean): void {
+  const playbackUrl = getTrackPlaybackUrl(track);
+  const targetUrl = new URL(playbackUrl, window.location.origin).toString();
+  const requestToken = ++sourceLoadToken;
+  pendingAutoplay = autoplay;
+
+  if (track.streamUrl) {
     if (canUseNativeHls(track)) {
       destroyHls();
       if (audio.src !== targetUrl) {
@@ -334,17 +312,12 @@ function attachTrackSource(track: GlobalPlayerTrack, autoplay: boolean): void {
       flushPendingAutoplay();
       return;
     }
+
+    void attachHlsTrack(track, autoplay, requestToken);
+    return;
   }
 
-  destroyHls();
-  if (audio.src !== targetUrl) {
-    audio.src = playbackUrl;
-    audio.load();
-  }
-  if (autoplay) {
-    requestImmediatePlayback();
-  }
-  flushPendingAutoplay();
+  applyTrackSource(playbackUrl, targetUrl, autoplay);
 }
 
 function loadTrack(index: number, autoplay: boolean): void {
@@ -353,6 +326,7 @@ function loadTrack(index: number, autoplay: boolean): void {
   if (!activeQueue || !track) return;
   state.currentIndex = index;
   state.duration = typeof track.duration === "number" ? track.duration : 0;
+  state.bufferedTime = 0;
   attachTrackSource(track, autoplay);
 
   syncOrderPosition(index);
@@ -413,18 +387,56 @@ function moveToNextTrack(autoplay: boolean): void {
 function attachListeners(): void {
   if (listenersAttached) return;
 
+  function updateBufferedTime() {
+    let bufferedEnd = 0;
+    const current = audio.currentTime || 0;
+    try {
+      const ranges = audio.buffered;
+      if (ranges && ranges.length > 0) {
+        for (let i = 0; i < ranges.length; i += 1) {
+          const start = ranges.start(i);
+          const end = ranges.end(i);
+          bufferedEnd = Math.max(bufferedEnd, end);
+          if (current >= start && current <= end) {
+            bufferedEnd = end;
+            break;
+          }
+        }
+      }
+    } catch {
+      bufferedEnd = 0;
+    }
+
+    const duration = Number.isFinite(audio.duration) ? audio.duration : 0;
+    if (duration > 0) {
+      bufferedEnd = clamp(bufferedEnd, 0, duration);
+    }
+    state.bufferedTime = bufferedEnd;
+  }
+
   audio.addEventListener("timeupdate", () => {
     state.currentTime = audio.currentTime || 0;
+    updateBufferedTime();
+    const playbackBucket = Math.floor(state.currentTime / 5);
+    if (playbackBucket !== lastPersistedPlaybackBucket) {
+      lastPersistedPlaybackBucket = playbackBucket;
+      schedulePersist();
+    }
   });
 
   audio.addEventListener("loadedmetadata", () => {
     state.duration = Number.isFinite(audio.duration) ? audio.duration : 0;
+    updateBufferedTime();
     if (pendingRestoreTime !== null && Number.isFinite(audio.duration) && audio.duration > 0) {
       const nextTime = clamp(pendingRestoreTime, 0, audio.duration);
       audio.currentTime = nextTime;
       state.currentTime = nextTime;
       pendingRestoreTime = null;
     }
+  });
+
+  audio.addEventListener("progress", () => {
+    updateBufferedTime();
   });
 
   audio.addEventListener("canplay", () => {
@@ -438,10 +450,12 @@ function attachListeners(): void {
 
   audio.addEventListener("pause", () => {
     state.playing = false;
+    persistState();
   });
 
   audio.addEventListener("ended", () => {
     moveToNextTrack(true);
+    persistState();
   });
 
   watch(
@@ -464,7 +478,6 @@ function attachListeners(): void {
     () => [
       state.queue?.queueKey ?? "",
       state.currentIndex,
-      state.currentTime,
       state.volume,
       state.muted,
       state.shuffleEnabled,
@@ -475,7 +488,7 @@ function attachListeners(): void {
       state.playOrder.join(",")
     ],
     () => {
-      persistState();
+      schedulePersist();
     }
   );
 
@@ -502,6 +515,7 @@ function setQueue(nextQueue: GlobalPlayerQueue): void {
   state.orderPos = 0;
   state.currentTime = 0;
   state.duration = 0;
+  state.bufferedTime = 0;
   state.playing = false;
   state.trackDurations = Object.fromEntries(
     nextQueue.tracks
@@ -511,6 +525,7 @@ function setQueue(nextQueue: GlobalPlayerQueue): void {
 
   audio.removeAttribute("src");
   audio.load();
+  lastPersistedPlaybackBucket = -1;
 }
 
 function clearPlayer(): void {
@@ -525,10 +540,12 @@ function clearPlayer(): void {
   state.playing = false;
   state.currentTime = 0;
   state.duration = 0;
+  state.bufferedTime = 0;
   state.hasStartedPlayback = false;
   state.playOrder = [];
   state.orderPos = 0;
   state.trackDurations = {};
+  lastPersistedPlaybackBucket = -1;
 
   persistState();
 }

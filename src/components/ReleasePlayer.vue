@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { Pause, Play } from "lucide-vue-next";
-import { usePlayer, type GlobalPlayerQueue } from "@/composables/usePlayer";
+import UiSelect from "@/components/UiSelect.vue";
+import { usePlayer } from "@/composables/usePlayer";
+import { useReleaseDownloads } from "@/composables/useReleaseDownloads";
+import { buildPlayerQueueFromRelease, type GlobalPlayerQueue } from "@/player/queue";
 import type { ReleaseEntry } from "@/types/content";
 
 type DownloadFormat = "flac" | "mp3" | "ogg" | "wav";
@@ -19,23 +22,16 @@ const {
   seekByRatio
 } = usePlayer();
 
-const queuePayload = computed<GlobalPlayerQueue>(() => ({
-  queueKey: props.release.slug,
-  albumSlug: props.release.slug,
-  albumTitle: props.release.albumName,
-  artist: "D7TUN6",
-  coverUrl: props.release.coverPreviewUrl || props.release.coverUrl,
-  releaseDate: props.release.releaseDate,
-  genre: props.lang === "ru" ? props.release.genre.ru : props.release.genre.en,
-  tracks: props.release.tracks.map((track) => ({
-    title: track.title,
-    url: track.url,
-    streamUrl: track.streamUrl,
-    fallbackUrl: track.sourceUrl,
-    duration: track.duration,
-    links: track.links
-  }))
-}));
+const {
+  isDownloading,
+  isTrackDownloading,
+  downloadError,
+  setDownloadError,
+  downloadRelease,
+  downloadTrack
+} = useReleaseDownloads(props.release);
+
+const queuePayload = computed<GlobalPlayerQueue>(() => buildPlayerQueueFromRelease(props.release, props.lang));
 
 const isRu = computed(() => props.lang === "ru");
 const isActiveQueue = computed(() => state.queue?.queueKey === props.release.slug);
@@ -48,6 +44,23 @@ const progress = computed(() => {
   return Math.max(0, Math.min(100, (activePosition.value / activeDuration.value) * 100));
 });
 
+const buffered = computed(() => {
+  if (!isActiveQueue.value || !activeDuration.value) return 0;
+  const value = (state.bufferedTime / activeDuration.value) * 100;
+  return Math.max(0, Math.min(100, value));
+});
+
+const seekDragRatio = ref<number | null>(null);
+const displayProgress = computed(() => {
+  if (seekDragRatio.value == null) return progress.value;
+  return Math.max(0, Math.min(100, seekDragRatio.value * 100));
+});
+
+const displayPosition = computed(() => {
+  if (seekDragRatio.value == null) return fmtTime(activePosition.value);
+  return fmtTime(activeDuration.value * seekDragRatio.value);
+});
+
 const releaseDownloadFormats = computed<DownloadFormat[]>(() => props.release.availableDownloadFormats as DownloadFormat[]);
 const trackDownloadFormats = computed<DownloadFormat[]>(() => {
   const track = props.release.tracks[activeIndex.value];
@@ -55,44 +68,36 @@ const trackDownloadFormats = computed<DownloadFormat[]>(() => {
 });
 
 const downloadFormat = ref<DownloadFormat>((props.release.availableDownloadFormats[0] as DownloadFormat) || "ogg");
-const isDownloading = ref(false);
-const downloadError = ref<string | null>(null);
-const isTrackDownloading = ref(false);
+
+function formatLabel(format: DownloadFormat): string {
+  switch (format) {
+    case "flac":
+      return "FLAC 16-bit / 44.1kHz";
+    case "mp3":
+      return "MP3 320 kbps / 44.1kHz";
+    case "wav":
+      return "WAV PCM 16-bit / 44.1kHz";
+    default:
+      return "Ogg Opus VBR / 48kHz";
+  }
+}
+
+const downloadFormatOptions = computed(() => {
+  return releaseDownloadFormats.value.map((format) => ({
+    value: format,
+    label: formatLabel(format)
+  }));
+});
+
+function setDownloadFormat(value: string) {
+  downloadFormat.value = value as DownloadFormat;
+}
 
 function fmtTime(seconds: number): string {
   if (!Number.isFinite(seconds) || seconds < 0) return "0:00";
   const m = Math.floor(seconds / 60);
   const s = Math.floor(seconds % 60);
   return `${m}:${String(s).padStart(2, "0")}`;
-}
-
-function parseDownloadFileName(contentDisposition: string | null, fallbackName: string): string {
-  if (!contentDisposition) return fallbackName;
-
-  const utf8Match = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
-  if (utf8Match?.[1]) {
-    try {
-      return decodeURIComponent(utf8Match[1]);
-    } catch {
-      return utf8Match[1];
-    }
-  }
-
-  const simpleMatch = contentDisposition.match(/filename="([^"]+)"/i);
-  if (simpleMatch?.[1]) return simpleMatch[1];
-
-  return fallbackName;
-}
-
-function getApiError(payload: { error?: string; message?: string } | null, fallback: string): string {
-  if (payload?.error && payload.error.trim().length > 0) return payload.error;
-  if (payload?.message && payload.message.trim().length > 0) return payload.message;
-  return fallback;
-}
-
-function isLikelyIOSDevice(): boolean {
-  const ua = navigator.userAgent || "";
-  return /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 }
 
 function toggleMainPlayPause() {
@@ -124,62 +129,57 @@ function playTrackFromList(index: number) {
   playTrack(index);
 }
 
-function seekByClick(event: MouseEvent) {
+function clamp01(value: number): number {
+  return Math.max(0, Math.min(1, value));
+}
+
+function ratioFromPointer(event: PointerEvent, target: HTMLElement): number {
+  const rect = target.getBoundingClientRect();
+  if (rect.width <= 0) return 0;
+  return (event.clientX - rect.left) / rect.width;
+}
+
+function onTimelinePointerDown(event: PointerEvent) {
   if (!isActiveQueue.value || !activeDuration.value) return;
+  if (typeof event.button === "number" && event.button !== 0) return;
 
   const target = event.currentTarget as HTMLElement;
-  const rect = target.getBoundingClientRect();
-  const ratio = (event.clientX - rect.left) / rect.width;
+  try {
+    target.setPointerCapture(event.pointerId);
+  } catch {
+    // ignore
+  }
+
+  const ratio = clamp01(ratioFromPointer(event, target));
+  seekDragRatio.value = ratio;
   seekByRatio(ratio);
+}
+
+function onTimelinePointerMove(event: PointerEvent) {
+  if (seekDragRatio.value == null) return;
+  const target = event.currentTarget as HTMLElement;
+  const ratio = clamp01(ratioFromPointer(event, target));
+  seekDragRatio.value = ratio;
+  seekByRatio(ratio);
+}
+
+function onTimelinePointerUp(event: PointerEvent) {
+  if (seekDragRatio.value == null) return;
+  const target = event.currentTarget as HTMLElement;
+  try {
+    target.releasePointerCapture(event.pointerId);
+  } catch {
+    // ignore
+  }
+  seekDragRatio.value = null;
 }
 
 async function handleDownload() {
   if (!releaseDownloadFormats.value.includes(downloadFormat.value)) {
-    downloadError.value = isRu.value ? "Этот формат недоступен для релиза" : "Format is not available for this release";
+    setDownloadError(isRu.value ? "Этот формат недоступен для релиза" : "Format is not available for this release");
     return;
   }
-
-  if (isDownloading.value) return;
-
-  downloadError.value = null;
-  isDownloading.value = true;
-
-  try {
-    const directDownloadUrl = `/api/releases/download?slug=${encodeURIComponent(props.release.slug)}&format=${encodeURIComponent(downloadFormat.value)}`;
-
-    if (isLikelyIOSDevice()) {
-      window.location.assign(directDownloadUrl);
-      return;
-    }
-
-    const response = await fetch(directDownloadUrl, {
-      method: "GET",
-      cache: "no-store"
-    });
-
-    if (!response.ok) {
-      const payload = (await response.json().catch(() => null)) as { error?: string; message?: string } | null;
-      throw new Error(getApiError(payload, "Download failed"));
-    }
-    const blob = await response.blob();
-    const objectUrl = URL.createObjectURL(blob);
-
-    const anchor = document.createElement("a");
-    anchor.href = objectUrl;
-    anchor.download = parseDownloadFileName(
-      response.headers.get("content-disposition"),
-      `${props.release.slug}-${downloadFormat.value}.zip`
-    );
-
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-    URL.revokeObjectURL(objectUrl);
-  } catch (error) {
-    downloadError.value = error instanceof Error ? error.message : "Unexpected download error";
-  } finally {
-    isDownloading.value = false;
-  }
+  await downloadRelease(downloadFormat.value);
 }
 
 async function handleTrackDownload() {
@@ -187,52 +187,10 @@ async function handleTrackDownload() {
   if (!track) return;
 
   if (!trackDownloadFormats.value.includes(downloadFormat.value)) {
-    downloadError.value = isRu.value ? "Этот формат недоступен для трека" : "Format is not available for this track";
+    setDownloadError(isRu.value ? "Этот формат недоступен для трека" : "Format is not available for this track");
     return;
   }
-
-  isTrackDownloading.value = true;
-  downloadError.value = null;
-
-  try {
-    const response = await fetch(
-      `/api/releases/track?slug=${encodeURIComponent(props.release.slug)}&track=${encodeURIComponent(String(track.index))}&format=${encodeURIComponent(downloadFormat.value)}`,
-      {
-        method: "GET",
-        cache: "no-store"
-      }
-    );
-
-    if (!response.ok) {
-      const payload = (await response.json().catch(() => null)) as { error?: string; message?: string } | null;
-      throw new Error(getApiError(payload, "Track download failed"));
-    }
-
-    if (isLikelyIOSDevice()) {
-      window.location.assign(
-        `/api/releases/track?slug=${encodeURIComponent(props.release.slug)}&track=${encodeURIComponent(String(track.index))}&format=${encodeURIComponent(downloadFormat.value)}`
-      );
-      return;
-    }
-
-    const blob = await response.blob();
-    const objectUrl = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = objectUrl;
-    anchor.download = parseDownloadFileName(
-      response.headers.get("content-disposition"),
-      `${props.release.slug}-${track.index}.${downloadFormat.value}`
-    );
-
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-    URL.revokeObjectURL(objectUrl);
-  } catch (error) {
-    downloadError.value = error instanceof Error ? error.message : "Unexpected track download error";
-  } finally {
-    isTrackDownloading.value = false;
-  }
+  await downloadTrack(track.index, downloadFormat.value);
 }
 
 </script>
@@ -282,16 +240,22 @@ async function handleTrackDownload() {
         </header>
 
         <div class="release-player-timeline-wrap">
-          <div class="release-player-time">{{ fmtTime(activePosition) }}</div>
+          <div class="release-player-time">{{ displayPosition }}</div>
           <div
             class="release-player-timeline"
             role="slider"
+            :class="{ 'is-dragging': seekDragRatio !== null }"
             :aria-valuemin="0"
             :aria-valuemax="Math.max(activeDuration, 1)"
-            :aria-valuenow="activePosition"
-            @click="seekByClick"
+            :aria-valuenow="seekDragRatio == null ? activePosition : activeDuration * seekDragRatio"
+            @pointerdown.prevent="onTimelinePointerDown"
+            @pointermove.prevent="onTimelinePointerMove"
+            @pointerup.prevent="onTimelinePointerUp"
+            @pointercancel.prevent="onTimelinePointerUp"
           >
-            <div class="release-player-timeline-fill" :style="{ width: `${progress}%` }" />
+            <div class="release-player-timeline-buffer" :style="{ width: `${buffered}%` }" />
+            <div class="release-player-timeline-fill" :style="{ width: `${displayProgress}%` }" />
+            <div class="release-player-timeline-knob" :style="{ left: `${displayProgress}%` }" />
           </div>
           <div class="release-player-time">{{ fmtTime(activeDuration) }}</div>
         </div>
@@ -331,19 +295,12 @@ async function handleTrackDownload() {
           <aside class="release-download-panel" aria-label="Release download">
             <h4>{{ isRu ? "Скачать релиз" : "Download Release" }}</h4>
             <p>{{ isRu ? "Выбери формат:" : "Choose format:" }}</p>
-            <select v-model="downloadFormat">
-              <option v-for="format in releaseDownloadFormats" :key="format" :value="format">
-                {{
-                  format === "flac"
-                    ? "FLAC 16-bit / 44.1kHz"
-                    : format === "mp3"
-                      ? "MP3 320 kbps / 44.1kHz"
-                      : format === "wav"
-                        ? "WAV PCM 16-bit / 44.1kHz"
-                        : "Ogg Opus VBR / 48kHz"
-                }}
-              </option>
-            </select>
+            <UiSelect
+              :model-value="downloadFormat"
+              :options="downloadFormatOptions"
+              :aria-label="isRu ? 'формат скачивания' : 'download format'"
+              @update:model-value="setDownloadFormat"
+            />
             <button type="button" class="release-download-btn" :disabled="isDownloading" @click="handleDownload">
               {{ isRu ? "Скачать ZIP" : "Download ZIP" }}
             </button>

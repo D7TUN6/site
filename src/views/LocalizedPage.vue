@@ -1,42 +1,19 @@
 <script setup lang="ts">
-import { computed, reactive, watch } from "vue";
-import { RouterLink, useRoute, useRouter } from "vue-router";
-import MarkdownContent from "@/components/MarkdownContent.vue";
+import { computed } from "vue";
+import { RouterLink } from "vue-router";
+import AccountPage from "@/components/AccountPage.vue";
+import AdminPage from "@/components/AdminPage.vue";
 import BlogIndex from "@/components/BlogIndex.vue";
+import CartPage from "@/components/CartPage.vue";
+import MarkdownContent from "@/components/MarkdownContent.vue";
 import MusicGrid from "@/components/MusicGrid.vue";
 import ReleasePlayer from "@/components/ReleasePlayer.vue";
+import ShopIndex from "@/components/ShopIndex.vue";
+import ShopProduct from "@/components/ShopProduct.vue";
 import SiteFrame from "@/components/SiteFrame.vue";
-import { getRoutePayload, resolveRoute, splitSplat, type RoutePayload } from "@/lib/content";
-import { getLocaleDictionary } from "@/lib/i18n";
-import type { Lang, LocaleDictionary, RouteKey } from "@/types/content";
+import { useLocalizedPage } from "@/composables/useLocalizedPage";
 
-const route = useRoute();
-const router = useRouter();
-
-const lang = computed<Lang | null>(() => {
-  const raw = typeof route.params.lang === "string" ? route.params.lang : null;
-  if (raw === "en" || raw === "ru") return raw;
-  return null;
-});
-
-const splat = computed(() => {
-  const raw = route.params.pathMatch;
-  if (typeof raw === "string") return raw;
-  if (Array.isArray(raw)) return raw.join("/");
-  return "";
-});
-
-const routeKey = computed<RouteKey | null>(() => {
-  return resolveRoute(splitSplat(splat.value));
-});
-
-const state = reactive({
-  status: "loading" as "loading" | "ready" | "not-found" | "error",
-  dictionary: null as LocaleDictionary | null,
-  payload: null as RoutePayload | null,
-  route: null as RouteKey | null,
-  message: ""
-});
+const { lang, state } = useLocalizedPage();
 
 const notesMarkdown = computed(() => {
   if (state.status !== "ready" || !state.payload || state.payload?.kind !== "release") return "";
@@ -55,59 +32,27 @@ const notesMarkdown = computed(() => {
 const backLabel = computed(() => (lang.value === "ru" ? "Назад к дискографии" : "Back to Discography"));
 const blogBackLabel = computed(() => (lang.value === "ru" ? "Назад в блог" : "Back to Blog"));
 
-watch(
-  () => [lang.value, routeKey.value] as const,
-  async ([nextLang, nextRoute]) => {
-    if (!nextLang) {
-      await router.replace("/en");
-      return;
-    }
-
-    const shouldShowBlockingLoader = !state.dictionary && !state.payload;
-    if (shouldShowBlockingLoader) {
-      state.status = "loading";
-    }
-    state.message = "";
-
-    try {
-      const [dictionary, payload] = await Promise.all([
-        getLocaleDictionary(nextLang),
-        nextRoute ? getRoutePayload(nextLang, nextRoute) : Promise.resolve(null)
-      ]);
-
-      if (!nextRoute) {
-        state.status = "not-found";
-        state.dictionary = dictionary;
-        return;
-      }
-
-      if (!payload) {
-        state.status = "not-found";
-        state.dictionary = dictionary;
-        return;
-      }
-
-      state.status = "ready";
-      state.dictionary = dictionary;
-      state.payload = payload;
-      state.route = nextRoute;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Unexpected loading error";
-
-      try {
-        const dictionary = await getLocaleDictionary(nextLang);
-        state.status = "error";
-        state.dictionary = dictionary;
-        state.message = message;
-      } catch {
-        state.status = "error";
-        state.dictionary = null;
-        state.message = message;
-      }
-    }
-  },
-  { immediate: true }
+const notFoundTitle = computed(() => (lang.value === "ru" ? "404 — страница не найдена" : "404 — page not found"));
+const notFoundText = computed(() =>
+  lang.value === "ru"
+    ? "Похоже, такой страницы нет. Проверьте адрес или перейдите в разделы сайта."
+    : "Looks like this page does not exist. Check the URL or use the navigation links below."
 );
+const errorTitle = computed(() => (lang.value === "ru" ? "ошибка" : "error"));
+const errorText = computed(() =>
+  lang.value === "ru"
+    ? "Что-то пошло не так. Попробуйте обновить страницу."
+    : "Something went wrong. Try reloading the page."
+);
+const homeLabel = computed(() => (lang.value === "ru" ? "на главную" : "home"));
+const shopLabel = computed(() => (lang.value === "ru" ? "магазин" : "shop"));
+const accountLabel = computed(() => (lang.value === "ru" ? "личный кабинет" : "account"));
+const reloadLabel = computed(() => (lang.value === "ru" ? "обновить" : "reload"));
+
+function reloadPage() {
+  if (typeof window === "undefined") return;
+  window.location.reload();
+}
 </script>
 
 <template>
@@ -124,11 +69,25 @@ watch(
     :route="state.route"
     :dictionary="state.dictionary"
   >
-    <MarkdownContent v-if="state.payload.kind === 'markdown'" :source="state.payload.source" />
+    <MarkdownContent
+      v-if="state.payload.kind === 'markdown'"
+      :source="state.payload.source"
+      :open-external-links-in-new-tab="state.route === 'links'"
+    />
 
     <MusicGrid v-else-if="state.payload.kind === 'music-index'" :lang="lang" :releases="state.payload.releases" />
 
     <BlogIndex v-else-if="state.payload.kind === 'blog-index'" :lang="lang" :posts="state.payload.posts" />
+
+    <ShopIndex v-else-if="state.payload.kind === 'shop-index'" :lang="lang" :products="state.payload.products" />
+
+    <ShopProduct v-else-if="state.payload.kind === 'shop-product'" :lang="lang" :product="state.payload.product" />
+
+    <CartPage v-else-if="state.payload.kind === 'cart'" :lang="lang" />
+
+    <AccountPage v-else-if="state.payload.kind === 'account'" :lang="lang" />
+
+    <AdminPage v-else-if="state.payload.kind === 'admin'" :lang="lang" />
 
     <template v-else-if="state.payload.kind === 'release'">
       <RouterLink :to="`/${lang}/music`" class="content-link-plain">← {{ backLabel }}</RouterLink>
@@ -157,13 +116,29 @@ watch(
 
   <SiteFrame v-else-if="lang && state.dictionary" :lang="lang" route="main" :dictionary="state.dictionary">
     <template v-if="state.status === 'not-found'">
-      <h1>404</h1>
-      <p>Page not found.</p>
+      <div class="error-page">
+        <h1 class="error-title">{{ notFoundTitle }}</h1>
+        <p class="error-text">{{ notFoundText }}</p>
+
+        <div class="error-actions">
+          <RouterLink :to="`/${lang}`" class="shop-btn shop-btn-secondary">{{ homeLabel }}</RouterLink>
+          <RouterLink :to="`/${lang}/shop`" class="shop-btn shop-btn-secondary">{{ shopLabel }}</RouterLink>
+          <RouterLink :to="`/${lang}/account`" class="shop-btn shop-btn-secondary">{{ accountLabel }}</RouterLink>
+        </div>
+      </div>
     </template>
 
     <template v-else>
-      <h1>Error</h1>
-      <p>{{ state.status === 'error' ? state.message : 'Unexpected error.' }}</p>
+      <div class="error-page">
+        <h1 class="error-title">{{ errorTitle }}</h1>
+        <p class="error-text">{{ errorText }}</p>
+        <p v-if="state.status === 'error' && state.message" class="error-details">{{ state.message }}</p>
+
+        <div class="error-actions">
+          <button type="button" class="shop-btn" @click="reloadPage">{{ reloadLabel }}</button>
+          <RouterLink :to="`/${lang}`" class="shop-btn shop-btn-secondary">{{ homeLabel }}</RouterLink>
+        </div>
+      </div>
     </template>
   </SiteFrame>
 

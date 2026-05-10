@@ -11,6 +11,8 @@ export default tseslint.config(
       "OLD/**",
       "node_modules/**",
       "dist/**",
+      "dst/**",
+      "tmp/**",
       "coverage/**",
       "public/media/**",
       "content/mdx/**",
@@ -21,7 +23,7 @@ export default tseslint.config(
   ...tseslint.configs.recommended,
   ...vue.configs["flat/recommended"],
   {
-    files: ["src/**/*.{ts,vue}", "vite.config.ts"],
+    files: ["src/**/*.{ts,vue}"],
     languageOptions: {
       parser: vueParser,
       parserOptions: {
@@ -29,7 +31,10 @@ export default tseslint.config(
         ecmaVersion: "latest",
         sourceType: "module"
       },
-      globals: globals.browser
+      globals: {
+        ...globals.browser,
+        ...globals.commonjs
+      }
     },
     rules: {
       "vue/max-attributes-per-line": "off",
@@ -40,7 +45,7 @@ export default tseslint.config(
     }
   },
   {
-    files: ["server/**/*.{js,mjs}", "scripts/**/*.{js,mjs}"],
+    files: ["server/**/*.{js,mjs}", "scripts/**/*.{js,mjs}", "vite.config.ts"],
     languageOptions: {
       globals: globals.node
     }

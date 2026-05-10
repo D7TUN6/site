@@ -1,115 +1,61 @@
 import { existsSync } from "node:fs";
-import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import compression from "compression";
 import express from "express";
 import rateLimit from "express-rate-limit";
 import helmet from "helmet";
-import JSZip from "jszip";
 import mime from "mime-types";
+import { sendApiNotFound, sendApiRateLimited } from "./lib/api.mjs";
+import { getAppSecret, requireEnv } from "./lib/config.mjs";
+import { openAppDb } from "./lib/db.mjs";
+import { loadDotEnv } from "./lib/env.mjs";
+import { createMailer } from "./lib/mailer.mjs";
+import { createOrderHub } from "./lib/order-hub.mjs";
+import { startTrackingJob } from "./lib/tracking-job.mjs";
+import { ReleaseDownloadService } from "./lib/release-download-service.mjs";
+import { createReleaseRouter } from "./routes/releases.mjs";
+import { createAuthRouter } from "./routes/auth.mjs";
+import { createOrdersRouter } from "./routes/orders.mjs";
+import { createShippingRouter } from "./routes/shipping.mjs";
+import { createConfigRouter } from "./routes/config.mjs";
+import { createYooKassaRouter } from "./routes/payments-yookassa.mjs";
+import { createAdminRouter } from "./routes/admin.mjs";
+import { cleanupExpiredSessions } from "./lib/sessions.mjs";
+import { installApiErrorHandler } from "./middleware/api-error-handler.mjs";
+import { installRequestIdMiddleware } from "./middleware/request-id.mjs";
+import { installSessionMiddleware } from "./middleware/session.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT = path.resolve(__dirname, "..");
 const DIST_DIR = path.join(ROOT, "dist");
+const PUBLIC_DIR = path.join(ROOT, "public");
 const RELEASE_DATA_PATH = path.join(__dirname, "generated", "release-download-data.json");
 
-const ARTIST_NAME = "D7TUN6";
-const MAX_TRACKS_PER_ARCHIVE = 64;
-const SLUG_RE = /^[a-z0-9-]{1,128}$/;
 const STATIC_PRECOMPRESSED_EXT_RE = /\.(?:js|css|html|json|svg|txt|xml|map|woff2?|ico)$/i;
-const TRACK_INDEX_RE = /^\d{1,3}$/;
+const INLINE_THEME_BOOTSTRAP_HASH = "'sha256-mHfdDhiqAosniShduqMpUrB7hsKrxLsZAOHbEjmVFuk='";
+
+loadDotEnv({ root: ROOT });
+getAppSecret();
+requireEnv("ADMIN_EMAIL");
+requireEnv("ADMIN_PASSWORD");
 
 const isDev = process.argv.includes("--dev");
 const defaultPort = isDev ? 3002 : 3001;
-const port = Number(process.env.PORT || defaultPort);
+const rawPort = String((isDev ? process.env.API_PORT || process.env.PORT : process.env.PORT) || "").trim();
+const port = Number(rawPort) || defaultPort;
 const host = process.env.HOSTNAME || "127.0.0.1";
 
-let releaseDownloadData = [];
+function shouldRewriteToIndex(req) {
+  if (req.method !== "GET" && req.method !== "HEAD") return false;
+  if (req.path === "/index.html") return false;
+  if (req.path === "/api" || req.path.startsWith("/api/")) return false;
 
-function sanitizeFileName(value) {
-  return value.replace(/[\\/:*?"<>|]/g, "-").replace(/\s+/g, " ").trim();
-}
+  const lastSegment = req.path.split("/").filter(Boolean).pop() ?? "";
+  if (!lastSegment) return true; // "/"
 
-function formatExt(format) {
-  if (format === "mp3") return "mp3";
-  if (format === "ogg") return "ogg";
-  if (format === "wav") return "wav";
-  return "flac";
-}
-
-function isOutputFormat(value) {
-  return value === "mp3" || value === "ogg" || value === "flac" || value === "wav";
-}
-
-function resolveTrackAssetPath(release, relative) {
-  const normalized = path.posix.normalize(relative);
-  if (!normalized || normalized === "." || normalized.startsWith("../") || path.posix.isAbsolute(normalized)) {
-    throw new Error("Invalid track path");
-  }
-
-  const releaseRoot = path.resolve(ROOT, "public", "media", "music", release.sourceDirName);
-  const resolvedPath = path.resolve(releaseRoot, normalized.split("/").join(path.sep));
-  if (resolvedPath !== releaseRoot && !resolvedPath.startsWith(`${releaseRoot}${path.sep}`)) {
-    throw new Error("Invalid track path");
-  }
-
-  return resolvedPath;
-}
-
-function resolveTrackDownloadPath(release, track, format) {
-  return resolveTrackAssetPath(release, path.posix.join("tracks", "download", format, `${track.safeStem}.${format}`));
-}
-
-async function createReleaseArchive(release, format) {
-  const zip = new JSZip();
-  const extension = formatExt(format);
-
-  for (const track of release.tracks) {
-    if (!Array.isArray(track.availableDownloadFormats) || !track.availableDownloadFormats.includes(format)) {
-      throw new Error(`Track "${track.title}" is not available in ${format}`);
-    }
-
-    const encoded = await readFile(resolveTrackDownloadPath(release, track, format));
-    const zipName = `${String(track.index).padStart(2, "0")} - ${sanitizeFileName(track.title)}.${extension}`;
-    zip.file(`tracks/${zipName}`, encoded);
-  }
-
-  const metadataText = [
-    `artist: ${ARTIST_NAME}`,
-    `album: ${release.albumName}`,
-    `release_date: ${release.releaseDate}`,
-    `format: ${format}`,
-    `sample_rate: ${format === "ogg" ? "48000" : "44100"}`,
-    format === "flac"
-      ? "bit_depth: 16"
-      : format === "ogg"
-        ? "codec: opus (vbr), target_bitrate: 320k"
-        : format === "wav"
-          ? "codec: pcm_s16le"
-          : "bitrate: 320k",
-    "",
-    "tracks:",
-    ...release.tracks.map((track) => `${track.index}. ${track.title}`)
-  ].join("\n");
-
-  zip.file("release-info.txt", metadataText);
-
-  const zipBuffer = await zip.generateAsync({
-    type: "nodebuffer",
-    compression: "DEFLATE",
-    compressionOptions: { level: 6 }
-  });
-
-  return {
-    fileName: `${sanitizeFileName(release.albumName)}-${format}.zip`,
-    zipBuffer
-  };
-}
-
-function findRelease(slug) {
-  return releaseDownloadData.find((entry) => entry.slug === slug);
+  return !lastSegment.includes(".");
 }
 
 function precompressedStaticMiddleware(req, res, next) {
@@ -117,10 +63,15 @@ function precompressedStaticMiddleware(req, res, next) {
     return next();
   }
 
-  let requestPath = req.path;
-  try {
-    requestPath = decodeURIComponent(req.path);
-  } catch {
+  const requestPath = (() => {
+    try {
+      return decodeURIComponent(req.path);
+    } catch {
+      return null;
+    }
+  })();
+
+  if (!requestPath) {
     return next();
   }
 
@@ -159,32 +110,89 @@ function precompressedStaticMiddleware(req, res, next) {
   return next();
 }
 
-async function bootstrapReleaseData() {
-  const raw = await readFile(RELEASE_DATA_PATH, "utf8");
-  const parsed = JSON.parse(raw);
-  if (!Array.isArray(parsed)) {
-    throw new Error("Invalid generated release data format");
-  }
-  releaseDownloadData = parsed;
-}
+const releaseDownloadService = new ReleaseDownloadService({
+  root: ROOT,
+  releaseDataPath: RELEASE_DATA_PATH
+});
 
-await bootstrapReleaseData();
+await releaseDownloadService.bootstrap();
+
+const { db } = openAppDb({ rootDir: ROOT });
+cleanupExpiredSessions(db);
+const mailer = createMailer();
+const orderHub = createOrderHub();
+startTrackingJob({ db, hub: orderHub });
 
 const app = express();
 app.disable("x-powered-by");
 app.set("trust proxy", 1);
+app.use(installRequestIdMiddleware());
+app.use(installSessionMiddleware({ db }));
 app.use(
   helmet({
     contentSecurityPolicy: {
       useDefaults: true,
       directives: {
         "default-src": ["'self'"],
-        "img-src": ["'self'", "data:", "blob:"],
+        "img-src": [
+          "'self'",
+          "data:",
+          "blob:",
+          "https://api-maps.yandex.ru",
+          "https://*.api-maps.yandex.ru",
+          "https://*.maps.yandex.net",
+          "https://yastatic.net",
+          "https://*.yastatic.net",
+          "https://yandex.ru",
+          "https://yookassa.ru",
+          "https://*.yookassa.ru",
+          "https://yoomoney.ru",
+          "https://*.yoomoney.ru"
+        ],
         "media-src": ["'self'", "blob:"],
-        "connect-src": ["'self'"],
-        "font-src": ["'self'", "data:"],
-        "style-src": ["'self'", "'unsafe-inline'"],
-        "script-src": ["'self'"],
+        "connect-src": [
+          "'self'",
+          "https://api-maps.yandex.ru",
+          "https://*.api-maps.yandex.ru",
+          "https://suggest-maps.yandex.ru",
+          "https://search-maps.yandex.ru",
+          "https://*.maps.yandex.net",
+          "https://yastatic.net",
+          "https://*.yastatic.net",
+          "https://yandex.ru",
+          "https://yookassa.ru",
+          "https://*.yookassa.ru",
+          "https://yoomoney.ru",
+          "https://*.yoomoney.ru"
+        ],
+        "font-src": ["'self'", "data:", "https://yastatic.net", "https://*.yastatic.net"],
+        "style-src": ["'self'", "'unsafe-inline'", "blob:", "https://yastatic.net", "https://*.yastatic.net"],
+        "style-src-elem": ["'self'", "'unsafe-inline'", "blob:", "https://yastatic.net", "https://*.yastatic.net"],
+        "script-src": [
+          "'self'",
+          "'unsafe-eval'",
+          INLINE_THEME_BOOTSTRAP_HASH,
+          "https://api-maps.yandex.ru",
+          "https://*.api-maps.yandex.ru",
+          "https://suggest-maps.yandex.ru",
+          "https://*.maps.yandex.net",
+          "https://yastatic.net",
+          "https://*.yastatic.net",
+          "https://yandex.ru",
+          "https://yookassa.ru",
+          "https://*.yookassa.ru",
+          "https://yoomoney.ru",
+          "https://*.yoomoney.ru"
+        ],
+        "frame-src": [
+          "'self'",
+          "https:",
+          "https://api-maps.yandex.ru",
+          "https://yookassa.ru",
+          "https://*.yookassa.ru",
+          "https://yoomoney.ru",
+          "https://*.yoomoney.ru"
+        ],
         "object-src": ["'none'"],
         "base-uri": ["'self'"],
         "frame-ancestors": ["'none'"]
@@ -196,137 +204,136 @@ app.use(
   compression({
     filter: (req, res) => {
       if (req.path.endsWith(".zip")) return false;
+      if (req.path.endsWith("/stream")) return false;
+      if (String(req.get("accept") || "").includes("text/event-stream")) return false;
       return compression.filter(req, res);
     }
   })
 );
 app.use(express.json({ limit: "64kb" }));
+app.use(express.urlencoded({ extended: false, limit: "64kb" }));
+
+function apiRateLimit(options) {
+  return rateLimit({
+    ...options,
+    handler: (req, res) => sendApiRateLimited(req, res)
+  });
+}
+
 app.use(
   "/api",
-  rateLimit({
+  apiRateLimit({
     windowMs: 60 * 1000,
-    max: 240,
+    max: 120,
     standardHeaders: true,
     legacyHeaders: false
   })
 );
+app.use(
+  "/api/releases",
+  apiRateLimit({
+    windowMs: 60 * 1000,
+    max: 20,
+    standardHeaders: true,
+    legacyHeaders: false
+  }),
+  createReleaseRouter({ service: releaseDownloadService })
+);
 
-app.post("/api/releases/download", async (req, res) => {
-  const slug = typeof req.body?.slug === "string" ? req.body.slug : null;
-  const format = typeof req.body?.format === "string" ? req.body.format : null;
+app.use(
+  "/api/auth",
+  apiRateLimit({
+    windowMs: 60 * 1000,
+    max: 30,
+    standardHeaders: true,
+    legacyHeaders: false
+  }),
+  createAuthRouter({ db, mailer })
+);
 
-  if (!slug || !SLUG_RE.test(slug) || !isOutputFormat(format)) {
-    return res.status(400).json({ error: "Invalid slug or format" });
-  }
+app.use(
+  "/api/orders",
+  apiRateLimit({
+    windowMs: 60 * 1000,
+    max: 120,
+    standardHeaders: true,
+    legacyHeaders: false
+  }),
+  createOrdersRouter({ db, hub: orderHub })
+);
 
-  const release = findRelease(slug);
-  if (!release) {
-    return res.status(404).json({ error: "Release not found" });
-  }
+app.use(
+  "/api/shipping",
+  apiRateLimit({
+    windowMs: 60 * 1000,
+    max: 120,
+    standardHeaders: true,
+    legacyHeaders: false
+  }),
+  createShippingRouter()
+);
 
-  if (release.tracks.length === 0) {
-    return res.status(400).json({ error: "No tracks found in release" });
-  }
+app.use("/api/config", createConfigRouter());
 
-  if (release.tracks.length > MAX_TRACKS_PER_ARCHIVE) {
-    return res.status(400).json({ error: "Too many tracks in release" });
-  }
+app.use(
+  "/api/admin",
+  apiRateLimit({
+    windowMs: 60 * 1000,
+    max: 120,
+    standardHeaders: true,
+    legacyHeaders: false
+  }),
+  createAdminRouter({ db, hub: orderHub })
+);
 
-  if (!Array.isArray(release.availableDownloadFormats) || !release.availableDownloadFormats.includes(format)) {
-    return res.status(400).json({ error: "Format is not available for the whole release" });
-  }
-
-  try {
-    const { fileName, zipBuffer } = await createReleaseArchive(release, format);
-    res.setHeader("Cache-Control", "no-store");
-    res.setHeader("Content-Type", "application/zip");
-    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
-    return res.status(200).send(zipBuffer);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unable to build release archive";
-    return res.status(500).json({ error: message });
-  }
-});
-
-app.get("/api/releases/track", async (req, res) => {
-  const slug = typeof req.query.slug === "string" ? req.query.slug : null;
-  const trackIndexRaw = typeof req.query.track === "string" ? req.query.track : null;
-  const format = typeof req.query.format === "string" ? req.query.format : null;
-
-  if (!slug || !SLUG_RE.test(slug) || !trackIndexRaw || !TRACK_INDEX_RE.test(trackIndexRaw) || !isOutputFormat(format)) {
-    return res.status(400).json({ error: "Invalid slug, track, or format" });
-  }
-
-  const release = findRelease(slug);
-  if (!release) {
-    return res.status(404).json({ error: "Release not found" });
-  }
-
-  const trackIndex = Number(trackIndexRaw);
-  const track = release.tracks.find((entry) => entry.index === trackIndex);
-  if (!track) {
-    return res.status(404).json({ error: "Track not found" });
-  }
-
-  if (!Array.isArray(track.availableDownloadFormats) || !track.availableDownloadFormats.includes(format)) {
-    return res.status(400).json({ error: "Format is not available for this track" });
-  }
-
-  try {
-    const filePath = resolveTrackDownloadPath(release, track, format);
-    const fileName = `${String(track.index).padStart(2, "0")} - ${sanitizeFileName(track.title)}.${formatExt(format)}`;
-    res.setHeader("Cache-Control", "no-store");
-    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
-    return res.download(filePath, fileName);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unable to download track";
-    return res.status(500).json({ error: message });
-  }
-});
-
-app.get("/api/releases/download", async (req, res) => {
-  const slug = typeof req.query.slug === "string" ? req.query.slug : null;
-  const format = typeof req.query.format === "string" ? req.query.format : null;
-
-  if (!slug || !SLUG_RE.test(slug) || !isOutputFormat(format)) {
-    return res.status(400).json({ error: "Invalid slug or format" });
-  }
-
-  const release = findRelease(slug);
-  if (!release) {
-    return res.status(404).json({ error: "Release not found" });
-  }
-
-  if (release.tracks.length === 0) {
-    return res.status(400).json({ error: "No tracks found in release" });
-  }
-
-  if (release.tracks.length > MAX_TRACKS_PER_ARCHIVE) {
-    return res.status(400).json({ error: "Too many tracks in release" });
-  }
-
-  if (!Array.isArray(release.availableDownloadFormats) || !release.availableDownloadFormats.includes(format)) {
-    return res.status(400).json({ error: "Format is not available for the whole release" });
-  }
-
-  try {
-    const { fileName, zipBuffer } = await createReleaseArchive(release, format);
-    res.setHeader("Cache-Control", "no-store");
-    res.setHeader("Content-Type", "application/zip");
-    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
-    return res.status(200).send(zipBuffer);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unable to build release archive";
-    return res.status(500).json({ error: message });
-  }
-});
+app.use(
+  "/api/payments/yookassa",
+  apiRateLimit({
+    windowMs: 60 * 1000,
+    max: 240,
+    standardHeaders: true,
+    legacyHeaders: false
+  }),
+  createYooKassaRouter({ db, hub: orderHub })
+);
 
 app.get("/api/health", (_req, res) => {
   res.status(200).json({ ok: true });
 });
 
+app.use("/api", (req, res) => sendApiNotFound(req, res));
+app.use(installApiErrorHandler());
+
 if (!isDev) {
+  app.use(
+    express.static(PUBLIC_DIR, {
+      index: false,
+      setHeaders: (res, filePath) => {
+        const relative = path.relative(PUBLIC_DIR, filePath).split(path.sep).join("/");
+        if (relative.startsWith("media/")) {
+          res.setHeader("Cache-Control", "public, max-age=31536000");
+          return;
+        }
+
+        if (relative.startsWith("locales/")) {
+          res.setHeader("Cache-Control", "public, max-age=86400");
+          return;
+        }
+
+        res.setHeader("Cache-Control", "public, max-age=86400");
+      }
+    })
+  );
+
+  app.use((req, _res, next) => {
+    if (shouldRewriteToIndex(req)) {
+      req.url = "/index.html";
+    }
+    next();
+  });
+
   app.use(precompressedStaticMiddleware);
+
   app.use(
     express.static(DIST_DIR, {
       index: false,
@@ -345,8 +352,13 @@ if (!isDev) {
           return;
         }
 
-        if (relative.startsWith("assets/") && /-[A-Za-z0-9_-]{8,}\./.test(path.basename(relative))) {
+        if (relative.startsWith("assets/") && /[.-][A-Za-z0-9_-]{8,}\./.test(path.basename(relative))) {
           res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+          return;
+        }
+
+        if (relative.startsWith("media/")) {
+          res.setHeader("Cache-Control", "public, max-age=31536000");
           return;
         }
 
@@ -354,10 +366,6 @@ if (!isDev) {
       }
     })
   );
-
-  app.get(/^(?!\/api\/).*/, (_req, res) => {
-    res.sendFile(path.join(DIST_DIR, "index.html"));
-  });
 }
 
 const server = app.listen(port, host, () => {
@@ -368,7 +376,7 @@ const server = app.listen(port, host, () => {
 server.ref();
 
 // Some Windows/Node setups let the dev API process exit immediately after listen().
-// Keep the event loop pinned explicitly in dev so concurrently does not tear down Vite.
+// Keep the event loop pinned explicitly in dev so concurrently does not tear down the Vite dev server.
 const devKeepAlive = isDev ? setInterval(() => {}, 1 << 30) : null;
 
 function shutdown() {

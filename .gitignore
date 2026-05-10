@@ -4,6 +4,9 @@ public/media/music/
 src/generated/
 server/generated/
 
+public/robots.txt
+public/sitemap.xml
+
 .DS_Store
 Thumbs.db
 Desktop.ini
