@@ -193,6 +193,49 @@
   }
 }
 
+/* iOS Safari 15 occasionally miscalculates nested grid widths in production bundles.
+   Force a stable single-column release layout on touch Safari to prevent panel overlap. */
+@supports (-webkit-touch-callout: none) {
+  @media (hover: none) and (pointer: coarse) {
+    .release-player,
+    .release-player-top,
+    .release-player-head,
+    .release-player-content {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+    }
+
+    .release-player-main,
+    .release-player-meta,
+    .release-player-list,
+    .release-download-panel {
+      min-width: 0;
+      width: 100%;
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+
+    .release-player-cover-large {
+      display: block;
+      margin: 0 0 12px;
+    }
+
+    .release-player-side {
+      display: flex;
+      flex-direction: row;
+      gap: 8px;
+      justify-content: space-between;
+      margin-top: 8px;
+      text-align: left;
+    }
+
+    .release-download-panel {
+      margin-top: 10px;
+    }
+  }
+}
+
 @media (pointer: coarse), (hover: none), (max-width: 1200px) {
   body::before {
     background-attachment: scroll;
