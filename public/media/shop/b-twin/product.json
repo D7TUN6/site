@@ -1,0 +1,19 @@
+{
+  "slug": "b-twin",
+  "title": "D7TUN6 - B TWIN (CD, limited edition)",
+  "category": "cd",
+  "price": 130000,
+  "status": "available",
+  "quantity": 2,
+  "images": [
+    "1777678760967-photo_2026-05-02_04-39-01.jpg",
+    "1777678760969-photo_2026-05-02_04-39-06.jpg",
+    "1777678760970-photo_2026-05-02_04-39-08.jpg",
+    "1777678760971-photo_2026-05-02_04-39-10.jpg"
+  ],
+  "coverImage": "1777678760967-photo_2026-05-02_04-39-01.jpg",
+  "description": {
+    "en": "limited handmade edition of EP \"B TWIN\" on CD\ncover of each copy is unique\nthe price is for the product (800 rubles) + taxes (~100 rubles) + shipping",
+    "ru": "лимитированная ручная версия EP \"B TWIN\" на CD\nобложка каждого экземпляра уникальна\nцена указана за товар (800 рублей) + налоги (~100 рублей) + за доставку"
+  }
+}

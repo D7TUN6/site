@@ -1,0 +1,532 @@
+{
+  "tracks": [
+    "Crying Witches",
+    "Static N0is3 Tvrn3d int0 Static Pain (intro)",
+    "ethixeat",
+    "Dr. Star",
+    "hd1ep2amb.mmpz",
+    "K1ndn3ss",
+    "fallen_kingdom",
+    "Acid Tears (t2)",
+    "Crying Witches",
+    "Thai",
+    "unnrR35sT",
+    "Dr. Star",
+    "Drag Den",
+    "wh1te_hous3-001",
+    "Poignant",
+    "Dr. Star",
+    "Starfighter",
+    "Drag Den",
+    "K1ndn3ss",
+    "hd1ep2amb.mmpz",
+    "AC41-00050A",
+    "Crying Witches",
+    "unnamed012",
+    "Dope",
+    "aclidiemt",
+    "Winter Walk",
+    "SVR-433",
+    "Static N0is3 Tvrn3d int0 Static Pain",
+    "Lucifer",
+    "Thai",
+    "Drag Den",
+    "Dope",
+    "Winter Walk",
+    "Dr.Star",
+    "unnamed012",
+    "Acid Tears",
+    "unnrR35sT",
+    "Snowgazer",
+    "Acid Tears",
+    "Lucifer",
+    "Understation",
+    "Winter Walk",
+    "ido",
+    "Acid Tears (t2)",
+    "Acid Tears",
+    "Understation",
+    "Starfighter",
+    "transmission1",
+    "Snowgazer",
+    "D0nor",
+    "Crying Witches",
+    "Acid Tears",
+    "transmission2",
+    "D0nor",
+    "Poignant",
+    "unnamed012",
+    "Drag Den",
+    "unnamed012"
+  ],
+  "count": 58,
+  "generatedAt": "2026-06-07T18:34:40.825Z",
+  "totalDuration": 16877.072266000006,
+  "regeneratedAtEpoch": 1780857280825,
+  "timeline": [
+    {
+      "title": "Crying Witches",
+      "album": "A Path of Static Snow",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/A Path of Static Snow/cover/cover-preview.webp",
+      "duration": 281,
+      "startOffset": 0
+    },
+    {
+      "title": "Static N0is3 Tvrn3d int0 Static Pain (intro)",
+      "album": "Wh1te Hous3",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/Wh1te Hous3/cover/cover-preview.webp",
+      "duration": 364,
+      "startOffset": 281
+    },
+    {
+      "title": "ethixeat",
+      "album": "ethixeat",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/ethixeat/cover/cover-preview.webp",
+      "duration": 269.774444,
+      "startOffset": 645
+    },
+    {
+      "title": "Dr. Star",
+      "album": "A Path of Static Snow (Deluxe Analog Edition)",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/cover/cover-preview.webp",
+      "duration": 172.428571,
+      "startOffset": 914.774444
+    },
+    {
+      "title": "hd1ep2amb.mmpz",
+      "album": "Wh1te Hous3",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/Wh1te Hous3/cover/cover-preview.webp",
+      "duration": 83.285714,
+      "startOffset": 1087.203015
+    },
+    {
+      "title": "K1ndn3ss",
+      "album": "Wh1te Hous3",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/Wh1te Hous3/cover/cover-preview.webp",
+      "duration": 480,
+      "startOffset": 1170.4887290000001
+    },
+    {
+      "title": "fallen_kingdom",
+      "album": "B TWIN",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/B TWIN/cover/cover-preview.webp",
+      "duration": 101.142857,
+      "startOffset": 1650.4887290000001
+    },
+    {
+      "title": "Acid Tears (t2)",
+      "album": "Wh1te Hous3",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/Wh1te Hous3/cover/cover-preview.webp",
+      "duration": 105.571066,
+      "startOffset": 1751.6315860000002
+    },
+    {
+      "title": "Crying Witches",
+      "album": "Wh1te Hous3 (Deluxe Analog Edition)",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/cover/cover-preview.webp",
+      "duration": 281,
+      "startOffset": 1857.2026520000002
+    },
+    {
+      "title": "Thai",
+      "album": "Wh1te Hous3 (Deluxe Analog Edition)",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/cover/cover-preview.webp",
+      "duration": 128,
+      "startOffset": 2138.202652
+    },
+    {
+      "title": "unnrR35sT",
+      "album": "Wh1te Hous3",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/Wh1te Hous3/cover/cover-preview.webp",
+      "duration": 244.285714,
+      "startOffset": 2266.202652
+    },
+    {
+      "title": "Dr. Star",
+      "album": "Wh1te Hous3 (Deluxe Analog Edition)",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/cover/cover-preview.webp",
+      "duration": 172.428571,
+      "startOffset": 2510.488366
+    },
+    {
+      "title": "Drag Den",
+      "album": "A Path of Static Snow",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/A Path of Static Snow/cover/cover-preview.webp",
+      "duration": 107.285714,
+      "startOffset": 2682.916937
+    },
+    {
+      "title": "wh1te_hous3-001",
+      "album": "Wh1te Hous3 (Deluxe Analog Edition)",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/cover/cover-preview.webp",
+      "duration": 3381.557619,
+      "startOffset": 2790.202651
+    },
+    {
+      "title": "Poignant",
+      "album": "Wh1te Hous3",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/Wh1te Hous3/cover/cover-preview.webp",
+      "duration": 219.385896,
+      "startOffset": 6171.760270000001
+    },
+    {
+      "title": "Dr. Star",
+      "album": "A Path of Static Snow",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/A Path of Static Snow/cover/cover-preview.webp",
+      "duration": 172.428571,
+      "startOffset": 6391.146166
+    },
+    {
+      "title": "Starfighter",
+      "album": "Wh1te Hous3",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/Wh1te Hous3/cover/cover-preview.webp",
+      "duration": 259.93,
+      "startOffset": 6563.574737000001
+    },
+    {
+      "title": "Drag Den",
+      "album": "A Path of Static Snow (Deluxe Analog Edition)",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/cover/cover-preview.webp",
+      "duration": 107.285714,
+      "startOffset": 6823.504737000001
+    },
+    {
+      "title": "K1ndn3ss",
+      "album": "Wh1te Hous3 (Deluxe Analog Edition)",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/cover/cover-preview.webp",
+      "duration": 480,
+      "startOffset": 6930.790451000001
+    },
+    {
+      "title": "hd1ep2amb.mmpz",
+      "album": "Wh1te Hous3 (Deluxe Analog Edition)",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/cover/cover-preview.webp",
+      "duration": 82.5,
+      "startOffset": 7410.790451000001
+    },
+    {
+      "title": "AC41-00050A",
+      "album": "B TWIN",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/B TWIN/cover/cover-preview.webp",
+      "duration": 435.771429,
+      "startOffset": 7493.290451000001
+    },
+    {
+      "title": "Crying Witches",
+      "album": "A Path of Static Snow (Deluxe Analog Edition)",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/cover/cover-preview.webp",
+      "duration": 281,
+      "startOffset": 7929.061880000001
+    },
+    {
+      "title": "unnamed012",
+      "album": "A Path of Static Snow (Deluxe Analog Edition)",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/cover/cover-preview.webp",
+      "duration": 305,
+      "startOffset": 8210.061880000001
+    },
+    {
+      "title": "Dope",
+      "album": "Wh1te Hous3",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/Wh1te Hous3/cover/cover-preview.webp",
+      "duration": 375,
+      "startOffset": 8515.061880000001
+    },
+    {
+      "title": "aclidiemt",
+      "album": "B TWIN",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/B TWIN/cover/cover-preview.webp",
+      "duration": 380.16,
+      "startOffset": 8890.061880000001
+    },
+    {
+      "title": "Winter Walk",
+      "album": "A Path of Static Snow (Deluxe Analog Edition)",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/cover/cover-preview.webp",
+      "duration": 321,
+      "startOffset": 9270.221880000001
+    },
+    {
+      "title": "SVR-433",
+      "album": "B TWIN",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/B TWIN/cover/cover-preview.webp",
+      "duration": 330.651429,
+      "startOffset": 9591.221880000001
+    },
+    {
+      "title": "Static N0is3 Tvrn3d int0 Static Pain",
+      "album": "Wh1te Hous3 (Deluxe Analog Edition)",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/cover/cover-preview.webp",
+      "duration": 360,
+      "startOffset": 9921.873309
+    },
+    {
+      "title": "Lucifer",
+      "album": "Wh1te Hous3",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/Wh1te Hous3/cover/cover-preview.webp",
+      "duration": 436.619433,
+      "startOffset": 10281.873309
+    },
+    {
+      "title": "Thai",
+      "album": "Wh1te Hous3",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/Wh1te Hous3/cover/cover-preview.webp",
+      "duration": 131.908299,
+      "startOffset": 10718.492742
+    },
+    {
+      "title": "Drag Den",
+      "album": "A Path of Static Snow (Deluxe Analog Edition)",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/cover/cover-preview.webp",
+      "duration": 106,
+      "startOffset": 10850.401041000001
+    },
+    {
+      "title": "Dope",
+      "album": "Wh1te Hous3 (Deluxe Analog Edition)",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/cover/cover-preview.webp",
+      "duration": 384,
+      "startOffset": 10956.401041000001
+    },
+    {
+      "title": "Winter Walk",
+      "album": "Wh1te Hous3 (Deluxe Analog Edition)",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/cover/cover-preview.webp",
+      "duration": 321,
+      "startOffset": 11340.401041000001
+    },
+    {
+      "title": "Dr.Star",
+      "album": "A Path of Static Snow (Deluxe Analog Edition)",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/cover/cover-preview.webp",
+      "duration": 170,
+      "startOffset": 11661.401041000001
+    },
+    {
+      "title": "unnamed012",
+      "album": "A Path of Static Snow (Deluxe Analog Edition)",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/cover/cover-preview.webp",
+      "duration": 305,
+      "startOffset": 11831.401041000001
+    },
+    {
+      "title": "Acid Tears",
+      "album": "A Path of Static Snow (Deluxe Analog Edition)",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/cover/cover-preview.webp",
+      "duration": 105,
+      "startOffset": 12136.401041000001
+    },
+    {
+      "title": "unnrR35sT",
+      "album": "Wh1te Hous3 (Deluxe Analog Edition)",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/cover/cover-preview.webp",
+      "duration": 244,
+      "startOffset": 12241.401041000001
+    },
+    {
+      "title": "Snowgazer",
+      "album": "Wh1te Hous3",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/Wh1te Hous3/cover/cover-preview.webp",
+      "duration": 224.45,
+      "startOffset": 12485.401041000001
+    },
+    {
+      "title": "Acid Tears",
+      "album": "Wh1te Hous3 (Deluxe Analog Edition)",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/cover/cover-preview.webp",
+      "duration": 104.570658,
+      "startOffset": 12709.851041000002
+    },
+    {
+      "title": "Lucifer",
+      "album": "Wh1te Hous3 (Deluxe Analog Edition)",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/cover/cover-preview.webp",
+      "duration": 434,
+      "startOffset": 12814.421699000002
+    },
+    {
+      "title": "Understation",
+      "album": "Wh1te Hous3",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/Wh1te Hous3/cover/cover-preview.webp",
+      "duration": 281,
+      "startOffset": 13248.421699000002
+    },
+    {
+      "title": "Winter Walk",
+      "album": "A Path of Static Snow",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/A Path of Static Snow/cover/cover-preview.webp",
+      "duration": 321,
+      "startOffset": 13529.421699000002
+    },
+    {
+      "title": "ido",
+      "album": "ido",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/ido/cover/cover-preview.webp",
+      "duration": 300,
+      "startOffset": 13850.421699000002
+    },
+    {
+      "title": "Acid Tears (t2)",
+      "album": "Wh1te Hous3 (Deluxe Analog Edition)",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/cover/cover-preview.webp",
+      "duration": 105,
+      "startOffset": 14150.421699000002
+    },
+    {
+      "title": "Acid Tears",
+      "album": "A Path of Static Snow",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/A Path of Static Snow/cover/cover-preview.webp",
+      "duration": 104.570658,
+      "startOffset": 14255.421699000002
+    },
+    {
+      "title": "Understation",
+      "album": "Wh1te Hous3 (Deluxe Analog Edition)",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/cover/cover-preview.webp",
+      "duration": 281,
+      "startOffset": 14359.992357000003
+    },
+    {
+      "title": "Starfighter",
+      "album": "Wh1te Hous3 (Deluxe Analog Edition)",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/cover/cover-preview.webp",
+      "duration": 260,
+      "startOffset": 14640.992357000003
+    },
+    {
+      "title": "transmission1",
+      "album": "B TWIN",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/B TWIN/cover/cover-preview.webp",
+      "duration": 32.297143,
+      "startOffset": 14900.992357000003
+    },
+    {
+      "title": "Snowgazer",
+      "album": "Wh1te Hous3 (Deluxe Analog Edition)",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/cover/cover-preview.webp",
+      "duration": 220,
+      "startOffset": 14933.289500000003
+    },
+    {
+      "title": "D0nor",
+      "album": "Wh1te Hous3",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/Wh1te Hous3/cover/cover-preview.webp",
+      "duration": 191.397823,
+      "startOffset": 15153.289500000003
+    },
+    {
+      "title": "Crying Witches",
+      "album": "A Path of Static Snow (Deluxe Analog Edition)",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/cover/cover-preview.webp",
+      "duration": 277.5,
+      "startOffset": 15344.687323000002
+    },
+    {
+      "title": "Acid Tears",
+      "album": "A Path of Static Snow (Deluxe Analog Edition)",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/A Path of Static Snow (Deluxe Analog Edition)/cover/cover-preview.webp",
+      "duration": 104.570658,
+      "startOffset": 15622.187323000002
+    },
+    {
+      "title": "transmission2",
+      "album": "B TWIN",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/B TWIN/cover/cover-preview.webp",
+      "duration": 25.028571,
+      "startOffset": 15726.757981000002
+    },
+    {
+      "title": "D0nor",
+      "album": "Wh1te Hous3 (Deluxe Analog Edition)",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/cover/cover-preview.webp",
+      "duration": 192,
+      "startOffset": 15751.786552000003
+    },
+    {
+      "title": "Poignant",
+      "album": "Wh1te Hous3 (Deluxe Analog Edition)",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/cover/cover-preview.webp",
+      "duration": 216,
+      "startOffset": 15943.786552000003
+    },
+    {
+      "title": "unnamed012",
+      "album": "A Path of Static Snow",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/A Path of Static Snow/cover/cover-preview.webp",
+      "duration": 305,
+      "startOffset": 16159.786552000003
+    },
+    {
+      "title": "Drag Den",
+      "album": "Wh1te Hous3 (Deluxe Analog Edition)",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/cover/cover-preview.webp",
+      "duration": 107.285714,
+      "startOffset": 16464.786552000005
+    },
+    {
+      "title": "unnamed012",
+      "album": "Wh1te Hous3 (Deluxe Analog Edition)",
+      "artist": "D7TUN6",
+      "coverUrl": "/media/music/Wh1te Hous3 (Deluxe Analog Edition)/cover/cover-preview.webp",
+      "duration": 305,
+      "startOffset": 16572.072266000006
+    }
+  ]
+}

@@ -39,10 +39,14 @@ h4 {
 }
 
 p {
-  font-size: 1.1rem;
+  font-size: 1.15rem;
   font-weight: 400;
   line-height: 1.55;
   margin: 12px 0;
+}
+
+.markdown-content {
+  font-size: 1.08rem;
 }
 
 .markdown-content img {
@@ -128,4 +132,3 @@ a:not(.main-nav a):not(.control-btn):not(.site-title-link):not(.stream-badge-ima
 .content-link-plain:focus-visible::before {
   background: var(--ui-border-strong);
 }
-

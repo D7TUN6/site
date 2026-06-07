@@ -7,9 +7,9 @@
     flex-wrap: wrap;
     justify-content: flex-start;
     margin-bottom: 12px;
-    position: relative;
-    inset: auto;
-    z-index: 1;
+    position: relative !important;
+    inset: auto !important;
+    z-index: 1 !important;
   }
 
   .control-btn {
@@ -60,7 +60,9 @@
   }
 
   .release-player-cover-large {
+    display: block;
     height: 160px;
+    margin: 0 auto;
     width: 160px;
   }
 
@@ -80,10 +82,10 @@
   }
 
   .release-player-head {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    align-items: flex-start;
+    display: grid;
+    gap: 10px;
+    grid-template-columns: auto 1fr;
+    align-items: center;
   }
 
   .release-player-meta {
@@ -91,61 +93,59 @@
     min-width: 0;
   }
 
-  .release-player-side {
-    display: flex;
-    flex: 0 0 100%;
-    flex-direction: row;
-    justify-content: space-between;
-    text-align: left;
-  }
-
   .release-player-track-name {
     font-size: 1.05rem;
   }
 
   body.has-now-playing-bar {
-    padding-bottom: calc(124px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
   }
 
-  .now-playing-bar {
-    padding: 6px 6px 8px;
-    padding-bottom: max(8px, env(safe-area-inset-bottom));
-    gap: 6px;
-  }
-
-  .now-playing-bar-top {
-    gap: 8px;
+  .now-playing-bar-inner {
+    gap: 4px;
+    padding: 3px 6px;
+    padding-bottom: max(3px, env(safe-area-inset-bottom));
   }
 
   .now-playing-controls {
     gap: 1px;
   }
 
-  .now-playing-info {
-    gap: 8px;
-  }
-
-  .now-playing-actions {
+  .now-playing-seek {
+    flex: 1 1 60px;
+    min-width: 40px;
     gap: 4px;
   }
 
-  .now-playing-cover {
-    height: 28px;
-    width: 28px;
+  .now-playing-seek-time {
+    font-size: 0.65rem;
+  }
+
+  .now-playing-info {
+    gap: 6px;
   }
 
   .now-playing-meta {
-    max-width: min(52vw, 240px);
+    max-width: min(36vw, 180px);
+  }
+
+  .now-playing-title {
+    font-size: 0.78rem;
+  }
+
+  .now-playing-actions {
+    gap: 1px;
+  }
+
+  .now-playing-cover {
+    height: 24px;
+    width: 24px;
   }
 
   .now-playing-nextup {
-    bottom: calc(116px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(60px + env(safe-area-inset-bottom, 0px));
     right: 8px;
     width: min(420px, calc(100vw - 16px));
-  }
-
-  .now-playing-volume-popup {
-    bottom: calc(100% + 6px);
   }
 
   .now-playing-fullscreen {
@@ -190,6 +190,68 @@
 
   .now-playing-fullscreen-tracklist {
     max-height: min(280px, 34vh);
+  }
+}
+
+
+@supports (-webkit-touch-callout: none) {
+  @media (hover: none) and (pointer: coarse) {
+    .release-player,
+    .release-player-top,
+    .release-player-content {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+    }
+
+    .release-player-head {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: flex;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      align-items: center;
+      -webkit-flex-wrap: wrap;
+      flex-wrap: wrap;
+      gap: 10px;
+      width: 100%;
+      max-width: 100%;
+      min-height: -webkit-min-content;
+      min-height: min-content;
+    }
+
+    .release-player-main-btn {
+      -webkit-flex-shrink: 0;
+      flex-shrink: 0;
+    }
+
+    .release-player-main,
+    .release-player-meta,
+    .release-player-list,
+    .release-download-panel {
+      min-width: 0;
+      width: 100%;
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+
+    .release-player-cover-large {
+      display: block;
+      margin: 0 0 12px;
+    }
+
+    .release-download-panel {
+      margin-top: 10px;
+    }
+
+    .release-download-options .form-field {
+      flex: 1 1 100%;
+      min-width: 0;
+    }
+
+    .release-download-options select.form-input {
+      max-width: 100%;
+    }
   }
 }
 

@@ -1,7 +1,7 @@
 import type { Lang, LocaleDictionary } from "@/types/content";
 
-import enLocaleSource from "../../public/locales/en.xml?raw";
-import ruLocaleSource from "../../public/locales/ru.xml?raw";
+import enLocaleSource from "@/locales/en.xml?raw";
+import ruLocaleSource from "@/locales/ru.xml?raw";
 
 const localeCache = new Map<Lang, Promise<LocaleDictionary>>();
 
@@ -10,7 +10,7 @@ const localeSourceByLang: Record<Lang, string> = {
   ru: ruLocaleSource
 };
 
-function isLocaleDictionary(input: unknown): input is LocaleDictionary {
+export function isLocaleDictionary(input: unknown): input is LocaleDictionary {
   if (!input || typeof input !== "object") {
     return false;
   }
@@ -25,6 +25,10 @@ function isLocaleDictionary(input: unknown): input is LocaleDictionary {
       candidate.nav?.blog &&
       candidate.nav?.links &&
       candidate.nav?.shop &&
+      candidate.nav?.projects &&
+      candidate.nav?.gallery &&
+      candidate.nav?.video &&
+      candidate.nav?.radio &&
       candidate.loader?.detecting &&
       candidate.loader?.fallback &&
       candidate.loader?.english &&
@@ -54,7 +58,11 @@ async function loadLocale(lang: Lang): Promise<LocaleDictionary> {
         news: text("nav > news"),
         blog: text("nav > blog"),
         links: text("nav > links"),
-        shop: text("nav > shop")
+        shop: text("nav > shop"),
+        projects: text("nav > projects"),
+        gallery: text("nav > gallery"),
+        video: text("nav > video"),
+        radio: text("nav > radio")
       },
       loader: {
         detecting: text("loader > detecting"),

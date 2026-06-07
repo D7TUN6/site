@@ -5,6 +5,24 @@
 @import "./modules/shop.css";
 @import "./modules/account.css";
 @import "./modules/release.css";
+@import "./modules/projects.css";
 @import "./modules/player.css";
 @import "./modules/status.css";
+@import "./modules/content.css";
 @import "./modules/responsive.css";
+
+.page-banners {
+  margin-bottom: var(--space-4);
+}
+
+.page-banner {
+  padding: var(--space-3);
+  margin-bottom: var(--space-3);
+  background: var(--color-surface);
+  border-left: 3px solid var(--color-accent);
+  border-radius: var(--radius-1);
+}
+
+.page-banner:last-child {
+  margin-bottom: 0;
+}

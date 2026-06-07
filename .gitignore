@@ -34,3 +34,4 @@ coverage/
 photo_*.jpg
 photo_*.jpeg
 photo_*.png
+.aider*

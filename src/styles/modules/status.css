@@ -2,6 +2,7 @@
   align-items: center;
   display: flex;
   height: 100vh;
+  height: 100dvh;
   justify-content: center;
   margin: 0;
   text-transform: none;
@@ -22,7 +23,7 @@
   position: absolute;
   inset: 0 0 auto 0;
   height: 2px;
-  background: rgba(0, 255, 106, 0.62);
+  background: var(--accent-hot-status-bg);
 }
 
 .loader p {
@@ -43,6 +44,7 @@
   height: 32px;
   margin: 0 auto 20px;
   width: 32px;
+  will-change: transform;
 }
 
 .loader-link {
@@ -120,4 +122,3 @@
     transform: rotate(360deg);
   }
 }
-

@@ -46,6 +46,6 @@ export function persistPreferredLanguage(lang: Lang): void {
   try {
     window.localStorage.setItem(PREFERRED_LANGUAGE_STORAGE_KEY, lang);
   } catch {
-    // Ignore storage failures and keep navigation working.
+    
   }
 }
