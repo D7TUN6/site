@@ -36,48 +36,59 @@ export function isLocaleDictionary(input: unknown): input is LocaleDictionary {
   );
 }
 
-async function loadLocale(lang: Lang): Promise<LocaleDictionary> {
+function parseLocale(lang: Lang): LocaleDictionary | null {
   const source = localeSourceByLang[lang];
-  const document = new DOMParser().parseFromString(source, "application/xml");
-  const parserError = document.querySelector("parsererror");
-  if (parserError) {
-    throw new Error(`Invalid locale XML for ${lang}`);
-  }
+  if (!source) return null;
+  try {
+    const document = new DOMParser().parseFromString(source, "application/xml");
+    const parserError = document.querySelector("parsererror");
+    if (parserError) return null;
 
-  const localeNode = document.querySelector("locale");
-  const text = (selector: string) => localeNode?.querySelector(selector)?.textContent?.trim() ?? "";
-  const parsed = {
-    locale: {
-      site: {
-        title: text("site > title")
-      },
-      nav: {
-        main: text("nav > main"),
-        bio: text("nav > bio"),
-        music: text("nav > music"),
-        news: text("nav > news"),
-        blog: text("nav > blog"),
-        links: text("nav > links"),
-        shop: text("nav > shop"),
-        projects: text("nav > projects"),
-        gallery: text("nav > gallery"),
-        video: text("nav > video"),
-        radio: text("nav > radio")
-      },
-      loader: {
-        detecting: text("loader > detecting"),
-        fallback: text("loader > fallback"),
-        english: text("loader > english"),
-        russian: text("loader > russian")
+    const localeNode = document.querySelector("locale");
+    if (!localeNode) return null;
+    const text = (selector: string) => localeNode.querySelector(selector)?.textContent?.trim() ?? "";
+    const parsed = {
+      locale: {
+        site: {
+          title: text("site > title")
+        },
+        nav: {
+          main: text("nav > main"),
+          bio: text("nav > bio"),
+          music: text("nav > music"),
+          news: text("nav > news"),
+          blog: text("nav > blog"),
+          links: text("nav > links"),
+          shop: text("nav > shop"),
+          projects: text("nav > projects"),
+          gallery: text("nav > gallery"),
+          video: text("nav > video"),
+          radio: text("nav > radio")
+        },
+        loader: {
+          detecting: text("loader > detecting"),
+          fallback: text("loader > fallback"),
+          english: text("loader > english"),
+          russian: text("loader > russian")
+        }
       }
-    }
-  } as const;
+    } as const;
 
-  if (!isLocaleDictionary(parsed.locale)) {
-    throw new Error(`Invalid locale schema for ${lang}`);
+    if (!isLocaleDictionary(parsed.locale)) return null;
+    return parsed.locale;
+  } catch {
+    return null;
   }
+}
 
-  return parsed.locale;
+export function getLocaleDictionarySync(lang: Lang): LocaleDictionary | null {
+  return parseLocale(lang);
+}
+
+async function loadLocale(lang: Lang): Promise<LocaleDictionary> {
+  const parsed = parseLocale(lang);
+  if (!parsed) throw new Error(`Invalid locale XML for ${lang}`);
+  return parsed;
 }
 
 export function getLocaleDictionary(lang: Lang): Promise<LocaleDictionary> {

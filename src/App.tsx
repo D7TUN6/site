@@ -1,5 +1,5 @@
 import { Match, Show, Switch, createEffect, createMemo, createSignal, onCleanup, onMount } from 'solid-js'
-import { getLocaleDictionary } from './lib/i18n'
+import { getLocaleDictionary, getLocaleDictionarySync } from './lib/i18n'
 import { getPageMarkdown } from './lib/pages'
 import { renderSimpleMarkdown } from './lib/simpleMarkdown'
 import { getUiCopy } from './lib/uiText'
@@ -102,12 +102,14 @@ function formatCount(count: number): string {
   return String(Math.max(0, Math.floor(count)))
 }
 
+const initialLang: Lang = window.location.pathname.split('/').filter(Boolean)[0] === 'ru' ? 'ru' : 'en'
+
 function App() {
   const [path, setPath] = createSignal(window.location.pathname)
   const parsed = createMemo(() => parsePathname(path()))
   const lang = createMemo(() => parsed().lang)
   const route = createMemo(() => parsed().route)
-  const [dict, setDict] = createSignal<LocaleDictionary | null>(null)
+  const [dict, setDict] = createSignal<LocaleDictionary | null>(getLocaleDictionarySync(initialLang))
   const [session, setSession] = createSignal<AuthState>({ authenticated: false, user: null })
   const [isAdmin, setIsAdmin] = createSignal(false)
   const [theme, setTheme] = createSignal<'dark' | 'light'>(loadTheme())
@@ -161,7 +163,7 @@ function App() {
 
   createEffect(() => {
     void getLocaleDictionary(lang()).then(setDict).catch((e) => { console.warn('Failed to load locale:', e); setDict(null) })
-    persistPreferredLanguage(lang())
+    try { persistPreferredLanguage(lang()) } catch {}
   })
 
   createEffect(() => {

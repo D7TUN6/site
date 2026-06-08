@@ -84,6 +84,8 @@ export function ReleasePlayer(props: { lang: Lang; release: ReleaseEntry }) {
   const [showCustomSrInput, setShowCustomSrInput] = createSignal(false)
   const [activeTab, setActiveTab] = createSignal<'basic' | 'advanced'>('basic')
 
+  const isRu = createMemo(() => props.lang === 'ru')
+
   const maxSampleRate = createMemo(() => {
     const track = props.release.tracks[0]
     return track?.sourceSampleRate ?? 192000
@@ -123,7 +125,6 @@ export function ReleasePlayer(props: { lang: Lang; release: ReleaseEntry }) {
   )
 
   const queuePayload = createMemo(() => buildPlayerQueueFromRelease(props.release, props.lang))
-  const isRu = createMemo(() => props.lang === 'ru')
   const isActiveQueue = createMemo(() => player.state.queue?.queueKey === props.release.slug)
   const activeIndex = createMemo(() => (isActiveQueue() ? player.state.currentIndex : 0))
   const activePosition = createMemo(() => (isActiveQueue() ? player.state.currentTime : 0))
