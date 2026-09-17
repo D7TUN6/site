@@ -1,127 +1,132 @@
-import express from 'express'
-import type { DatabaseSync } from 'node:sqlite'
+import { Elysia } from 'elysia'
+import type { DatabaseSync } from '../lib/sqlite.js'
 import { enforceSameOrigin } from '../lib/request-origin.js'
 import { getAppOrigin, isProduction } from '../lib/config.js'
-import { getCookie } from '../lib/cookies.js'
+import { getCookieByName } from '../lib/cookies.js'
 import { hashPassword, verifyPassword } from '../lib/password.js'
 import { USER_SESSION_COOKIE, clearUserSessionCookie, createUserSession, revokeUserSession, setUserSessionCookie } from '../lib/sessions.js'
+import { createRateLimiter } from '../lib/rate-limit.js'
+import { getRequestIp } from '../http/util.js'
+import { createSessionPlugin } from '../middleware/session.js'
 
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
-const RATE_LIMIT_WINDOW = 60_000
-const RATE_LIMIT_MAX = 10
+const checkRateLimit = createRateLimiter(10, 60_000)
 
-function checkRateLimit(key: string): boolean {
-  const now = Date.now()
-  const entry = rateLimitMap.get(key)
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW })
-    return true
-  }
-  if (entry.count >= RATE_LIMIT_MAX) return false
-  entry.count++
-  return true
-}
-// Periodically reclaim stale rate-limit entries
-setInterval(() => {
-  const now = Date.now()
-  for (const [key, entry] of rateLimitMap) if (now > entry.resetAt) rateLimitMap.delete(key)
-}, 300_000).unref()
+type AuthBody = { email?: string; password?: string; lang?: string }
 
 function normalizeEmail(raw: unknown) { return typeof raw === 'string' ? raw.trim().toLowerCase() : '' }
 function isValidEmail(email: string) { return !!email && email.length <= 320 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) }
 function isValidPassword(password: unknown) { return typeof password === 'string' && password.length >= 8 && password.length <= 200 }
 function pickLang(raw: unknown) { return raw === 'ru' || raw === 'en' ? raw : 'ru' }
-function userPublic(row: { id: number; email: string; email_verified: number } | undefined) { return row ? { id: row.id, email: row.email, emailVerified: Boolean(row.email_verified) } : null }
+function userPublic(row: { id: number; email: string; email_verified: number; role: string } | undefined | null) { return row ? { id: row.id, email: row.email, emailVerified: Boolean(row.email_verified), role: row.role } : null }
 
 export function createAuthRouter({ db }: { db: DatabaseSync }) {
-  const router = express.Router()
-
-  router.get('/me', (req, res) => {
-    res.setHeader('Cache-Control', 'no-store')
-    if (!req.user) return res.status(200).json({ user: null })
-    return res.status(200).json({ user: req.user })
-  })
-
-  router.get('/session', (req, res) => {
-    res.setHeader('Cache-Control', 'no-store')
-    if (!req.user) return res.status(200).json({ authenticated: false, user: null })
-    return res.status(200).json({ authenticated: true, user: req.user })
-  })
-
-  router.post('/logout', enforceSameOrigin, (req, res) => {
-    const sid = getCookie(req, USER_SESSION_COOKIE)
-    if (sid) revokeUserSession(db, sid)
-    clearUserSessionCookie(res)
-    return res.status(200).json({ ok: true })
-  })
-
-  router.post('/register', enforceSameOrigin, (req, res) => {
-    const ip = req.ip || 'unknown'
-    if (!checkRateLimit(`register:${ip}`)) return res.status(429).json({ error: 'Too many requests' })
-
-    const email = normalizeEmail(req.body?.email)
-    const password = req.body?.password
-    const lang = pickLang(req.body?.lang)
-    if (!isValidEmail(email)) return res.status(400).json({ error: lang === 'ru' ? 'Некорректный email' : 'Invalid email' })
-    if (!isValidPassword(password)) return res.status(400).json({ error: lang === 'ru' ? 'Некорректный пароль' : 'Invalid password' })
-
-    const createdAt = Date.now()
-    const passwordHash = hashPassword(password)
-    let userId = 0
-
-    db.exec('BEGIN IMMEDIATE;')
-    try {
-      const existing = db.prepare('SELECT id, email_verified FROM users WHERE email = ? LIMIT 1').get(email) as { id: number; email_verified: number } | undefined
-      if (existing?.email_verified) {
-        db.exec('ROLLBACK;')
-        return res.status(409).json({ error: lang === 'ru' ? 'Аккаунт уже существует, попробуйте вход' : 'Account already exists, try login' })
+  return new Elysia({ prefix: '/api/auth' })
+    .use(createSessionPlugin({ db }))
+    .get('/me', ({ user, set }) => {
+      set.headers['cache-control'] = 'no-store'
+      return { user: user ?? null }
+    })
+    .get('/session', ({ user, set }) => {
+      set.headers['cache-control'] = 'no-store'
+      if (!user) return { authenticated: false, user: null }
+      return { authenticated: true, user }
+    })
+    .post('/logout', ({ request, set }) => {
+      const sid = getCookieByName(request.headers.get('cookie'), USER_SESSION_COOKIE)
+      if (sid) revokeUserSession(db, sid)
+      set.headers['set-cookie'] = clearUserSessionCookie()
+      return { ok: true }
+    }, { beforeHandle: enforceSameOrigin })
+    .post('/register', ({ body, request, server, set }) => {
+      const ip = getRequestIp({ request, server })
+      if (!checkRateLimit(`register:${ip}`)) {
+        set.status = 429
+        return { error: 'Too many requests' }
       }
 
-      if (existing?.id) {
-        userId = existing.id
-        db.prepare('UPDATE users SET password_hash = ?, email_verified = 1, updated_at = ? WHERE id = ?').run(passwordHash, createdAt, userId)
-      } else {
-        const result = db.prepare('INSERT INTO users (email, password_hash, email_verified, created_at, updated_at) VALUES (?, ?, 1, ?, ?)').run(email, passwordHash, createdAt, createdAt)
-        userId = Number(result.lastInsertRowid)
+      const email = normalizeEmail((body as AuthBody | undefined)?.email)
+      const password = (body as AuthBody | undefined)?.password
+      const lang = pickLang((body as AuthBody | undefined)?.lang)
+      if (!isValidEmail(email)) {
+        set.status = 400
+        return { error: lang === 'ru' ? 'Некорректный email' : 'Invalid email' }
+      }
+      if (!isValidPassword(password)) {
+        set.status = 400
+        return { error: lang === 'ru' ? 'Некорректный пароль' : 'Invalid password' }
       }
 
-      db.exec('COMMIT;')
-      const user = db.prepare('SELECT id, email, email_verified FROM users WHERE id = ? LIMIT 1').get(userId) as { id: number; email: string; email_verified: number } | undefined
-      const session = createUserSession(db, { userId, ip: req.ip, userAgent: String(req.get('user-agent') || '') })
-      setUserSessionCookie(res, session.token)
-      return res.status(200).json({ ok: true, user: userPublic(user) })
-    } catch (error) {
-      try { db.exec('ROLLBACK;') } catch { /* rollback failed, nothing to do */ }
-      console.error('register failed', error)
-      return res.status(500).json({ error: 'Unable to register' })
-    }
-  })
+      const createdAt = Date.now()
+      const passwordHash = hashPassword(password!)
+      let userId = 0
 
-  router.post('/login', enforceSameOrigin, (req, res) => {
-    const ip = req.ip || 'unknown'
-    if (!checkRateLimit(`login:${ip}`)) return res.status(429).json({ error: 'Too many requests' })
+      let committed = false
+      try {
+        db.exec('BEGIN IMMEDIATE;')
+        const existing = db.prepare('SELECT id, email_verified FROM users WHERE email = ? LIMIT 1').get(email) as { id: number; email_verified: number } | undefined
+        if (existing?.email_verified) {
+          db.exec('ROLLBACK;')
+          committed = true
+          set.status = 409
+          return { error: lang === 'ru' ? 'Аккаунт уже существует, попробуйте вход' : 'Account already exists, try login' }
+        }
 
-    const email = normalizeEmail(req.body?.email)
-    const password = req.body?.password
-    const lang = pickLang(req.body?.lang)
-    if (!isValidEmail(email)) return res.status(400).json({ error: lang === 'ru' ? 'Некорректный email' : 'Invalid email' })
-    if (typeof password !== 'string') return res.status(400).json({ error: lang === 'ru' ? 'Некорректный пароль' : 'Invalid password' })
+        if (existing?.id) {
+          userId = existing.id
+          db.prepare('UPDATE users SET password_hash = ?, email_verified = 1, updated_at = ? WHERE id = ?').run(passwordHash, createdAt, userId)
+        } else {
+          const result = db.prepare('INSERT INTO users (email, password_hash, email_verified, created_at, updated_at) VALUES (?, ?, 1, ?, ?)').run(email, passwordHash, createdAt, createdAt)
+          userId = Number(result.lastInsertRowid)
+        }
 
-    const user = db.prepare('SELECT id, email, email_verified, password_hash FROM users WHERE email = ? LIMIT 1').get(email) as { id: number; email: string; email_verified: number; password_hash: string } | undefined
-    const DUMMY_HASH = 'scrypt$16384$8$1$00000000000000000000000000000000$000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
-    const storedHash = user?.password_hash ?? DUMMY_HASH
-    if (!verifyPassword(password, storedHash) || !user) {
-      return res.status(401).json({ error: lang === 'ru' ? 'Неверный email или пароль' : 'Invalid email or password' })
-    }
+        db.exec('COMMIT;')
+        committed = true
+        const user = db.prepare('SELECT id, email, email_verified, role FROM users WHERE id = ? LIMIT 1').get(userId) as { id: number; email: string; email_verified: number; role: string } | undefined
+        const userAgent = request.headers.get('user-agent') || ''
+        const session = createUserSession(db, { userId, ip, userAgent })
+        set.headers['set-cookie'] = setUserSessionCookie(session.token)
+        return { ok: true, user: userPublic(user) }
+      } catch (error) {
+        console.error('register failed', error)
+        set.status = 500
+        return { error: 'Unable to register' }
+      } finally {
+        if (!committed) { try { db.exec('ROLLBACK;') } catch { /* no transaction to roll back */ } }
+      }
+    }, { beforeHandle: enforceSameOrigin })
+    .post('/login', ({ body, request, server, set }) => {
+      const ip = getRequestIp({ request, server })
+      if (!checkRateLimit(`login:${ip}`)) {
+        set.status = 429
+        return { error: 'Too many requests' }
+      }
 
-    const session = createUserSession(db, { userId: user.id, ip: req.ip, userAgent: String(req.get('user-agent') || '') })
-    setUserSessionCookie(res, session.token)
-    return res.status(200).json({ ok: true, user: userPublic(user) })
-  })
+      const email = normalizeEmail((body as AuthBody | undefined)?.email)
+      const password = (body as AuthBody | undefined)?.password
+      const lang = pickLang((body as AuthBody | undefined)?.lang)
+      if (!isValidEmail(email)) {
+        set.status = 400
+        return { error: lang === 'ru' ? 'Некорректный email' : 'Invalid email' }
+      }
+      if (typeof password !== 'string') {
+        set.status = 400
+        return { error: lang === 'ru' ? 'Некорректный пароль' : 'Invalid password' }
+      }
 
-  router.get('/config', (_req, res) => {
-    return res.status(200).json({ ok: true, origin: getAppOrigin(), requireEmailVerification: false, enforceSecureCookies: isProduction() })
-  })
+      const user = db.prepare('SELECT id, email, email_verified, role, password_hash FROM users WHERE email = ? LIMIT 1').get(email) as { id: number; email: string; email_verified: number; role: string; password_hash: string } | undefined
+      const DUMMY_HASH = 'scrypt$16384$8$1$00000000000000000000000000000000$000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+      const storedHash = user?.password_hash ?? DUMMY_HASH
+      if (!verifyPassword(password, storedHash) || !user) {
+        set.status = 401
+        return { error: lang === 'ru' ? 'Неверный email или пароль' : 'Invalid email or password' }
+      }
 
-  return router
+      const userAgent = request.headers.get('user-agent') || ''
+      const session = createUserSession(db, { userId: user.id, ip, userAgent })
+      set.headers['set-cookie'] = setUserSessionCookie(session.token)
+      return { ok: true, user: userPublic(user) }
+    }, { beforeHandle: enforceSameOrigin })
+    .get('/config', () => {
+      return { ok: true, origin: getAppOrigin(), requireEmailVerification: false, enforceSecureCookies: isProduction() }
+    })
 }

@@ -1,11 +1,19 @@
-import type { RequestHandler } from 'express'
-
-export const requireUser: RequestHandler = (req, res, next) => {
-  if (!req.user) return res.status(401).json({ error: 'Unauthorized' })
-  return next()
+type AuthGuardContext = {
+  user?: unknown
+  isAdmin?: unknown
+  set: { status?: number | string }
 }
 
-export const requireAdmin: RequestHandler = (req, res, next) => {
-  if (!req.isAdmin) return res.status(401).json({ error: 'Unauthorized' })
-  return next()
+export function requireUser({ user, set }: AuthGuardContext) {
+  if (!user) {
+    set.status = 401
+    return { error: 'Unauthorized' }
+  }
+}
+
+export function requireAdmin({ isAdmin, set }: AuthGuardContext) {
+  if (!isAdmin) {
+    set.status = 401
+    return { error: 'Unauthorized' }
+  }
 }

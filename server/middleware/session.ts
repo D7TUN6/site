@@ -1,24 +1,29 @@
-import type { RequestHandler } from 'express'
-import type { DatabaseSync } from 'node:sqlite'
-import { getCookie } from '../lib/cookies.js'
+import { Elysia } from 'elysia'
+import type { DatabaseSync } from '../lib/sqlite.js'
+import { getCookieByName } from '../lib/cookies.js'
 import { ADMIN_SESSION_COOKIE, USER_SESSION_COOKIE, getUserBySessionToken, isAdminSessionValid } from '../lib/sessions.js'
 
-export function installSessionMiddleware({ db }: { db: DatabaseSync }): RequestHandler {
-  return (req, _res, next) => {
-    try {
-      const sid = getCookie(req, USER_SESSION_COOKIE)
-      req.user = sid ? getUserBySessionToken(db, sid) : null
-    } catch {
-      req.user = null
-    }
+type AppUser = { id: number; email: string; emailVerified: boolean; role: string }
 
-    try {
-      const asid = getCookie(req, ADMIN_SESSION_COOKIE)
-      req.isAdmin = asid ? isAdminSessionValid(db, asid) : false
-    } catch {
-      req.isAdmin = false
-    }
+export function createSessionPlugin({ db }: { db: DatabaseSync }) {
+  return (app: Elysia) =>
+    app.derive(({ request }) => {
+      let user: AppUser | null
+      try {
+        const sid = getCookieByName(request.headers.get('cookie'), USER_SESSION_COOKIE)
+        user = sid ? getUserBySessionToken(db, sid) : null
+      } catch {
+        user = null
+      }
 
-    return next()
-  }
+      let isAdmin: boolean
+      try {
+        const asid = getCookieByName(request.headers.get('cookie'), ADMIN_SESSION_COOKIE)
+        isAdmin = asid ? isAdminSessionValid(db, asid) : false
+      } catch {
+        isAdmin = false
+      }
+
+      return { user, isAdmin }
+    })
 }

@@ -9,8 +9,8 @@ import alternativesSource from '../../content/projects/oss-migrator/alternatives
 
 type Strings = typeof enStrings
 
-const enStringsObj: Strings = enStrings as any
-const ruStringsObj: Strings = ruStrings as any
+const enStringsObj = enStrings as Strings
+const ruStringsObj = ruStrings as Strings
 
 function getStrings(lang: Lang): Strings {
   return lang === 'ru' ? ruStringsObj : enStringsObj
@@ -146,7 +146,6 @@ export function OssMigrationWizard(props: { lang: Lang }) {
   function computeResult(): OssResult {
     const q = visibleQuestions()
 
-    let dependency = 0
     const profileScores: Record<string, number> = {
       gamer: 0,
       designer: 0,
@@ -163,9 +162,8 @@ export function OssMigrationWizard(props: { lang: Lang }) {
     for (const question of q) {
       const optionId = answers()[question.id]
       if (!optionId) continue
-      const option = question.options.find((o: any) => o.id === optionId)
+      const option = question.options.find((o) => o.id === optionId)
       if (!option) continue
-      dependency += Math.max(0, option.weight)
       for (const profile of option.profile ?? []) {
         profileScores[profile] = (profileScores[profile] ?? 0) + 1
       }
@@ -355,7 +353,7 @@ export function OssMigrationWizard(props: { lang: Lang }) {
     try {
       await navigator.clipboard.writeText(url)
     } catch {
-      
+      console.warn('Failed to copy share URL to clipboard')
     }
   }
 
@@ -366,10 +364,9 @@ export function OssMigrationWizard(props: { lang: Lang }) {
         <p class="oss-subtitle">{strings().subtitle}</p>
       </header>
 
-      <div class="oss-progress now-playing-progress" role="progressbar" aria-valuenow={progressPct()} aria-valuemin={0} aria-valuemax={100}>
+      <div class="oss-progress now-playing-progress is-static" role="progressbar" aria-valuenow={progressPct()} aria-valuemin={0} aria-valuemax={100}>
         <span class="now-playing-progress-buffer" style={{ width: '100%' }} />
         <span class="now-playing-progress-fill" style={{ width: `${progressPct()}%` }} />
-        <span class="now-playing-progress-knob" style={{ left: `${progressPct()}%` }} />
       </div>
 
       <Show when={!isComplete() && current()}>

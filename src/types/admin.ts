@@ -1,8 +1,10 @@
 import type { ShopProductStatus } from '@/types/shop'
 
-export type AdminReleaseTrack = {
+type AdminReleaseTrack = {
   filename: string
   title: string
+  previewable?: boolean
+  isMain?: boolean
 }
 
 export type AdminRelease = {
@@ -15,6 +17,16 @@ export type AdminRelease = {
   releaseDate: string | null
   releaseType: string
   hidden?: boolean
+  links?: {
+    spotify: string | null
+    yandexMusic: string | null
+    bandcamp: string | null
+    soundcloud: string | null
+  }
+  genres?: {
+    main: string[]
+    sub: string[]
+  }
 }
 
 export type AdminShopProduct = {
@@ -27,9 +39,4 @@ export type AdminShopProduct = {
   images: string[]
   coverImage: string | null
   description: { en: string; ru: string }
-}
-
-export type AdminDashboard = {
-  releases: AdminRelease[]
-  shopProducts: AdminShopProduct[]
 }

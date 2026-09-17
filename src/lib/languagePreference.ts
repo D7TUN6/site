@@ -15,6 +15,7 @@ export function readPreferredLanguage(): Lang | null {
     const stored = window.localStorage.getItem(PREFERRED_LANGUAGE_STORAGE_KEY);
     return isLang(stored) ? stored : null;
   } catch {
+    console.warn('Failed to read preferred language')
     return null;
   }
 }
@@ -46,6 +47,6 @@ export function persistPreferredLanguage(lang: Lang): void {
   try {
     window.localStorage.setItem(PREFERRED_LANGUAGE_STORAGE_KEY, lang);
   } catch {
-    
+    console.warn('Failed to persist preferred language')
   }
 }

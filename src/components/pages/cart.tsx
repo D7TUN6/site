@@ -1,6 +1,6 @@
 import { For, Show, createMemo, createSignal, onMount } from 'solid-js'
 import { getAllShopProducts } from '@/lib/shop'
-import { formatShopMoney } from '@/lib/money'
+import { formatShopMoney } from '@/lib/ruble'
 import { createOrder, getMyOrders } from '@/lib/api/orders'
 import { createYookassaPayment } from '@/lib/api/payments'
 import { getPublicConfig } from '@/lib/api/config'
@@ -101,10 +101,10 @@ export function CartPage(props: {
                     </div>
                     <div class="cart-line-meta">
                       <div class="cart-line-price">{line.product ? formatShopMoney(line.product.price, props.lang) : '—'}</div>
-                      <div class="cart-line-qty">
-                        <button type="button" class="shop-btn" onClick={() => setCartQuantity(line.slug, line.quantity - 1)}>-</button>
+                      <div class="cart-line-qty" role="group" aria-label={props.lang === 'ru' ? 'количество' : 'quantity'}>
+                        <button type="button" class="shop-btn" aria-label={props.lang === 'ru' ? 'уменьшить' : 'decrease'} onClick={() => setCartQuantity(line.slug, line.quantity - 1)}>-</button>
                         <span>{line.quantity}</span>
-                        <button type="button" class="shop-btn" onClick={() => setCartQuantity(line.slug, line.quantity + 1)}>+</button>
+                        <button type="button" class="shop-btn" aria-label={props.lang === 'ru' ? 'увеличить' : 'increase'} onClick={() => setCartQuantity(line.slug, line.quantity + 1)}>+</button>
                         <button type="button" class="cart-remove" onClick={() => setCartQuantity(line.slug, 0)}>{props.lang === 'ru' ? 'удалить' : 'remove'}</button>
                       </div>
                     </div>
@@ -142,8 +142,11 @@ export function CartPage(props: {
                 <input class="form-input" value={checkoutComment()} onInput={(e) => setCheckoutComment(e.currentTarget.value)} />
               </label>
             </div>
-            <Show when={checkoutStatus() === 'error' || checkoutStatus() === 'ok'}>
-              <p class="checkout-hint">{checkoutMessage()}</p>
+            <Show when={checkoutStatus() === 'error'}>
+              <p class="checkout-hint" role="alert">{checkoutMessage()}</p>
+            </Show>
+            <Show when={checkoutStatus() === 'ok'}>
+              <p class="checkout-hint" aria-live="polite">{checkoutMessage()}</p>
             </Show>
             <Show when={checkoutProvider() !== 'custom'}>
               <PickupPointPicker lang={props.lang} provider={checkoutProvider()} city={checkoutPickup()} value={checkoutPickupPoint()} onChange={setCheckoutPickupPoint} />

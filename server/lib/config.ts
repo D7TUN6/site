@@ -1,3 +1,14 @@
+const REQUIRED_ENV_VARS = ['APP_SECRET'] as const
+
+export function validateEnv() {
+  for (const name of REQUIRED_ENV_VARS) {
+    if (!process.env[name]) {
+      console.error(`Missing required env var: ${name}`)
+      process.exit(1)
+    }
+  }
+}
+
 export function isProduction() {
   return process.env.NODE_ENV === 'production'
 }
@@ -17,6 +28,6 @@ export function getAppSecret() {
   return requireEnv('APP_SECRET')
 }
 
-export function getAppOrigin() {
+export function getAppOrigin(): string {
   return getOptionalEnv('APP_ORIGIN', '')
 }

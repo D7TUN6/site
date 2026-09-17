@@ -1,0 +1,107 @@
+/* ── Device adaptation: client levels + performance tiers ──
+ *
+ * Level classes (.level-0..3) are set on <html> by the server (see
+ * server/lib/client-detect.ts). Tier classes (.tier-0..4) are set by the
+ * client hybrid detector (see src/lib/perf/tier-detector.ts), cached in
+ * localStorage and applied before first paint.
+ *
+ * All heavy effects default ON (target behavior for capable machines). The
+ * rules below peel them back by tier:
+ *
+ *   tier 0 (low-end)  — CRT, RGB bleed, noise, blur and canvas-grain off.
+ *   tier 1 (budget)   — static CSS scanlines only, no dynamic shaders/blur.
+ *   tier 2 (mid)      — full CRT emulation, calmer flicker.
+ *   tier 3 (high)     — full stack (default).
+ *   tier 4 (ultra)    — full stack (default).
+ */
+
+/* 1. Legacy clients (level-0..2). They are served a JS-free shell and never
+      load this stylesheet, but the rules stay for safety if any of it leaks. */
+html.level-0::after,
+html.level-1::after,
+html.level-2::after,
+html.level-0::before,
+html.level-1::before,
+html.level-2::before {
+  display: none !important;
+  animation: none !important;
+}
+html.level-0 body,
+html.level-1 body,
+html.level-2 body {
+  text-shadow: none !important;
+}
+html.level-0 body::after,
+html.level-1 body::after,
+html.level-2 body::after {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  animation: none !important;
+}
+
+/* 2. tier-0 (low-end): disable CRT, RGB bleed, noise, glass blur, bg filter. */
+html.tier-0::after,
+html.tier-0::before {
+  display: none !important;
+  animation: none !important;
+}
+html.tier-0 body {
+  text-shadow: none !important;
+}
+html.tier-0 body::before {
+  -webkit-filter: none !important;
+  filter: none !important;
+}
+html.tier-0 body::after {
+  display: none !important;
+}
+html.tier-0 {
+  --glass-blur: brightness(1.05) saturate(1.05);
+  --bg-image-filter: brightness(1);
+}
+
+/* 3. tier-1 (budget): static scanlines only — no grain, no rolling bar, no
+      blur, luminance breathing switched off. */
+html.tier-1::after,
+html.tier-1::before {
+  display: none !important;
+  animation: none !important;
+}
+html.tier-1 body::after {
+  -webkit-backdrop-filter: brightness(1.05);
+  backdrop-filter: brightness(1.05);
+  animation: none !important;
+}
+html.tier-1 {
+  --glass-blur: blur(5px) saturate(1.1);
+}
+
+/* 4. tier-2 (mid): keep the full CRT stack, at a calmer cadence. */
+html.tier-2::after {
+  animation-duration: 0.3s !important;
+}
+html.tier-2::before {
+  animation-duration: 12s !important;
+}
+
+/* 5. tier-3 / tier-4: full effect stack (default — nothing to add).
+
+/* 6. Elegant degradation for engines without modern features: every custom
+      property ships with a plain fallback, and layout only gains flex/grid
+      inside @supports guards. */
+.button {
+  background-color: #1a1a1a;
+  background-color: var(--btn-bg, #1a1a1a);
+  color: #ffffff;
+  padding: 8px;
+}
+main {
+  width: 100%;
+  display: block;
+}
+@supports (display: flex) {
+  main {
+    display: flex;
+    flex-direction: column;
+  }
+}

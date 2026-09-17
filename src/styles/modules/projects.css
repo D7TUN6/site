@@ -1,9 +1,13 @@
 .projects-grid {
   display: grid;
-  gap: 21px;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  margin-top: 14px;
-  max-width: 960px;
+  gap: 17px;
+  grid-template-columns: repeat(auto-fill, minmax(144px, 1fr));
+  margin-top: 11px;
+  max-width: 768px;
+}
+
+.projects-index {
+  margin-bottom: 14px;
 }
 
 .project-card-desc {
@@ -13,39 +17,74 @@
   font-size: 0.8rem;
   letter-spacing: 0.06em;
   line-height: 1.35;
-  margin-top: 10px;
-  text-transform: none;
+  margin-top: 8px;
+  text-transform: lowercase;
+}
+
+.projects-index .release-title {
+  text-transform: lowercase;
+}
+
+.projects-index h1 {
+  text-transform: lowercase;
+}
+
+.projects-grid .release-card {
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-shadow);
+  padding: 10px;
+}
+
+.oss-container {
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  box-shadow: var(--glass-shadow);
+  margin-bottom: 14px;
+  max-width: 720px;
+  padding: 14px;
+}
+
+.oss-container .oss-head {
+  margin-bottom: 0;
 }
 
 .oss-head {
   display: grid;
-  gap: 8px;
-  margin-bottom: 14px;
-  max-width: 860px;
+  gap: 6px;
+  margin-bottom: 11px;
+  max-width: 688px;
 }
 
 .oss-subtitle {
   color: var(--muted-color);
   margin: 0;
-  max-width: 860px;
+  max-width: 688px;
 }
 
 .oss-progress {
-  margin: 18px 0 22px;
-  max-width: 860px;
+  margin: 14px 0 18px;
+  max-width: 688px;
 }
 
 .oss-card {
   background: var(--ui-surface);
   border: 1px solid var(--ui-border);
-  max-width: 860px;
-  padding: 16px;
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-shadow);
+  max-width: 688px;
+  padding: 13px;
 }
 
 .oss-meta {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .oss-step {
@@ -58,12 +97,12 @@
 
 .oss-question {
   font-size: 1.2rem;
-  margin: 0 0 12px;
+  margin: 0 0 10px;
 }
 
 .oss-options {
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
 
 .oss-option {
@@ -73,21 +112,24 @@
 .oss-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 16px;
+  gap: 8px;
+  margin-top: 13px;
 }
 
 .oss-result-top {
   display: grid;
-  gap: 14px;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  margin-bottom: 18px;
+  gap: 11px;
+  grid-template-columns: repeat(auto-fit, minmax(176px, 1fr));
+  margin-bottom: 14px;
 }
 
 .oss-metric {
   background: var(--ui-surface-2);
   border: 1px solid var(--ui-border);
-  padding: 12px;
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-shadow);
+  padding: 10px;
 }
 
 .oss-metric-label {
@@ -103,39 +145,42 @@
   font-size: 1.55rem;
   font-weight: 800;
   letter-spacing: 0.06em;
-  margin-top: 8px;
+  margin-top: 6px;
   text-transform: uppercase;
 }
 
 .oss-block {
-  margin-top: 16px;
+  margin-top: 13px;
 }
 
 .oss-block-title {
   font-size: 1.05rem;
-  margin: 0 0 10px;
+  margin: 0 0 8px;
 }
 
 .oss-alt-grid {
   display: grid;
-  gap: 10px;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(192px, 1fr));
 }
 
 .oss-alt-card {
-  background: rgba(0, 0, 0, 0.35);
+  background: var(--ui-surface-2);
   border: 1px solid var(--ui-border);
   color: inherit;
   display: grid;
-  gap: 6px;
-  padding: 12px;
+  gap: 5px;
+  padding: 10px;
   text-decoration: none;
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-shadow);
   transition: border-color var(--transition-speed), background-color var(--transition-speed), transform var(--transition-speed);
 }
 
 .oss-alt-card:hover,
 .oss-alt-card:focus-visible {
-  background: rgba(0, 0, 0, 0.55);
+  background: var(--ui-surface);
   border-color: var(--ui-border-strong);
   outline: none;
   transform: translateY(-1px);
@@ -166,6 +211,5 @@
 .oss-communities {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
-

@@ -1,0 +1,199 @@
+/* ── Site settings menu (gear button) ──
+ *
+ * The gear lives in the top-right `.controls` row. The panel is a fixed
+ * popup right under it, reusing the site glass/panel/toggle vocabulary from
+ * the player (`.audio-settings-head`, `.audio-settings-toggle`).
+ */
+
+.control-gear {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+  line-height: 1;
+  padding: 5px 5px;
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+}
+.control-gear svg {
+  display: block;
+  height: 12px;
+  width: 12px;
+}
+
+.site-settings-panel {
+  animation: audio-settings-enter 0.18s ease both;
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-shadow);
+  display: flex;
+  flex-direction: column;
+  max-height: min(420px, calc(100vh - 72px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  position: fixed;
+  right: 11px;
+  right: max(11px, env(safe-area-inset-right));
+  top: 44px;
+  top: calc(max(10px, env(safe-area-inset-top)) + 34px);
+  width: min(300px, calc(100vw - 22px));
+  z-index: 1900;
+}
+
+.site-settings-body {
+  padding: 4px 11px 10px;
+}
+
+.site-settings-section {
+  padding: 8px 0 6px;
+}
+.site-settings-section + .site-settings-section {
+  border-top: 1px solid var(--ui-border);
+}
+
+.site-settings-label {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  opacity: 0.6;
+  text-transform: uppercase;
+}
+
+.site-settings-desc {
+  font-size: 0.8rem;
+  line-height: 1.35;
+  margin: 2px 0 0;
+  opacity: 0.72;
+}
+
+.site-settings-row {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.site-settings-grid {
+  display: grid;
+  gap: 4px;
+  grid-template-columns: repeat(auto-fit, minmax(52px, 1fr));
+  margin-top: 6px;
+}
+
+.site-settings-grid button {
+  background: var(--ui-surface-2);
+  border: 1px solid var(--ui-border);
+  color: var(--muted-color);
+  cursor: var(--cursor-link-select);
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  padding: 4px 6px;
+  text-transform: uppercase;
+}
+
+.site-settings-grid button:hover:not(:disabled),
+.site-settings-grid button:focus-visible:not(:disabled) {
+  background: var(--invert-bg);
+  border-color: var(--invert-border);
+  color: var(--invert-text);
+  outline: none;
+}
+
+.site-settings-grid button.is-active {
+  background: rgba(var(--accent-hot-rgb), 0.2);
+  border-color: var(--accent-hot);
+  box-shadow: inset 0 0 0 1px var(--accent-hot);
+  color: var(--text-color);
+}
+
+/* ── Effects master switch ──
+ *
+ * Kills the four cheap CRT layers: rgb bleed + bloom (body text-shadow),
+ * tube scanlines/vignette (body::after), rolling bar (html::before) and
+ * film grain / noise (html::after). Overrides keep working on every tier.
+ */
+html.effects-off body {
+  text-shadow: none !important;
+}
+html.effects-off body::after {
+  animation: none !important;
+  display: none !important;
+}
+html.effects-off::before {
+  animation: none !important;
+  display: none !important;
+}
+html.effects-off::after {
+  animation: none !important;
+  display: none !important;
+}
+
+/* ── Low-vision mode (WCAG-aligned) ── */
+
+html.a11y-on {
+  /* ~17% bigger base type (rem-scaled, px layout untouched) */
+  font-size: 70%;
+  background-color: var(--bg-color);
+
+  --text-color: #ffffff;
+  --muted-color: #e8e8f2;
+  --ui-surface: rgba(10, 8, 18, 0.94);
+  --ui-surface-2: rgba(18, 14, 30, 0.9);
+  --ui-border: rgba(246, 246, 255, 0.88);
+  --ui-border-strong: rgba(246, 246, 255, 0.98);
+  --glass-blur: none;
+  --bg-image-filter: brightness(0.8);
+  --scanline-color: transparent;
+  --crt-roll-color: transparent;
+}
+html.a11y-on[data-theme="light"] {
+  --text-color: #000000;
+  --muted-color: #12121a;
+  --ui-surface: rgba(250, 250, 252, 0.96);
+  --ui-surface-2: rgba(238, 238, 242, 0.96);
+  --ui-border: rgba(0, 0, 0, 0.6);
+  --ui-border-strong: rgba(0, 0, 0, 0.88);
+  --bg-image-filter: brightness(1.08) contrast(1.06);
+}
+
+html.a11y-on body {
+  text-shadow: none !important;
+}
+html.a11y-on body::after {
+  animation: none !important;
+  display: none !important;
+}
+html.a11y-on::before,
+html.a11y-on::after {
+  animation: none !important;
+  display: none !important;
+}
+html.a11y-on body::before {
+  -webkit-filter: brightness(0.86) saturate(1) contrast(1.25) !important;
+  filter: brightness(0.86) saturate(1) contrast(1.25) !important;
+}
+
+html.a11y-on a,
+html.a11y-on a:visited {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 2px;
+}
+
+html.a11y-on :focus-visible {
+  box-shadow: 0 0 0 3px var(--accent-hot-glow), 0 0 0 1px var(--accent-hot);
+  outline: 2px solid var(--accent-hot) !important;
+  outline-offset: 2px !important;
+}
+
+/* Reduced flicker / motion for a11y mode regardless of OS settings. */
+html.a11y-on *,
+html.a11y-on *::before,
+html.a11y-on *::after {
+  animation: none !important;
+  transition-duration: 0.01ms !important;
+}

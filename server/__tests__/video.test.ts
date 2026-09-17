@@ -1,39 +1,5 @@
-import { describe, it, expect } from 'vitest'
-
-// parseFrontmatter from server/routes/video.ts (replicated for testability)
-function parseFrontmatter(raw: string): Record<string, unknown> {
-  const match = raw.match(/^---\n([\s\S]*?)\n---\n?/)
-  if (!match) return {}
-  const body = match[1]
-  const attrs: Record<string, unknown> = {}
-  for (const line of body.split('\n')) {
-    const sep = line.indexOf(':')
-    if (sep === -1) continue
-    const key = line.slice(0, sep).trim()
-    let val: unknown = line.slice(sep + 1).trim()
-    const rawVal = String(val)
-    if (rawVal === 'true') val = true
-    else if (rawVal === 'false') val = false
-    else if (/^\d+$/.test(rawVal)) val = Number(rawVal)
-    else if (typeof val === 'string') val = val.replace(/^["']|["']$/g, '')
-    attrs[key] = val
-  }
-  const sourcesMatch = raw.match(/^sources:\n((?:\s+- .+\n)*)/m)
-  if (sourcesMatch) {
-    const sourcesLines = sourcesMatch[1].trim().split('\n')
-    const sources: Array<Record<string, string>> = sourcesLines.map((line: string) => {
-      const item: Record<string, string> = {}
-      const parts = line.replace(/^\s*-\s*/, '').split(',').map((s: string) => s.trim())
-      for (const part of parts) {
-        const [k, ...v] = part.split(':')
-        if (k && v.length) item[k.trim()] = v.join(':').trim()
-      }
-      return item
-    })
-    attrs.sources = sources as unknown[]
-  }
-  return attrs
-}
+import { describe, it, expect } from 'bun:test'
+import { parseFrontmatter } from '../lib/frontmatter.js'
 
 describe('video parseFrontmatter', () => {
   it('parses title, date, duration, thumbnail', () => {
@@ -100,5 +66,21 @@ Body`
     expect(sources).toHaveLength(2)
     expect(sources[0].resolution).toBeUndefined()
     expect(sources[1].resolution).toBe('4k')
+  })
+
+  it('parses multi-line sources format', () => {
+    const input = `---
+title: HLS Test
+date: "2025-06-01"
+sources:
+  - url: /media/video/test/videos/hls/index.m3u8
+    type: application/vnd.apple.mpegurl
+---
+Body`
+    const attrs = parseFrontmatter(input)
+    const sources = attrs.sources as Array<Record<string, string>>
+    expect(sources).toHaveLength(1)
+    expect(sources[0].url).toBe('/media/video/test/videos/hls/index.m3u8')
+    expect(sources[0].type).toBe('application/vnd.apple.mpegurl')
   })
 })

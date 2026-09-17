@@ -1,7 +1,8 @@
-import { For, Show, createResource, createSignal, onCleanup } from 'solid-js'
-import { getRadioState, getRadioTracks, getNowPlaying, reportListener, getBroadcastPosition } from '@/lib/api/radio'
-import type { Lang, NowPlayingInfo } from '@/types/content'
-import Hls from 'hls.js/light'
+import { For, Show, createResource, onCleanup, onMount } from 'solid-js'
+import { getRadioState } from '@/lib/api/radio'
+import { usePlayer } from '@/features/player/usePlayer'
+import { SkeletonBlock } from '@/components/skeleton'
+import type { Lang } from '@/types/content'
 
 function fmtTime(sec: number): string {
   const m = Math.floor(sec / 60)
@@ -12,186 +13,85 @@ function fmtTime(sec: number): string {
 export function RadioPage(props: {
   lang: Lang
 }) {
-  const [state] = createResource(getRadioState)
-  const [tracks] = createResource(getRadioTracks)
-  const [isPlaying, setIsPlaying] = createSignal(false)
-  const [nowPlaying, setNowPlaying] = createSignal<NowPlayingInfo | null>(null)
-  let audioRef: HTMLAudioElement | undefined
-  let hls: Hls | null = null
-  let audioResetTimer: ReturnType<typeof setInterval> | undefined
+  const player = usePlayer()
+  const [state, { refetch }] = createResource(getRadioState)
 
-  // poll current position every second while playing
-  let pollTimer: ReturnType<typeof setInterval> | undefined
-  const startPoll = () => {
-    stopPoll()
-    pollTimer = setInterval(() => {
-      if (!audioRef) return
-      const pos = audioRef.currentTime
-      if (pos > 0) getNowPlaying(pos).then(setNowPlaying).catch(() => {})
-
-      // keep listener alive
-      reportListener(0).catch(() => {})
-    }, 1000)
-  }
-  const stopPoll = () => {
-    if (pollTimer !== undefined) clearInterval(pollTimer)
-    pollTimer = undefined
-  }
-  
-  // reset audio element periodically during playback to sync with live broadcast
-  const startAudioResetTimer = () => {
-    stopAudioResetTimer()
-    audioResetTimer = setInterval(() => {
-      if (!audioRef || !isPlaying()) return
-      getBroadcastPosition().then((pos) => {
-        if (pos > 0) audioRef.currentTime = pos
-      }).catch(() => {})
-    }, 2000)
-  }
-  const stopAudioResetTimer = () => {
-    if (audioResetTimer !== undefined) clearInterval(audioResetTimer)
-    audioResetTimer = undefined
-  }
-
-  const destroyHls = () => {
-    hls?.destroy()
-    hls = null
-  }
-
-  const seekToLive = () => {
-    if (!audioRef) return
-    getBroadcastPosition().then((pos) => {
-      if (audioRef && pos > 0) audioRef.currentTime = pos
-    }).catch(() => {})
-  }
-
-  const attachStream = (seekLive = false): Promise<void> => {
-    return new Promise((resolve) => {
-      if (!audioRef) { resolve(); return }
-      
-      // completely reset audio element to avoid overlap and sync to live
-      audioRef.pause()
-      audioRef.currentTime = 0
-      audioRef.removeAttribute('src')
-      audioRef.load()
-      
-      setNowPlaying(null)
-
-      const supportsNativeHls = audioRef.canPlayType('application/vnd.apple.mpegurl') !== ''
-      if (supportsNativeHls) {
-        audioRef.src = '/api/radio/stream'
-        const onReady = () => {
-          if (seekLive) seekToLive()
-          resolve()
-        }
-        audioRef.addEventListener('loadedmetadata', onReady, { once: true })
-        audioRef.addEventListener('error', () => resolve(), { once: true })
-      } else if (Hls.isSupported()) {
-        hls = new Hls()
-        hls.loadSource('/api/radio/stream')
-        hls.attachMedia(audioRef)
-        hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          if (seekLive) seekToLive()
-          resolve()
-        })
-        hls.on(Hls.Events.ERROR, () => resolve())
-      } else {
-        resolve()
-      }
-    })
-  }
-
-  const togglePlay = async () => {
-    if (!audioRef) return
-    
-    if (isPlaying()) {
-      stopPoll()
-      stopAudioResetTimer()
-      audioRef.pause()
-      setIsPlaying(false)
-      destroyHls()
-      await reportListener(-1)
-    } else {
-      // First stop any existing playback to avoid overlap
-      destroyHls()
-      
-      await reportListener(1)
-      await attachStream(true)
-      audioRef.play().then(() => {
-        setIsPlaying(true)
-        startPoll()
-        startAudioResetTimer()
-      }).catch(() => {})
-    }
-  }
-
-  onCleanup(() => {
-    stopPoll()
-    stopAudioResetTimer()
-    destroyHls()
-    if (isPlaying()) {
-      reportListener(-1).catch(() => {})
-    }
+  onMount(() => {
+    const id = window.setInterval(() => refetch(), 3000)
+    onCleanup(() => window.clearInterval(id))
   })
+
+  const isPlaying = () => player.state.radioActive && player.state.playing
+  const nowPlaying = () => player.state.radioTrack
+  const progressPct = () => {
+    const np = nowPlaying()
+    if (!np || np.duration <= 0) return 0
+    return Math.max(0, Math.min(100, (np.elapsed / np.duration) * 100))
+  }
+
+  const toggle = () => {
+    if (player.state.radioActive) player.stopRadio()
+    else void player.startRadio()
+  }
 
   return (
     <>
       <h1>{props.lang === 'ru' ? 'радио' : 'radio'}</h1>
 
+      <Show when={!state.loading} fallback={
+        <div>
+          <div style={{ display: 'flex', gap: '11px', 'align-items': 'center', 'margin-bottom': '16px' }}>
+            <SkeletonBlock height="30px" width="80px" />
+            <SkeletonBlock height="11px" width="96px" />
+          </div>
+          <SkeletonBlock height="14px" width="144px" style={{ 'margin-bottom': '10px' }} />
+          <div style={{ display: 'flex', 'flex-direction': 'column', gap: '5px' }}>
+            {Array.from({ length: 5 }, () => (
+              <SkeletonBlock height="26px" />
+            ))}
+          </div>
+        </div>
+      }>
+
       <div class="radio-player">
-        <audio ref={audioRef} />
-        <button class="shop-btn radio-play-btn" onClick={togglePlay}>
+        <button class="shop-btn radio-play-btn" onClick={toggle}>
           {isPlaying() ? (props.lang === 'ru' ? 'стоп' : 'stop') : (props.lang === 'ru' ? 'слушать' : 'listen')}
         </button>
         <Show when={state()}>
           {(s) => (
             <div class="radio-info">
               <p class="radio-listeners">{props.lang === 'ru' ? 'слушателей' : 'listeners'}: {s().listeners}</p>
-              <Show when={s().currentTrack}>
-                <p class="radio-track">{s().currentTrack}</p>
-              </Show>
             </div>
           )}
         </Show>
       </div>
 
-      <Show when={nowPlaying()?.ok}>
-        <div class="radio-now-playing">
-          <Show when={nowPlaying()!.coverUrl}>
-            <img
-              class="radio-now-cover"
-              src={nowPlaying()!.coverUrl!}
-              alt={nowPlaying()!.album || ''}
-              width="120"
-              height="120"
-            />
-          </Show>
-          <div class="radio-now-info">
-            <p class="radio-now-track">{nowPlaying()!.title}</p>
-            <p class="radio-now-artist">{nowPlaying()!.artist}</p>
-            <p class="radio-now-album">{nowPlaying()!.album}</p>
-            <div class="radio-now-progress">
-              <span class="radio-now-elapsed">{fmtTime(nowPlaying()!.elapsed || 0)}</span>
-              <progress class="radio-now-bar" value={nowPlaying()!.elapsed || 0} max={nowPlaying()!.duration || 0} />
-              <span class="radio-now-duration">{fmtTime(nowPlaying()!.duration || 0)}</span>
+      <Show when={nowPlaying()}>
+        {(np) => (
+          <div class="radio-now-playing">
+            <Show when={np().coverUrl}>
+              <img
+                class="radio-now-cover"
+                src={np().coverUrl!}
+                alt={np().album || ''}
+                width="120"
+                height="120"
+              />
+            </Show>
+            <div class="radio-now-info">
+              <p class="radio-now-track">{np().title}</p>
+              <p class="radio-now-artist">{np().artist}{isPlaying() ? '' : props.lang === 'ru' ? ' · пауза' : ' · paused'}</p>
+              <p class="radio-now-album">{np().album}</p>
+              <div class="radio-now-progress">
+                <span class="radio-now-elapsed">{fmtTime(np().elapsed || 0)}</span>
+                <div class="radio-now-bar" role="progressbar" aria-valuemin={0} aria-valuemax={np().duration || 0} aria-valuenow={np().elapsed || 0} aria-label="Live position">
+                  <span class="radio-now-bar-fill" style={{ width: `${progressPct()}%` }} />
+                </div>
+                <span class="radio-now-duration">{fmtTime(np().duration || 0)}</span>
+              </div>
             </div>
           </div>
-        </div>
-      </Show>
-
-      <Show when={tracks() && tracks()!.length > 0} fallback={
-        <p class="muted">{props.lang === 'ru' ? 'нет доступных треков' : 'no tracks available'}</p>
-      }>
-        <h2>{props.lang === 'ru' ? 'доступные треки' : 'available tracks'}</h2>
-        <div class="radio-track-list">
-          <For each={tracks()!}>
-            {(track) => (
-              <a class="radio-track-item" href={`/media/radio/${track}`} target="_blank">
-                {track}
-              </a>
-            )}
-          </For>
-        </div>
+        )}
       </Show>
 
       <Show when={state() && state()!.schedule.length > 0}>
@@ -207,6 +107,7 @@ export function RadioPage(props: {
             )}
           </For>
         </div>
+      </Show>
       </Show>
     </>
   )

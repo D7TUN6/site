@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from 'bun:test'
 import { renderSimpleMarkdown } from '@/lib/simpleMarkdown'
 
 describe('renderSimpleMarkdown', () => {
@@ -8,8 +8,8 @@ describe('renderSimpleMarkdown', () => {
 
   it('renders headings', () => {
     expect(renderSimpleMarkdown('# Title')).toBe('<h1>Title</h1>')
-    expect(renderSimpleMarkdown('## Subtitle')).toBe('<h2>Subtitle</h2>')
-    expect(renderSimpleMarkdown('### Subsubtitle')).toBe('<h3>Subsubtitle</h3>')
+    expect(renderSimpleMarkdown('## Subtitle')).toBe('<h2 id="subtitle">Subtitle</h2>')
+    expect(renderSimpleMarkdown('### Subsubtitle')).toBe('<h3 id="subsubtitle">Subsubtitle</h3>')
   })
 
   it('escapes HTML in headings', () => {
@@ -31,7 +31,7 @@ describe('renderSimpleMarkdown', () => {
 
   it('closes list before heading', () => {
     const result = renderSimpleMarkdown('- Item\n## Heading')
-    expect(result).toBe('<ul>\n<li>Item</li>\n</ul>\n<h2>Heading</h2>')
+    expect(result).toBe('<ul>\n<li>Item</li>\n</ul>\n<h2 id="heading">Heading</h2>')
   })
 
   it('closes list before paragraph', () => {
@@ -44,7 +44,7 @@ describe('renderSimpleMarkdown', () => {
   })
 
   it('renders inline links', () => {
-    expect(renderSimpleMarkdown('Click [here](https://example.com)')).toBe('<p>Click <a href="https://example.com">here</a></p>')
+    expect(renderSimpleMarkdown('Click [here](https://example.com)')).toBe('<p>Click <a href="https://example.com" target="_blank" rel="noopener noreferrer">here</a></p>')
   })
 
   it('renders bold inside list items', () => {
@@ -67,6 +67,25 @@ describe('renderSimpleMarkdown', () => {
 
   it('passes through HTML block tags', () => {
     expect(renderSimpleMarkdown('<b>not bold</b>')).toBe('<b>not bold</b>')
+  })
+
+  it('adds target=_blank to raw HTML links when openLinksInNewTab is set', () => {
+    const result = renderSimpleMarkdown('<p>watch <a href="https://t.me/x/1022">on tg</a></p>', { openLinksInNewTab: true })
+    expect(result).toContain('<a href="https://t.me/x/1022" target="_blank" rel="noopener noreferrer">')
+  })
+
+  it('adds target=_blank to relative links when openLinksInNewTab is set', () => {
+    const result = renderSimpleMarkdown('[back](/ru/blog)', { openLinksInNewTab: true })
+    expect(result).toContain('<a href="/ru/blog" target="_blank" rel="noopener noreferrer">')
+  })
+
+  it('does not touch links without the option', () => {
+    expect(renderSimpleMarkdown('<a href="https://example.com">x</a>')).toBe('<a href="https://example.com">x</a>')
+  })
+
+  it('leaves existing target attributes untouched', () => {
+    const result = renderSimpleMarkdown('<a href="https://example.com" target="_self">x</a>', { openLinksInNewTab: true })
+    expect(result).toBe('<a href="https://example.com" target="_self">x</a>')
   })
 
   it('handles unclosed inline markers with graceful degradation', () => {

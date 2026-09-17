@@ -1,0 +1,138 @@
+/* ── /links — terminal tree / ascii panels ── */
+
+.links-page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 100%;
+  margin: 8px 0 8px;
+}
+
+.links-module {
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-shadow);
+  max-width: 100%;
+  padding: 13px 18px 28px;
+  width: fit-content;
+}
+
+.links-term {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.links-cmd {
+  font-family: var(--font-ui);
+  font-size: 1.08rem;
+  letter-spacing: 0.03em;
+  line-height: 1.6;
+  color: var(--text-color);
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.links-prompt {
+  color: var(--accent-hot);
+  font-weight: bold;
+  margin-right: 0.4em;
+  text-shadow: 0 0 8px var(--accent-hot-glow), var(--bleed-fringe);
+}
+
+.links-cursor {
+  display: inline-block;
+  width: 0.6em;
+  height: 1em;
+  margin-left: 0.25em;
+  vertical-align: text-bottom;
+  color: var(--accent-color);
+  overflow: hidden;
+  animation: links-blink 1.1s steps(1) infinite;
+}
+
+.links-cmd-idle {
+  margin-top: 6px;
+}
+
+@keyframes links-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+.links-loading {
+  color: var(--accent-color);
+  font-family: ui-monospace, "Cascadia Mono", "JetBrains Mono", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.98rem;
+  letter-spacing: 0.12em;
+  line-height: 1.7;
+  text-shadow: 0 0 8px var(--text-glow-soft), var(--bleed-fringe);
+}
+
+.links-loading-dots {
+  color: var(--text-fog-1);
+}
+
+/* printed terminal output — bigger, brighter, mono */
+.links-output {
+  font-family: ui-monospace, "Cascadia Mono", "JetBrains Mono", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.96rem;
+  line-height: 1.7;
+  color: var(--text-color);
+  overflow-x: auto;
+  padding: 2px 0;
+}
+
+.links-output .links-line {
+  white-space: pre;
+  animation: links-line-in 0.12s steps(2, end) both;
+}
+
+@keyframes links-line-in {
+  0% { opacity: 0; }
+  50% { opacity: 0.35; }
+  100% { opacity: 1; }
+}
+
+.links-tree-count {
+  color: var(--accent-color);
+}
+
+.links-row-literal {
+  color: inherit;
+}
+
+.links-head {
+  color: var(--accent-color);
+  font-weight: 600;
+  text-shadow: 0 0 8px var(--text-glow-soft), var(--bleed-fringe);
+}
+
+.links-foot {
+  color: var(--accent-color);
+}
+
+.links-url {
+  color: var(--accent-hot);
+  font-weight: 500;
+  text-decoration: none;
+  position: relative;
+}
+
+.links-url:hover {
+  color: var(--accent-hot);
+  text-shadow: 0 0 10px var(--accent-hot-glow), var(--bleed-fringe);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .links-cursor,
+  .links-output .links-line {
+    animation: none;
+  }
+
+  .links-cursor {
+    opacity: 0.8;
+  }
+}

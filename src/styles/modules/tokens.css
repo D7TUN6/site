@@ -1,51 +1,57 @@
 @font-face {
-  font-family: "BigBlueTerm";
+  font-family: "AmigaTopaz";
   src:
-    local("BigBlueTerm"),
     local("BigBlueTermPlusNerdFont-Regular"),
     local("Big Blue Term"),
-    url("/media/fonts/BigBlueTermPlusNerdFont-Regular.woff2?v=20260425-1") format("woff2");
+    url("/media/fonts/AmigaTopaz-subset.woff2?v=20260913-1") format("woff2");
   font-display: swap;
   font-style: normal;
   font-weight: 400;
 }
 
 :root {
-  --font-body: "BigBlueTerm", monospace;
-  --font-ui: "BigBlueTerm", monospace;
-  --font-display: "BigBlueTerm", monospace;
+  --font-body: "AmigaTopaz", monospace;
+  --font-ui: "AmigaTopaz", monospace;
+  --font-display: "AmigaTopaz", monospace;
 
   --bg-color: #07070c;
   --text-color: rgba(246, 246, 255, 0.94);
   --muted-color: rgba(246, 246, 255, 0.72);
 
   --accent-color: #b7a6ff;
-  --accent-hot: #00ff6a;
-  --accent-hot-rgb: 0, 255, 106;
-  --accent-hot-glow: rgba(var(--accent-hot-rgb), 0.24);
-  --accent-hot-glow-soft: rgba(var(--accent-hot-rgb), 0.2);
-  --accent-hot-inset: rgba(var(--accent-hot-rgb), 0.36);
-  --accent-hot-status-bg: rgba(var(--accent-hot-rgb), 0.62);
+  --accent-hot: #b881c8;
+  --accent-hot-rgb: 184, 129, 200;
+  --accent-hot-glow: rgba(var(--accent-hot-rgb), 0.28);
+  --accent-hot-glow-soft: rgba(var(--accent-hot-rgb), 0.22);
+  --accent-hot-inset: rgba(var(--accent-hot-rgb), 0.38);
+  --accent-hot-status-bg: rgba(var(--accent-hot-rgb), 0.68);
   --danger-color: #ff2d55;
   --warning-color: #ffd400;
+  --ok-color: #5ee08a;
 
-  --ui-surface: rgba(0, 0, 0, 0.84);
-  --ui-surface-2: rgba(10, 8, 18, 0.9);
+  --ui-surface: rgba(12, 9, 22, 0.62);
+  --ui-surface-2: rgba(20, 15, 34, 0.52);
   --ui-border: rgba(246, 246, 255, 0.4);
   --ui-border-strong: rgba(246, 246, 255, 0.78);
+  --glass-tint: linear-gradient(165deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.014) 36%, rgba(0, 0, 0, 0.16) 100%);
+  --glass-blur: blur(14px) saturate(1.3);
+  --glass-shadow: 0 12px 34px rgba(0, 0, 0, 0.34), 0 2px 6px rgba(0, 0, 0, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 -1px 0 rgba(0, 0, 0, 0.16);
 
   --invert-bg: rgba(255, 255, 255, 0.92);
   --invert-border: rgba(255, 255, 255, 0.92);
   --invert-text: rgba(0, 0, 0, 0.92);
 
-  --bg-image-opacity: 0.66;
-  --bg-image-filter: none;
-  --scanline-color: rgba(255, 255, 255, 0.028);
+  --bg-image-opacity: 1;
+  --bg-image-filter: brightness(1.3);
+  --scanline-color: rgba(255, 255, 255, 0.05);
+  --crt-roll-color: rgba(255, 255, 255, 0.04);
+  --crt-vignette-color: rgba(0, 0, 0, 0.13);
+  --crt-glow-color: rgba(255, 255, 255, 0.06);
   --overlay-gradient: linear-gradient(
     180deg,
-    rgba(10, 9, 19, 0.44) 0%,
-    rgba(42, 37, 82, 0.3) 55%,
-    rgba(0, 0, 0, 0.58) 100%
+    rgba(10, 9, 19, 0.32) 0%,
+    rgba(42, 37, 82, 0.2) 55%,
+    rgba(0, 0, 0, 0.5) 100%
   );
   --fullscreen-overlay: linear-gradient(180deg, rgba(0, 0, 0, 0.86) 0%, rgba(10, 8, 18, 0.94) 100%);
 
@@ -64,12 +70,58 @@
   --fallback-bg: linear-gradient(180deg, #0a0913 0%, #2a2552 100%);
   --text-glow-soft: rgba(183, 166, 255, 0.22);
   --text-glow-hard: rgba(183, 166, 255, 0.36);
-  --text-fog-1: rgba(183, 166, 255, 0.28);
+  --text-fog-1: rgba(183, 166, 255, 0.46);
   --text-fog-2: rgba(var(--accent-hot-rgb), 0.22);
   --text-fog-3: rgba(255, 212, 0, 0.18);
   --text-fog-4: rgba(255, 45, 85, 0.16);
 
+  /* RGB bleed fringe — re-attach to any element whose text-shadow is
+     overridden (hover states) so the electron-gun ghosting survives. */
+  --bleed-fringe: 0.8px 0 0 rgba(255, 20, 80, 0.32), -0.8px 0 0 rgba(0, 200, 255, 0.32);
+
   color-scheme: dark;
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --text-color: #ffffff;
+    --muted-color: #dddddd;
+    --ui-border: rgba(246, 246, 255, 0.7);
+    --ui-border-strong: rgba(246, 246, 255, 0.92);
+  }
+  :root[data-theme="light"] {
+    --text-color: #000000;
+    --muted-color: #1a1a1a;
+    --ui-border: rgba(0, 0, 0, 0.5);
+    --ui-border-strong: rgba(0, 0, 0, 0.78);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  body::before {
+    transition: none;
+  }
+  .release-card:hover {
+    transform: none;
+  }
+  .blog-card:hover {
+    transform: none;
+  }
+  .release-download-spinner {
+    animation: none;
+    opacity: 0.6;
+  }
+  .now-playing-progress-knob,
+  .release-player-timeline-knob,
+  .release-player-track-plays,
+  .release-player-track-like {
+    transition: none;
+  }
 }
 
 :root[data-theme="light"] {
@@ -80,19 +132,23 @@
   --muted-color: rgba(10, 10, 14, 0.68);
 
   --accent-color: #3f51ff;
-  --accent-hot: #00b85c;
-  --accent-hot-rgb: 0, 184, 92;
-  --accent-hot-glow: rgba(var(--accent-hot-rgb), 0.22);
-  --accent-hot-glow-soft: rgba(var(--accent-hot-rgb), 0.18);
-  --accent-hot-inset: rgba(var(--accent-hot-rgb), 0.3);
-  --accent-hot-status-bg: rgba(var(--accent-hot-rgb), 0.5);
+  --accent-hot: #7e4595;
+  --accent-hot-rgb: 126, 69, 149;
+  --accent-hot-glow: rgba(var(--accent-hot-rgb), 0.24);
+  --accent-hot-glow-soft: rgba(var(--accent-hot-rgb), 0.2);
+  --accent-hot-inset: rgba(var(--accent-hot-rgb), 0.34);
+  --accent-hot-status-bg: rgba(var(--accent-hot-rgb), 0.55);
   --danger-color: #c0002d;
   --warning-color: #b38f00;
+  --ok-color: #0a7a34;
 
-  --ui-surface: rgba(248, 248, 250, 0.92);
-  --ui-surface-2: rgba(229, 229, 233, 0.94);
+  --ui-surface: rgba(248, 248, 250, 0.66);
+  --ui-surface-2: rgba(229, 229, 233, 0.58);
   --ui-border: rgba(0, 0, 0, 0.22);
   --ui-border-strong: rgba(0, 0, 0, 0.46);
+  --glass-tint: linear-gradient(165deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.18) 36%, rgba(120, 110, 150, 0.06) 100%);
+  --glass-blur: blur(14px) saturate(1.25);
+  --glass-shadow: 0 12px 34px rgba(50, 40, 90, 0.16), 0 2px 6px rgba(50, 40, 90, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.85), inset 0 -1px 0 rgba(0, 0, 0, 0.05);
 
   --invert-bg: rgba(0, 0, 0, 0.88);
   --invert-border: rgba(0, 0, 0, 0.88);
@@ -100,14 +156,17 @@
 
   --bg-image-opacity: 0.45;
   --bg-image-filter: grayscale(0.08) brightness(1.04) contrast(0.94);
-  --scanline-color: rgba(0, 0, 0, 0.045);
+  --scanline-color: rgba(0, 0, 0, 0.06);
+  --crt-roll-color: rgba(90, 90, 105, 0.09);
+  --crt-vignette-color: rgba(0, 0, 0, 0.12);
+  --crt-glow-color: rgba(255, 255, 255, 0.05);
   --overlay-gradient: linear-gradient(
     180deg,
-    rgba(235, 232, 242, 0.62) 0%,
-    rgba(222, 214, 232, 0.34) 55%,
-    rgba(0, 0, 0, 0.14) 100%
+    rgba(235, 232, 242, 0.24) 0%,
+    rgba(222, 214, 232, 0.12) 55%,
+    rgba(0, 0, 0, 0.21) 100%
   );
-  --fullscreen-overlay: linear-gradient(180deg, rgba(246, 246, 248, 0.96) 0%, rgba(214, 214, 218, 0.96) 100%);
+  --fullscreen-overlay: linear-gradient(180deg, rgba(246, 246, 248, 0.88) 0%, rgba(214, 214, 218, 0.90) 100%);
 
   --scrollbar-color-thumb: rgba(0, 0, 0, 0.28);
   --scrollbar-color-track: rgba(0, 0, 0, 0.12);
@@ -121,7 +180,7 @@
   --fallback-bg: linear-gradient(180deg, #f2f2f4 0%, #c9c9cb 100%);
   --text-glow-soft: rgba(0, 0, 0, 0.1);
   --text-glow-hard: rgba(0, 0, 0, 0.16);
-  --text-fog-1: rgba(63, 81, 255, 0.18);
+  --text-fog-1: rgba(63, 81, 255, 0.34);
   --text-fog-2: rgba(var(--accent-hot-rgb), 0.16);
   --text-fog-3: rgba(179, 143, 0, 0.14);
   --text-fog-4: rgba(192, 0, 45, 0.12);

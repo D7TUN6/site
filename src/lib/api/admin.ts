@@ -11,20 +11,19 @@ export function getAdminShop() {
 }
 
 export function getAdminMe() {
-  return apiFetchJson<{ ok: boolean; isAdmin: boolean; email: string | null }>('/api/admin/me')
+  return apiFetchJson<{ ok: boolean; isAdmin: boolean; email: string | null }>('/api/admin/auth/me')
 }
 
 export function adminLogin(payload: { email: string; password: string }) {
-  return apiFetchJson<{ ok: boolean }>('/api/admin/login', {
+  return apiFetchJson<{ ok: boolean }>('/api/admin/auth/login', {
     method: 'POST',
     body: JSON.stringify(payload),
   })
 }
 
 export function adminLogout() {
-  return apiFetchJson<{ ok: boolean }>('/api/admin/logout', {
+  return apiFetchJson<{ ok: boolean }>('/api/admin/auth/logout', {
     method: 'POST',
-    body: JSON.stringify({}),
   })
 }
 
@@ -36,6 +35,9 @@ export function updateAdminRelease(slug: string, patch: {
   trackRenames?: Record<string, string>
   trackDeletes?: string[]
   hidden?: boolean
+  links?: Record<string, string | null>
+  trackMeta?: Record<string, { previewable?: boolean; isMain?: boolean }>
+  genres?: { main: string[]; sub: string[] }
 }) {
   return apiFetchJson<{ ok: boolean; slug?: string }>(`/api/admin/releases/${encodeURIComponent(slug)}`, {
     method: 'PATCH',
@@ -46,7 +48,6 @@ export function updateAdminRelease(slug: string, patch: {
 export function deleteAdminRelease(slug: string) {
   return apiFetchJson<{ ok: boolean }>(`/api/admin/releases/${encodeURIComponent(slug)}`, {
     method: 'DELETE',
-    body: JSON.stringify({}),
   })
 }
 
@@ -85,7 +86,6 @@ export function updateAdminShopProduct(slug: string, patch: Partial<{
 export function deleteAdminShopProduct(slug: string) {
   return apiFetchJson<{ ok: boolean }>(`/api/admin/shop/${encodeURIComponent(slug)}`, {
     method: 'DELETE',
-    body: JSON.stringify({}),
   })
 }
 
@@ -106,7 +106,6 @@ export async function uploadAdminShopImages(slug: string, files: File[]) {
 export function deleteAdminShopImage(slug: string, filename: string) {
   return apiFetchJson<{ ok: boolean }>(`/api/admin/shop/${encodeURIComponent(slug)}/images/${encodeURIComponent(filename)}`, {
     method: 'DELETE',
-    body: JSON.stringify({}),
   })
 }
 
@@ -141,7 +140,6 @@ export function updateAdminOrder(orderId: string, patch: Partial<{ status: strin
 export function createAdminMockOrder() {
   return apiFetchJson<{ ok: boolean; orderId: string }>('/api/admin/orders/mock', {
     method: 'POST',
-    body: JSON.stringify({}),
   })
 }
 
@@ -171,7 +169,6 @@ export async function uploadAdminReleaseCover(slug: string, file: File) {
 export function deleteAdminReleaseCover(slug: string) {
   return apiFetchJson<{ ok: boolean }>(`/api/admin/releases/${encodeURIComponent(slug)}/cover`, {
     method: 'DELETE',
-    body: JSON.stringify({}),
   })
 }
 
@@ -233,7 +230,7 @@ export function createAdminBanner(data: { page: string; text: string; active?: b
   })
 }
 
-export function updateAdminBanner(id: number, data: { text?: string; active?: boolean }) {
+export function updateAdminBanner(id: number, data: { text?: string; active?: boolean; page?: string }) {
   return apiFetchJson<{ ok: boolean }>(`/api/admin/banners/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(data),
@@ -243,11 +240,35 @@ export function updateAdminBanner(id: number, data: { text?: string; active?: bo
 export function deleteAdminBanner(id: number) {
   return apiFetchJson<{ ok: boolean }>(`/api/admin/banners/${id}`, {
     method: 'DELETE',
-    body: JSON.stringify({}),
   })
 }
 
 // ─── New: Users ───
+export type AdminSubmission = {
+  id: number
+  userId: number
+  artistId: number | null
+  type: string
+  status: string
+  data: unknown
+  feedback: string
+  scheduledAt: number | null
+  createdAt: number
+  userEmail: string | null
+}
+
+export function getAdminSubmissions(status?: string) {
+  const q = status ? `?status=${encodeURIComponent(status)}` : ''
+  return apiFetchJson<{ ok: boolean; submissions: AdminSubmission[] }>(`/api/admin/submissions${q}`)
+}
+
+export function reviewAdminSubmission(id: number, body: { status: 'approved' | 'rejected'; feedback?: string; scheduledAt?: number | null }) {
+  return apiFetchJson<{ ok: boolean; status: string; scheduled?: boolean }>(`/api/admin/submissions/${id}/review`, {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  })
+}
+
 export type AdminUser = { id: number; email: string; email_verified: number; banned: number; banned_at: number | null; created_at: number; updated_at: number }
 
 export function getAdminUsers() {
@@ -264,6 +285,140 @@ export function updateAdminUser(id: number, data: { email?: string; password?: s
 export function deleteAdminUser(id: number) {
   return apiFetchJson<{ ok: boolean }>(`/api/admin/users/${id}`, {
     method: 'DELETE',
-    body: JSON.stringify({}),
+  })
+}
+
+// ─── Admin: Artists ───
+export type AdminArtist = {
+  id: number
+  userId: number | null
+  name: string
+  slug: string
+  bio: string
+  avatar_url: string
+  status: string
+  verified: number
+  feedback_message: string
+  created_at: number
+}
+
+export function getAdminArtists() {
+  return apiFetchJson<{ ok: boolean; artists: AdminArtist[] }>('/api/admin/artists')
+}
+
+export function verifyAdminArtist(id: number, verified: boolean) {
+  return apiFetchJson<{ ok: boolean; verified: boolean }>(`/api/admin/artists/${id}/verify`, {
+    method: 'PUT',
+    body: JSON.stringify({ verified }),
+  })
+}
+
+// ─── Admin: Artist Applications (moderation) ───
+export type AdminArtistApplication = {
+  id: number
+  userId: number
+  name: string
+  bio: string
+  links: string
+  status: 'pending' | 'approved' | 'rejected' | 'sent_back'
+  feedback: string
+  createdAt: number
+  userEmail: string | null
+}
+
+export function getAdminArtistApplications() {
+  return apiFetchJson<{ ok: boolean; applications: AdminArtistApplication[] }>('/api/admin/artists/applications')
+}
+
+export function reviewAdminArtistApplication(id: number, body: { status: 'approved' | 'rejected' | 'sent_back'; feedback?: string }) {
+  return apiFetchJson<{ ok: boolean }>(`/api/admin/artists/applications/${id}/review`, {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  })
+}
+
+// ─── Admin: Artist Content (moderation) ───
+export type AdminContentItem = {
+  id: number
+  artistId: number
+  artistName: string
+  title: string
+  description: string
+  fileUrl: string
+  thumbnailUrl: string
+  type: string
+  status: 'pending' | 'approved' | 'rejected'
+  feedback: string
+  createdAt: number
+}
+
+export function getAdminPendingContent() {
+  return apiFetchJson<{ ok: boolean; items: AdminContentItem[] }>('/api/admin/artists/content/pending')
+}
+
+export function reviewAdminContent(id: number, body: { status: 'approved' | 'rejected'; feedback?: string }) {
+  return apiFetchJson<{ ok: boolean }>(`/api/admin/artists/content/${id}/review`, {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  })
+}
+
+// ─── Admin: Support Tickets ───
+export type AdminSupportTicket = {
+  id: number
+  userId: number
+  subject: string
+  message: string
+  status: string
+  adminNotes: string
+  createdAt: number
+  updatedAt: number
+  userEmail: string | null
+}
+
+export function getAdminSupportTickets(status?: string) {
+  const q = status ? `?status=${encodeURIComponent(status)}` : ''
+  return apiFetchJson<{ ok: boolean; tickets: AdminSupportTicket[] }>(`/api/admin/support${q}`)
+}
+
+export function updateAdminSupportTicket(id: number, data: { status?: string; adminNotes?: string }) {
+  return apiFetchJson<{ ok: boolean }>(`/api/admin/support/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  })
+}
+
+export type AdminComment = {
+  id: number
+  post_slug: string
+  author_id: number
+  parent_id: number | null
+  content: string
+  status: 'pending' | 'approved' | 'deleted'
+  created_at: number
+  email: string | null
+  banned: number
+}
+
+export function getAdminComments(status?: 'pending' | 'approved' | 'deleted') {
+  const q = status ? `?status=${status}` : ''
+  return apiFetchJson<{ ok: boolean; status: string | null; comments: AdminComment[] }>(`/api/admin/comments${q}`)
+}
+
+export function approveAdminComment(id: number) {
+  return apiFetchJson<{ ok: boolean; id: number }>(`/api/admin/comments/${id}/approve`, {
+    method: 'POST',
+  })
+}
+
+export function deleteAdminComment(id: number) {
+  return apiFetchJson<{ ok: boolean; id: number }>(`/api/admin/comments/${id}`, {
+    method: 'DELETE',
+  })
+}
+
+export function banAdminUser(id: number) {
+  return apiFetchJson<{ ok: boolean; banned: boolean }>(`/api/admin/users/${id}/ban`, {
+    method: 'POST',
   })
 }

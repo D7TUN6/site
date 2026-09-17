@@ -3,7 +3,9 @@ import { Portal } from 'solid-js/web'
 import { getPageMarkdown } from '@/lib/pages'
 import { renderSimpleMarkdown } from '@/lib/simpleMarkdown'
 import { getAllShopProducts, getShopProductDetails } from '@/lib/shop'
-import { formatShopMoney } from '@/lib/money'
+import { formatShopMoney } from '@/lib/ruble'
+import { UiSelect, type UiSelectOption } from '@/components/ui-select'
+import { ArtistFilterSwitcher } from '@/components/artist-filter-switcher'
 import type { Lang } from '@/types/content'
 import type { UiCopy } from '@/lib/uiText'
 
@@ -21,42 +23,100 @@ export function ShopPage(props: {
   const shopProducts = getAllShopProducts()
   const [shopSearch, setShopSearch] = createSignal('')
   const [shopCategoryFilter, setShopCategoryFilter] = createSignal('all')
+  const [shopArtistSlug, setShopArtistSlug] = createSignal('')
+  const [searchFocused, setSearchFocused] = createSignal(false)
+  let searchRef: HTMLInputElement | undefined
 
   const shopCategories = createMemo(() =>
     Array.from(new Set(shopProducts.map((p) => p.category).filter(Boolean))).sort((a, b) => a.localeCompare(b))
   )
 
+  const shopCategoryOptions = createMemo<UiSelectOption[]>(() => [
+    { value: 'all', label: props.lang === 'ru' ? 'все' : 'all' },
+    ...shopCategories().map((category) => ({ value: category, label: category })),
+  ])
+
   const filteredShopProducts = createMemo(() => {
     const q = shopSearch().trim().toLowerCase()
     const category = shopCategoryFilter()
+    const artist = shopArtistSlug()
     return shopProducts.filter((p) => {
       if (category !== 'all' && p.category !== category) return false
+      if (artist && p.artistSlug !== artist) return false
       if (!q) return true
       return `${p.title} ${p.category}`.toLowerCase().includes(q)
     })
   })
+
+  const searchSuggestions = createMemo(() => {
+    const q = shopSearch().trim().toLowerCase()
+    if (!q || q.length < 2) return []
+    return shopProducts.filter((p) =>
+      `${p.title} ${p.category}`.toLowerCase().includes(q)
+    ).slice(0, 8)
+  })
+
+  const showSuggestions = createMemo(() =>
+    searchFocused() && searchSuggestions().length > 0
+  )
 
   const shopIntroHtml = createMemo(() => {
     const src = getPageMarkdown(props.lang, 'shop').replace(/^# .*\r?\n+/, '')
     return renderSimpleMarkdown(src)
   })
 
+  function handleSuggestionClick(slug: string) {
+    setShopSearch('')
+    setSearchFocused(false)
+    props.navigate(`/${props.lang}/shop/${slug}`)
+  }
+
   return (
     <>
       <h1>{props.copy.shopTitle}</h1>
       <article class="markdown-content" innerHTML={shopIntroHtml()} />
       <div class="shop-filters">
-        <label class="form-field shop-filter">
+        <label class="form-field shop-filter shop-filter-search">
           <span class="form-label">{props.lang === 'ru' ? 'поиск' : 'search'}</span>
-          <input class="form-input" value={shopSearch()} onInput={(e) => setShopSearch(e.currentTarget.value)} />
+          <input
+            ref={searchRef}
+            class="form-input"
+            value={shopSearch()}
+            onInput={(e) => setShopSearch(e.currentTarget.value)}
+            onFocus={() => setSearchFocused(true)}
+            onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
+            autocomplete="off"
+          />
+          <Show when={showSuggestions()}>
+            <div class="shop-autocomplete">
+              <For each={searchSuggestions()}>
+                {(suggestion) => (
+                  <button
+                    type="button"
+                    class="shop-autocomplete-item"
+                    onMouseDown={(e) => { e.preventDefault(); handleSuggestionClick(suggestion.slug) }}
+                  >
+                    <span class="shop-autocomplete-title">{suggestion.title}</span>
+                    <span class="shop-autocomplete-meta">
+                      <Show when={suggestion.category}><span class="shop-badge">{suggestion.category}</span></Show>
+                      <span class="shop-autocomplete-price">{formatShopMoney(suggestion.price, props.lang)}</span>
+                    </span>
+                  </button>
+                )}
+              </For>
+            </div>
+          </Show>
         </label>
         <label class="form-field shop-filter">
           <span class="form-label">{props.lang === 'ru' ? 'категория' : 'category'}</span>
-          <select class="form-input" value={shopCategoryFilter()} onInput={(e) => setShopCategoryFilter(e.currentTarget.value)}>
-            <option value="all">{props.lang === 'ru' ? 'все' : 'all'}</option>
-            <For each={shopCategories()}>{(category) => <option value={category}>{category}</option>}</For>
-          </select>
+          <UiSelect
+            modelValue={shopCategoryFilter()}
+            options={shopCategoryOptions()}
+            onChange={(v) => setShopCategoryFilter(v)}
+            ariaLabel={props.lang === 'ru' ? 'Категория' : 'Category'}
+          />
         </label>
+        <ArtistFilterSwitcher lang={props.lang} selectedSlug={shopArtistSlug()} onChange={setShopArtistSlug} />
       </div>
       <div class="shop-grid">
         <For each={filteredShopProducts()}>
@@ -76,7 +136,10 @@ export function ShopPage(props: {
                   </Show>
                 </div>
                 <div class="shop-card-meta">
-                  <span class="shop-title"><span>{product.title}</span><Show when={product.category}><span class="shop-badge">{product.category}</span></Show></span>
+                  <span class="shop-title"><span>{product.title}</span></span>
+                  <div class="shop-card-badges">
+                    <Show when={product.category}><span class="shop-badge">{product.category}</span></Show>
+                  </div>
                   <span class="shop-price">{formatShopMoney(product.price, props.lang)}</span>
                 </div>
               </a>
@@ -106,6 +169,7 @@ export function ShopProductPage(props: {
   const [galleryIndex, setGalleryIndex] = createSignal(0)
   const [lightboxOpen, setLightboxOpen] = createSignal(false)
   const [lightboxIndex, setLightboxIndex] = createSignal(0)
+  const [coverLoaded, setCoverLoaded] = createSignal(false)
 
   const shopProduct = createMemo(() => getShopProductDetails(props.lang, props.slug))
   const shopProductImages = createMemo(() => {
@@ -143,6 +207,7 @@ export function ShopProductPage(props: {
   function moveLightbox(delta: number) {
     const count = shopProductImages().length
     if (count <= 0) return
+    setCoverLoaded(false)
     setLightboxIndex((current) => (current + delta + count) % count)
   }
 
@@ -151,8 +216,8 @@ export function ShopProductPage(props: {
       {(item) => (
         <>
           <a class="content-link-plain" href={`/${props.lang}/shop`} onClick={(e) => props.navigate(`/${props.lang}/shop`, e)}>{props.copy.shopBack}</a>
-          <section class="shop-product">
-            <div class="shop-gallery">
+          <section class="shop-product" aria-label={props.lang === 'ru' ? 'Товар' : 'Product'}>
+            <section class="shop-gallery" aria-label={props.lang === 'ru' ? 'Галерея' : 'Gallery'}>
               <div
                 class="shop-gallery-main"
                 role="button"
@@ -176,7 +241,7 @@ export function ShopProductPage(props: {
                 <div class="shop-gallery-thumbs">
                   <For each={shopProductImages()}>
                     {(img, index) => (
-                      <button type="button" class={`shop-gallery-thumb-btn ${index() === galleryIndex() ? 'is-active' : ''}`} onClick={() => setGalleryIndex(index())}>
+                      <button type="button" class={`shop-gallery-thumb-btn ${index() === galleryIndex() ? 'is-active' : ''}`} aria-label={`${item().title} ${index() + 1}`} onClick={() => setGalleryIndex(index())}>
                         <div class="progressive-cover shop-gallery-thumb" style={{ 'background-image': `url(${img})` }}>
                           <img class="shop-gallery-thumb-inner" src={img} alt={`${item().title} ${index() + 1}`} loading="lazy" decoding="async" onLoad={(e) => e.currentTarget.classList.add('loaded')} />
                         </div>
@@ -190,8 +255,8 @@ export function ShopProductPage(props: {
                   <button type="button" class="shop-gallery-arrow" aria-label="next" onClick={() => moveGallery(1)}>›</button>
                 </div>
               </Show>
-            </div>
-            <div class="shop-product-main">
+            </section>
+            <section class="shop-product-main">
               <h1 class="shop-product-title">{item().title}</h1>
               <div class="shop-product-meta">
                 <Show when={item().category}><span class="shop-badge">{item().category}</span></Show>
@@ -210,10 +275,10 @@ export function ShopProductPage(props: {
                   when={item().status === 'available'}
                   fallback={<button type="button" class="shop-btn" disabled>{shopProductStatusLabel()}</button>}
                 >
-                  <div class="qty-stepper">
-                    <button type="button" class="qty-btn" onClick={() => setProductQuantity(productQty() - 1)} disabled={productQty() <= 1}>−</button>
-                    <input class="qty-input" inputMode="numeric" value={productQty()} onInput={(e) => setProductQuantity(Number(e.currentTarget.value))} />
-                    <button type="button" class="qty-btn" onClick={() => setProductQuantity(productQty() + 1)} disabled={item().quantity > 0 && productQty() >= item().quantity}>+</button>
+                  <div class="qty-stepper" role="group" aria-label={props.lang === 'ru' ? 'количество' : 'quantity'}>
+                    <button type="button" class="qty-btn" aria-label={props.lang === 'ru' ? 'уменьшить' : 'decrease'} onClick={() => setProductQuantity(productQty() - 1)} disabled={productQty() <= 1}>−</button>
+                    <input class="qty-input" inputMode="numeric" aria-label={props.lang === 'ru' ? 'количество' : 'quantity'} value={productQty()} onInput={(e) => setProductQuantity(Number(e.currentTarget.value))} />
+                    <button type="button" class="qty-btn" aria-label={props.lang === 'ru' ? 'увеличить' : 'increase'} onClick={() => setProductQuantity(productQty() + 1)} disabled={item().quantity > 0 && productQty() >= item().quantity}>+</button>
                   </div>
                   <button type="button" class="shop-btn" onClick={() => props.incrementCart(item().slug, productQty())}>
                     {props.copy.shopAddToCart}
@@ -223,12 +288,16 @@ export function ShopProductPage(props: {
                   {`${props.copy.shopToCart} (${formatCount(props.cartTotalItems())})`}
                 </a>
               </div>
-            </div>
+            </section>
           </section>
-          <div class="shop-product-description markdown-content" innerHTML={renderSimpleMarkdown(item().descriptionMarkdown)} />
+          <section class="shop-product-description" aria-label={props.lang === 'ru' ? 'Описание' : 'Description'}>
+            <h2 class="content-heading">{props.lang === 'ru' ? 'Описание' : 'Description'}</h2>
+            <div class="markdown-content" innerHTML={renderSimpleMarkdown(item().descriptionMarkdown)} />
+          </section>
           <Show when={lightboxOpen() && shopProductImages().length > 0}>
             <Portal>
               <div
+                ref={(el) => { el?.focus() }}
                 class="shop-lightbox"
                 role="dialog"
                 aria-modal="true"
@@ -240,13 +309,22 @@ export function ShopProductPage(props: {
                   if (e.key === 'Escape') setLightboxOpen(false)
                 }}
               >
-                <button type="button" class="shop-lightbox-close" aria-label="close" onClick={() => setLightboxOpen(false)}>✕</button>
+                <button type="button" class="overlay-close" aria-label="close" onClick={() => setLightboxOpen(false)}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                </button>
                 <Show when={shopProductImages().length > 1}>
-                  <button type="button" class="shop-lightbox-arrow shop-lightbox-prev" aria-label="prev" onClick={() => moveLightbox(-1)}>‹</button>
+                  <button type="button" class="shop-lightbox-arrow shop-lightbox-prev" aria-label="prev" onClick={() => moveLightbox(-1)}>
+                    <svg class="shop-lightbox-arrow-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+                  </button>
                 </Show>
-                <img class="shop-lightbox-img" src={shopProductImages()[lightboxIndex()]} alt={item().title} onLoad={(e) => e.currentTarget.classList.add('loaded')} />
+                <Show when={!coverLoaded()}>
+                  <div class="overlay-loading" />
+                </Show>
+                <img class="shop-lightbox-img" src={shopProductImages()[lightboxIndex()]} alt={item().title} onLoad={() => setCoverLoaded(true)} />
                 <Show when={shopProductImages().length > 1}>
-                  <button type="button" class="shop-lightbox-arrow shop-lightbox-next" aria-label="next" onClick={() => moveLightbox(1)}>›</button>
+                  <button type="button" class="shop-lightbox-arrow shop-lightbox-next" aria-label="next" onClick={() => moveLightbox(1)}>
+                    <svg class="shop-lightbox-arrow-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+                  </button>
                   <div class="shop-lightbox-counter">{lightboxIndex() + 1} / {shopProductImages().length}</div>
                 </Show>
               </div>

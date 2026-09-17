@@ -7,11 +7,14 @@ export default defineConfig({
   build: {
     minify: 'esbuild',
     cssMinify: 'esbuild',
-      rolldownOptions: {
-        checks: { pluginTimings: false },
-        output: {
+    rollupOptions: {
+      output: {
         manualChunks(id: string) {
-          if (id.includes('node_modules/hls.js')) return 'hls'
+          if (id.includes('node_modules')) {
+            if (id.includes('lucide-solid')) return 'vendor-icons'
+            if (id.includes('hls.js')) return 'vendor-hls'
+            if (id.includes('dompurify')) return 'vendor-sanitize'
+          }
         },
       },
     },
@@ -19,12 +22,12 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:3001',
-        changeOrigin: false,
+        target: process.env.VITE_API_PROXY || 'http://127.0.0.1:3001',
+        changeOrigin: true,
       },
     },
     hmr: {
-      overlay: false,
+      overlay: true,
     },
   },
   resolve: {

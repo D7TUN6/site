@@ -1,0 +1,25 @@
+# D7TUN6 — Independent Music, Art & Experimental Audio
+
+D7TUN6 is an independent music label and art platform for experimental audio, visual art, and digital culture. This site hosts music releases with high-fidelity streaming, a gallery, video section, internet radio, a blog, news, and a shop.
+
+## Site Pages
+
+- [Home](https://d7tun6.neome.uk/)
+- [Music](https://d7tun6.neome.uk/music) — Browse and stream all music releases
+- [News](https://d7tun6.neome.uk/news) — Updates and announcements
+- [Blog](https://d7tun6.neome.uk/blog) — Long-form writing and essays
+- [Gallery](https://d7tun6.neome.uk/gallery) — Visual art and photography
+- [Video](https://d7tun6.neome.uk/video) — Video works and performances
+- [Radio](https://d7tun6.neome.uk/radio) — Internet radio stream and schedule
+- [Shop](https://d7tun6.neome.uk/shop) — Merchandise and physical releases
+- [Projects](https://d7tun6.neome.uk/projects) — Software and creative projects
+- [About / Bio](https://d7tun6.neome.uk/bio) — About the artist
+- [Links](https://d7tun6.neome.uk/links) — External profiles and social links
+
+## API
+
+- [Releases manifest](https://d7tun6.neome.uk/api/releases/manifest) — JSON list of all music releases with metadata
+
+## Contact
+
+- [Contact page](https://d7tun6.neome.uk/contact)

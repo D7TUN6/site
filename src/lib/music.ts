@@ -12,13 +12,32 @@ const MUSIC_TAG_LABELS: Record<MusicTag, string> = {
 }
 
 function parseReleaseDate(releaseDate: string): number {
-  const match = releaseDate.match(/^(\d{2})\/(\d{2})\/(\d{4})$/)
-  if (!match) return 0
-
-  const day = Number(match[1])
-  const month = Number(match[2])
-  const year = Number(match[3])
-  return Date.UTC(year, month - 1, day)
+  if (!releaseDate) return 0
+  // DD/MM/YYYY
+  const ddmmyyyy = releaseDate.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
+  if (ddmmyyyy) {
+    const day = Number(ddmmyyyy[1])
+    const month = Number(ddmmyyyy[2])
+    const year = Number(ddmmyyyy[3])
+    return Date.UTC(year, month - 1, day)
+  }
+  // DD/MM/YY
+  const ddmmyy = releaseDate.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2})$/)
+  if (ddmmyy) {
+    const day = Number(ddmmyy[1])
+    const month = Number(ddmmyy[2])
+    const year = 2000 + Number(ddmmyy[3])
+    return Date.UTC(year, month - 1, day)
+  }
+  // YYYY-MM-DD
+  const isodate = releaseDate.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/)
+  if (isodate) {
+    const year = Number(isodate[1])
+    const month = Number(isodate[2])
+    const day = Number(isodate[3])
+    return Date.UTC(year, month - 1, day)
+  }
+  return 0
 }
 
 export function compareReleasesByDateDesc(a: ReleaseEntry, b: ReleaseEntry): number {
@@ -65,6 +84,30 @@ export function getMusicTag(release: ReleaseEntry): MusicTag {
 
 export function getMusicTagLabel(tag: MusicTag): string {
   return MUSIC_TAG_LABELS[tag]
+}
+
+export function getReleaseTags(release: ReleaseEntry): string[] {
+  const out: string[] = []
+  const genres = release.genres
+  if (genres) {
+    for (const t of genres.main ?? []) out.push(t)
+    for (const t of genres.sub ?? []) out.push(t)
+  }
+  if (release.genre.en) out.push(release.genre.en)
+  if (release.genre.ru && release.genre.ru !== release.genre.en) out.push(release.genre.ru)
+  return out
+}
+
+export function releaseMatchesTag(release: ReleaseEntry, query: string): boolean {
+  const q = query.trim().toLowerCase()
+  if (!q) return false
+  return getReleaseTags(release).some((t) => t.toLowerCase().includes(q))
+}
+
+export function releaseHasTagExact(release: ReleaseEntry, tag: string): boolean {
+  const wanted = tag.trim().toLowerCase()
+  if (!wanted) return false
+  return getReleaseTags(release).some((t) => t.trim().toLowerCase() === wanted)
 }
 
 export function groupMusicReleasesByTag(releases: ReleaseEntry[]): Array<{ tag: MusicTag; label: string; releases: ReleaseEntry[] }> {

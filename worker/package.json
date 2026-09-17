@@ -1,0 +1,13 @@
+{
+  "name": "d7tun6-worker",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "redis": "^4.7.0",
+    "tsx": "^4.19.0"
+  },
+  "scripts": {
+    "start": "tsx index.ts",
+    "dev": "tsx watch index.ts"
+  }
+}

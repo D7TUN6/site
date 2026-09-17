@@ -1,5 +1,3 @@
-import crypto from 'node:crypto'
-import type { Request, Response, NextFunction } from 'express'
 import { getOptionalEnv, isProduction } from './config.js'
 
 const DEFAULT_PORT_BY_PROTOCOL: Record<string, string> = { http: '80', https: '443' }
@@ -20,16 +18,16 @@ function normalizeOrigin(value: unknown, fallbackProtocol = ''): string | null {
   } catch { return null }
 }
 
-function getExpectedOrigin(req: Request) {
-  const protocol = firstHeaderValue(req.get('x-forwarded-proto')) || req.protocol
-  const host = firstHeaderValue(req.get('x-forwarded-host')) || req.get('host')
-  return normalizeOrigin(host, protocol)
+function getExpectedOrigin(headers: Headers, fallbackProtocol = 'http'): string | null {
+  const protocol = firstHeaderValue(headers.get('x-forwarded-proto')) || fallbackProtocol
+  const host = firstHeaderValue(headers.get('x-forwarded-host')) || headers.get('host') || ''
+  return normalizeOrigin(host, protocol || fallbackProtocol)
 }
 
-function getSourceOrigin(req: Request) {
-  const origin = normalizeOrigin(firstHeaderValue(req.get('origin')))
+function getSourceOrigin(headers: Headers): string | null {
+  const origin = normalizeOrigin(firstHeaderValue(headers.get('origin')))
   if (origin) return origin
-  return normalizeOrigin(firstHeaderValue(req.get('referer')))
+  return normalizeOrigin(firstHeaderValue(headers.get('referer')))
 }
 
 function isLoopbackHost(hostname: string) {
@@ -49,44 +47,32 @@ function hostFromNormalizedOrigin(origin: string) {
   return url.hostname.toLowerCase()
 }
 
-export function enforceSameOrigin(req: Request, res: Response, next: NextFunction) {
-  // sec-fetch-site is the most authoritative signal from the browser
-  const fetchSite = firstHeaderValue(req.get('sec-fetch-site'))
-  if (fetchSite === 'same-origin' || fetchSite === 'none') return next()
+type OriginGuardContext = { request: Request; set: { status?: number | string } }
 
-  const expectedOrigin = getExpectedOrigin(req)
-  const sourceOrigin = getSourceOrigin(req)
+export function enforceSameOrigin({ request, set }: OriginGuardContext) {
+  const headers = request.headers
+  const fetchSite = firstHeaderValue(headers.get('sec-fetch-site'))
+  if (fetchSite === 'same-origin' || fetchSite === 'none') return
+
+  const expectedOrigin = getExpectedOrigin(headers, new URL(request.url).protocol.replace(':', ''))
+  const sourceOrigin = getSourceOrigin(headers)
   const appOrigin = normalizeOrigin(getOptionalEnv('APP_ORIGIN'))
 
-  // if browser sent a valid Origin, trust it as the authoritative source
   if (sourceOrigin) {
-    // accept if it matches the expected request origin (from host headers)
-    if (sourceOrigin === expectedOrigin) return next()
-
-    // accept if it matches a configured APP_ORIGIN (for reverse proxy setups)
-    if (appOrigin && sourceOrigin === appOrigin) return next()
-
-    // in dev mode, allow loopback-to-loopback
+    if (expectedOrigin && sourceOrigin === expectedOrigin) return
+    if (appOrigin && sourceOrigin === appOrigin) return
     if (!isProduction() && expectedOrigin) {
       const expectedHost = hostFromNormalizedOrigin(expectedOrigin)
       const sourceHost = hostFromNormalizedOrigin(sourceOrigin)
-      if (isLoopbackHost(expectedHost) && isLoopbackHost(sourceHost)) return next()
+      if (isLoopbackHost(expectedHost) && isLoopbackHost(sourceHost)) return
     }
-
-    // production or mismatch — reject
-    return res.status(403).json({ error: 'Cross-site requests are not allowed' })
+    set.status = 403
+    return { error: 'Cross-site requests are not allowed' }
   }
 
-  // no Origin header — check X-Requested-With (legacy fetch indicator)
-  const requestedWith = firstHeaderValue(req.get('x-requested-with'))
-  if (requestedWith === 'fetch') return next()
+  const requestedWith = firstHeaderValue(headers.get('x-requested-with'))
+  if (requestedWith === 'fetch') return
 
-  return res.status(403).json({ error: 'Cross-site requests are not allowed' })
-}
-
-export function safeEqual(a: string, b: string) {
-  const A = Buffer.from(String(a))
-  const B = Buffer.from(String(b))
-  if (A.length !== B.length) return false
-  return crypto.timingSafeEqual(A, B)
+  set.status = 403
+  return { error: 'Cross-site requests are not allowed' }
 }

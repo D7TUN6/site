@@ -1,12 +1,12 @@
-export type YMapsBounds = [[number, number], [number, number]];
+type YMapsBounds = [[number, number], [number, number]];
 
-export type YMapsPlacemark = {
+type YMapsPlacemark = {
   events: {
     add: (eventName: string, cb: () => void) => void;
   };
 };
 
-export type YMapsMap = {
+type YMapsMap = {
   geoObjects: {
     add: (obj: unknown) => void;
     remove: (obj: unknown) => void;

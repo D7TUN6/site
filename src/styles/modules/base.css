@@ -1,22 +1,64 @@
 html,
 body {
   background-color: var(--bg-color);
-  scrollbar-color: var(--scrollbar-color-thumb) var(--scrollbar-color-track);
-  scrollbar-width: thin;
+  cursor: var(--cursor-default);
 }
 
 html {
-  font-size: 75%;
+  font-size: 60%;
   -webkit-text-size-adjust: 100%;
   -moz-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
 
 :root {
-  --cursor-default: url("/media/image/cursor.png?v=20260425-1") 0 0, auto;
-  --cursor-text: url("/media/image/text.png?v=20260425-1") 0 0, text;
-  --cursor-unavailable: url("/media/image/unavailable.png?v=20260425-1") 0 0, not-allowed;
-  --cursor-link-select: url("/media/image/precision.png?v=20260425-1") 0 0, pointer;
+  --cursor-default: url("/media/image/cursor.png?v=20260914-3") 4 4, auto;
+  --cursor-text: url("/media/image/text.png?v=20260914-3") 16 16, text;
+  --cursor-unavailable: url("/media/image/unavailable.png?v=20260914-3") 16 16, not-allowed;
+  --cursor-link-select: url("/media/image/precision.png?v=20260914-3") 16 16, pointer;
+}
+
+/* Native custom cursors — handled entirely by the browser, no JS involved.
+   Elements keep inheriting unless they set their own cursor. */
+a,
+button,
+select,
+summary,
+[role='button'],
+[role='slider'],
+[role='tab'],
+[role='option'],
+[role='menuitem'],
+[role='link'] {
+  cursor: var(--cursor-link-select);
+}
+
+input:not([type='button']):not([type='submit']):not([type='reset']):not([type='checkbox']):not([type='radio']):not([type='range']):not([type='hidden']),
+textarea,
+[contenteditable='true'],
+[contenteditable='plaintext-only'] {
+  cursor: var(--cursor-text);
+}
+
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled,
+[aria-disabled='true'] {
+  cursor: var(--cursor-unavailable);
+}
+
+.cursor-link-select,
+.cursor-precision-select,
+[data-cursor='link-select'],
+[data-cursor='precision'] {
+  cursor: var(--cursor-link-select);
+}
+
+/* Browsers without caret*FromPoint (see src/lib/cursorMode.ts) can't do
+   glyph-precise text hit-testing — give them the classic full-box I-beam. */
+html.no-caret-api :is(p, h1, h2, h3, h4, h5, h6, li, dt, dd, blockquote, figcaption, label, th, td, small, strong, em, q, cite, sub, sup, code, pre, samp, kbd) {
+  cursor: var(--cursor-text);
 }
 
 * {
@@ -29,111 +71,41 @@ body {
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
   background-image: var(--fallback-bg);
   color: var(--text-color);
   line-height: 1.5;
   min-height: 100vh;
   min-height: 100dvh;
+  overflow-x: clip;
   overscroll-behavior-y: none;
-  padding: 24px 28px;
+  padding: 19px 22px;
   position: relative;
   text-transform: none;
+  /* CRT phosphor bloom + RGB bleed — inherited by all text.
+     Bloom = soft glow around glyphs; fringes = electron-gun convergence error.
+     Kept subtle + tight offset: strong offsets get clipped by overflow:hidden
+     boxes and make dark-on-light text hard to read. */
+  text-shadow:
+    0 0 5px rgba(246, 246, 255, 0.18),
+    0 0 11px rgba(205, 195, 255, 0.10),
+    0.8px 0 0 rgba(255, 20, 80, 0.30),
+    -0.8px 0 0 rgba(0, 200, 255, 0.30);
 }
 
-body,
-body * {
-  cursor: var(--cursor-default);
-}
-
-input:not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="checkbox"]):not([type="radio"]),
-textarea,
-[contenteditable="true"],
-[contenteditable="plaintext-only"] {
-  cursor: var(--cursor-text);
-}
-
-body :is(button, [role="button"], [type="button"], [type="submit"], [type="reset"], summary, .cursor-link-select, [data-cursor="link-select"], .control-btn, .main-nav a, .nav-active, .site-title-link, .content-link-plain, .release-card, .blog-card, .shop-card-link, .shop-btn, .cart-remove, .cart-line-title a) {
-  cursor: var(--cursor-link-select);
-}
-
-body :is(p,
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6,
-  li,
-  dt,
-  dd,
-  blockquote,
-  figcaption,
-  label,
-  th,
-  td,
-  small,
-  strong,
-  em,
-  q,
-  cite,
-  abbr,
-  sup,
-  sub,
-  code,
-  pre) {
-  cursor: var(--cursor-text);
-}
-
-button:disabled,
-[aria-disabled="true"],
-:disabled,
-button:disabled *,
-[aria-disabled="true"] *,
-:disabled * {
-  cursor: var(--cursor-unavailable);
-}
-
-input[type="range"],
-[role="slider"],
-.cursor-precision-select,
-[data-cursor="precision"] {
-  cursor: var(--cursor-link-select);
-}
-
-
-@supports selector(::-webkit-scrollbar) {
-
-  html::-webkit-scrollbar,
-  body::-webkit-scrollbar,
-  *::-webkit-scrollbar {
-    height: 10px;
-    width: 10px;
-  }
-
-  html::-webkit-scrollbar-track,
-  body::-webkit-scrollbar-track,
-  *::-webkit-scrollbar-track {
-    background: var(--scrollbar-track-bg);
-  }
-
-  html::-webkit-scrollbar-thumb,
-  body::-webkit-scrollbar-thumb,
-  *::-webkit-scrollbar-thumb {
-    background: var(--scrollbar-thumb-bg);
-    border: 1px solid var(--scrollbar-thumb-border);
-    border-radius: 0;
-  }
-
-  html::-webkit-scrollbar-thumb:hover,
-  body::-webkit-scrollbar-thumb:hover,
-  *::-webkit-scrollbar-thumb:hover {
-    background: var(--scrollbar-thumb-hover-bg);
+@media (min-width: 1200px) {
+  body {
+    text-shadow:
+      0 0 6px rgba(246, 246, 255, 0.22),
+      0 0 13px rgba(205, 195, 255, 0.12),
+      1px 0 0 rgba(255, 20, 80, 0.34),
+      -1px 0 0 rgba(0, 200, 255, 0.34);
   }
 }
 
 body::before {
   background-attachment: scroll;
-  background-image: var(--bg-image, url("/media/background/bg.jpg?v=20260507-1"));
+  background-image: var(--overlay-gradient), url("/media/background/bg.jpg?v=20260826-1");
   background-position: center;
   background-repeat: no-repeat;
   background-size: cover;
@@ -151,22 +123,192 @@ body::before {
   -webkit-transform: translateZ(0);
   transform: translateZ(0);
 }
+@supports (background-image: image-set(url("x") type("image/avif"))) {
+  body::before {
+    background-image: var(--overlay-gradient), var(--bg-image, image-set(
+      url("/media/background/bg.avif?v=20260826-1") type("image/avif"),
+      url("/media/background/bg.webp?v=20260826-1") type("image/webp"),
+      url("/media/background/bg.jpg?v=20260826-1") type("image/jpeg")
+    ));
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent-hot);
+  outline-offset: 2px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
 
 body::after {
   content: "";
   position: fixed;
   inset: 0;
   background:
+    /* tube curvature — edge/corner falloff, strongest in corners */
+    radial-gradient(
+      ellipse at center,
+      transparent 76%,
+      rgba(0, 0, 0, 0.045) 88%,
+      var(--crt-vignette-color) 100%
+    ),
+    /* beam center luminance boost */
+    radial-gradient(
+      ellipse 62% 48% at 50% 42%,
+      var(--crt-glow-color),
+      transparent 100%
+    ),
+    /* aperture grille — RGB triad stripes */
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 0, 80, 0.024) 0,
+      rgba(255, 0, 80, 0.024) 1px,
+      rgba(0, 255, 90, 0.024) 1px,
+      rgba(0, 255, 90, 0.024) 2px,
+      rgba(0, 100, 255, 0.024) 2px,
+      rgba(0, 100, 255, 0.024) 3px
+    ),
+    /* horizontal scanlines */
     repeating-linear-gradient(
       0deg,
       var(--scanline-color) 0,
       var(--scanline-color) 1px,
       transparent 2px,
       transparent 4px
-    ),
-    var(--overlay-gradient);
-  z-index: 0;
+    );
+  z-index: 9999;
   pointer-events: none;
+  /* luminance/saturation lift, like a glowing tube (no blur — stays crisp) */
+  -webkit-backdrop-filter: brightness(1.07) saturate(1.06);
+  backdrop-filter: brightness(1.07) saturate(1.06);
   -webkit-transform: translateZ(0);
   transform: translateZ(0);
+  animation: crt-luminance 3.4s ease-in-out infinite;
+}
+
+:root[data-theme="light"] body::after {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+@media (min-width: 1200px) {
+  body::after {
+    background:
+      radial-gradient(
+        ellipse at center,
+        transparent 76%,
+        rgba(0, 0, 0, 0.045) 88%,
+        var(--crt-vignette-color) 100%
+      ),
+      radial-gradient(
+        ellipse 62% 48% at 50% 42%,
+        var(--crt-glow-color),
+        transparent 100%
+      ),
+      repeating-linear-gradient(
+        90deg,
+        rgba(255, 0, 80, 0.034) 0,
+        rgba(255, 0, 80, 0.034) 1px,
+        rgba(0, 255, 90, 0.034) 1px,
+        rgba(0, 255, 90, 0.034) 2px,
+        rgba(0, 100, 255, 0.034) 2px,
+        rgba(0, 100, 255, 0.034) 3px
+      ),
+      repeating-linear-gradient(
+        0deg,
+        var(--scanline-color) 0,
+        var(--scanline-color) 1px,
+        transparent 2px,
+        transparent 4px
+      );
+  }
+}
+
+/* Rolling scan bar lives on its own fixed layer so it can be moved with a
+   compositor-only transform. Previously it was `background-position` on
+   body::after — repainting the viewport every frame. The band now sits inside
+   the layer's own box and the whole layer is translated, so the sweep is pure
+   compositor work with zero repaints. */
+html::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    transparent 40%,
+    var(--crt-roll-color) 45%,
+    rgba(255, 255, 255, 0.07) 50%,
+    var(--crt-roll-color) 55%,
+    transparent 60%,
+    transparent 100%
+  ) 0 0 / 100% 100% no-repeat;
+  will-change: transform;
+  animation: crt-roll 12s linear infinite;
+}
+
+@media (min-width: 1200px) {
+  html::before {
+    background: linear-gradient(
+      180deg,
+      transparent 0%,
+      transparent 40%,
+      var(--crt-roll-color) 45%,
+      rgba(255, 255, 255, 0.08) 50%,
+      var(--crt-roll-color) 55%,
+      transparent 60%,
+      transparent 100%
+    ) 0 0 / 100% 100% no-repeat;
+  }
+}
+
+/* The band is centered in the layer's own box (45%→55%). Translating the layer
+   over ±75% of the viewport sweeps the band across the whole screen top→bottom;
+   the loop restart happens with the band (incl. its trailing glow) fully clear
+   of the viewport, so the motion never visibly jumps. */
+@keyframes crt-roll {
+  0% { transform: translateY(-75%); }
+  100% { transform: translateY(75%); }
+}
+
+/* Gentle phosphor luminance breathing (kept slow + tiny for comfort) */
+@keyframes crt-luminance {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.96; }
+}
+
+/* ── Custom scrollbars, site-wide ── */
+html,
+body,
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--ui-border-strong) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.22);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--ui-border-strong);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-color, var(--ui-border-strong));
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-corner {
+  background: rgba(0, 0, 0, 0.22);
 }

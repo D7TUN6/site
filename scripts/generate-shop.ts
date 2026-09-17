@@ -69,7 +69,8 @@ async function main() {
           ru: String(data.description?.ru || ''),
         },
       })
-    } catch {
+    } catch (err) {
+      console.error(`Failed to load product ${slug}:`, err)
       continue
     }
   }

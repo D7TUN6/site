@@ -20,18 +20,27 @@ export function createAdminGallery(data: { title: string; date?: string; tags?: 
   })
 }
 
-export async function uploadAdminGalleryImages(slug: string, files: FileList | File[]) {
-  const fd = new FormData()
-  for (const file of files) fd.append('file', file)
-  const response = await fetch(`/api/admin/gallery/${encodeURIComponent(slug)}/images`, {
-    method: 'POST',
-    credentials: 'include',
-    headers: { 'X-Requested-With': 'fetch' },
-    body: fd,
+export function uploadAdminGalleryImagesWithProgress(slug: string, files: FileList | File[], onProgress?: (loaded: number, total: number) => void): Promise<{ ok: boolean; files: string[] }> {
+  return new Promise((resolve, reject) => {
+    const fd = new FormData()
+    for (const file of files) fd.append('file', file)
+    const xhr = new XMLHttpRequest()
+    xhr.open('POST', `/api/admin/gallery/${encodeURIComponent(slug)}/images`)
+    xhr.setRequestHeader('X-Requested-With', 'fetch')
+    xhr.withCredentials = true
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) onProgress(e.loaded, e.total)
+    }
+    xhr.onload = () => {
+      try {
+        const payload = JSON.parse(xhr.responseText)
+        if (xhr.status >= 200 && xhr.status < 300) resolve(payload)
+        else reject(new Error(payload.error || 'Upload failed'))
+      } catch { reject(new Error('Invalid response')) }
+    }
+    xhr.onerror = () => reject(new Error('Network error'))
+    xhr.send(fd)
   })
-  const payload = await response.json().catch(() => ({}))
-  if (!response.ok) throw new Error(payload.error || 'Upload failed')
-  return payload as { ok: boolean; files: string[] }
 }
 
 export function updateAdminGallery(slug: string, patch: { title?: string; date?: string; tags?: string[] }) {

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from 'bun:test'
 import { getMusicTag, getMusicTagLabel, groupMusicReleasesByTag, compareReleasesByDateDesc, MUSIC_TAG_ORDER } from '@/lib/music'
 import type { ReleaseEntry } from '@/types/content'
 

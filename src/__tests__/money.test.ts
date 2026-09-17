@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { formatShopMoney } from '@/lib/money'
+import { describe, it, expect } from 'bun:test'
+import { formatShopMoney } from '@/lib/ruble'
 
 describe('formatShopMoney', () => {
   it('formats RUB in Russian locale', () => {

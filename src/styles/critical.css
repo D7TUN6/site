@@ -1,0 +1,63 @@
+@import "./modules/tokens.css";
+@import "./modules/base.css";
+@import "./modules/layout.css";
+@import "./modules/typography.css";
+@import "./modules/status.css";
+@import "./modules/skeleton.css";
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: fixed;
+  top: -100%;
+  left: 6px;
+  z-index: 10000;
+  background: var(--accent-hot);
+  color: #000;
+  font-family: var(--font-ui);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 10px 14px;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: top 0.18s ease;
+}
+
+.skip-link:focus {
+  top: 6px;
+}
+
+.focus-trap {
+  outline: none;
+}
+
+.page-banners {
+  margin-bottom: 13px;
+}
+
+.page-banner {
+  padding: 11px 13px;
+  margin-bottom: 8px;
+  background: rgba(183, 166, 255, 0.15);
+  border: 1px solid rgba(183, 166, 255, 0.4);
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+
+.page-banner:last-child {
+  margin-bottom: 0;
+}

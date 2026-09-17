@@ -1,0 +1,673 @@
+/* ── Homepage retro terminal blocks ─────────────────────────── */
+
+.home-page {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+
+.home-intro {
+  padding: 0 2px;
+}
+
+.home-intro .markdown-content,
+.home-intro p {
+  margin: 0;
+}
+
+.home-intro h1 {
+  margin-top: 0;
+}
+
+.home-grid {
+  display: grid;
+  gap: 13px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.home-block {
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-shadow);
+  padding: 12px 13px 13px;
+  min-width: 0;
+}
+
+.home-rms-easter {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.home-rms-easter img {
+  display: block;
+  height: auto;
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.5));
+}
+
+.home-rms-easter img:first-child,
+.home-rms-easter img:nth-child(2) {
+  width: 320px;
+}
+
+.home-rms-easter img:nth-child(n + 3) {
+  width: 240px;
+}
+
+.home-block-title {
+  align-items: baseline;
+  color: var(--text-color);
+  display: flex;
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+  font-weight: 600;
+  gap: 8px;
+  letter-spacing: 0.14em;
+  margin: 0 0 8px;
+  text-transform: uppercase;
+}
+
+.home-block-title-bracket {
+  color: var(--accent-color);
+}
+
+.home-block-title-right {
+  color: var(--muted-color);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  margin-left: auto;
+  text-transform: none;
+}
+
+.home-ascii {
+  color: var(--muted-color);
+  font-family: var(--font-ui);
+  font-size: 0.88rem;
+  line-height: 1.42;
+  margin: 0;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.home-ascii .dbar-on {
+  color: var(--accent-hot);
+}
+
+.home-ascii .dbar-off {
+  color: var(--ui-border);
+}
+
+.home-ascii-error {
+  color: var(--danger-color);
+}
+
+/* aligned rows: label | value, with meter+% on bar rows */
+.home-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.home-row {
+  align-items: baseline;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
+  min-width: 0;
+}
+
+.home-row-label {
+  color: var(--muted-color);
+  flex-shrink: 0;
+  font-family: var(--font-ui);
+  font-size: 0.88rem;
+  letter-spacing: 0.04em;
+}
+
+.home-row-value {
+  color: var(--text-color);
+  font-family: var(--font-ui);
+  font-size: 0.88rem;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0 4px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-row-meter {
+  color: var(--muted-color);
+  font-family: var(--font-ui);
+  font-size: 0.88rem;
+  min-width: 0;
+  overflow: hidden;
+  white-space: pre;
+}
+
+.home-row-meter .dbar-on {
+  color: var(--accent-hot);
+}
+
+.home-row-meter .dbar-off {
+  color: var(--ui-border);
+}
+
+.home-row-pct {
+  color: var(--accent-color);
+  flex-shrink: 0;
+  font-family: var(--font-ui);
+  font-size: 0.88rem;
+  text-align: right;
+}
+
+.home-rows-error {
+  color: var(--danger-color);
+}
+
+/* ── GitHub ── */
+
+.home-commits {
+  margin-top: 10px;
+  min-width: 0;
+}
+
+.home-commits-title {
+  color: var(--muted-color);
+  font-family: var(--font-ui);
+  font-size: 0.74rem;
+  letter-spacing: 0.12em;
+  margin-bottom: 5px;
+  text-transform: uppercase;
+}
+
+.home-commit {
+  align-items: baseline;
+  color: var(--muted-color);
+  display: flex;
+  gap: 8px;
+  padding: 6px 0;
+  text-decoration: none;
+}
+
+.home-commit:hover {
+  color: var(--text-color);
+}
+
+.home-commit-sha {
+  color: var(--accent-color);
+  flex-shrink: 0;
+}
+
+.home-commit-msg {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-commit-repo {
+  color: var(--text-fog-1);
+  flex-shrink: 0;
+}
+
+.home-commit-date {
+  color: var(--text-fog-1);
+  flex-shrink: 0;
+}
+
+/* ── Now playing + oscilloscope ── */
+
+.home-block-now {
+  display: flex;
+  flex-direction: column;
+}
+
+.home-now-idle {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.home-now-idle-signal {
+  color: var(--muted-color);
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+}
+
+.home-now-nominal {
+  background: none;
+  border: none;
+  color: var(--accent-color);
+  cursor: var(--cursor-link-select);
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  padding: 0;
+  text-align: left;
+}
+
+.home-now-nominal:hover {
+  color: var(--accent-hot);
+  text-shadow: 0 0 8px var(--accent-hot-glow), var(--bleed-fringe);
+}
+
+.home-now-track {
+  align-items: center;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.home-now-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.home-now-title {
+  background: none;
+  border: none;
+  color: var(--text-color);
+  cursor: var(--cursor-link-select);
+  display: block;
+  font-family: var(--font-ui);
+  font-size: 0.95rem;
+  overflow: hidden;
+  padding: 0 4px;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-now-track .home-now-title:hover {
+  color: var(--accent-color);
+}
+
+.home-now-artist {
+  color: var(--muted-color);
+  display: block;
+  font-family: var(--font-ui);
+  font-size: 0.74rem;
+  letter-spacing: 0.08em;
+  overflow: hidden;
+  padding: 0 4px;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.home-now-controls {
+  display: flex;
+  gap: 5px;
+}
+
+.home-now-btn {
+  align-items: center;
+  background: var(--ui-surface-2);
+  border: 1px solid var(--ui-border-strong);
+  border-radius: 0;
+  color: var(--text-color);
+  cursor: var(--cursor-link-select);
+  display: inline-flex;
+  height: 30px;
+  justify-content: center;
+  padding: 0;
+  transition: background-color var(--transition-speed), border-color var(--transition-speed), color var(--transition-speed);
+  width: 30px;
+}
+
+.home-now-btn:hover {
+  background: var(--invert-bg);
+  border-color: var(--invert-border);
+  color: var(--invert-text);
+}
+
+.home-now-btn:disabled {
+  cursor: var(--cursor-unavailable);
+  opacity: 0.32;
+}
+
+.home-now-btn-main {
+  border-color: var(--accent-hot);
+  background: var(--accent-hot-status-bg);
+  color: #fff;
+}
+
+.home-now-icon {
+  height: 16px;
+  width: 16px;
+}
+
+.home-scope {
+  background: rgba(7, 7, 12, 0.9);
+  border: 1px solid var(--ui-border);
+  display: block;
+  height: 74px;
+  margin-top: 10px;
+  width: 100%;
+}
+
+.home-now-time {
+  color: var(--muted-color);
+  display: flex;
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  justify-content: space-between;
+  margin-top: 4px;
+}
+
+.home-now-progress {
+  background: var(--ui-surface-2);
+  border: 1px solid var(--ui-border);
+  cursor: var(--cursor-default);
+  height: 7px;
+  margin-top: 2px;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.home-now-progress-fill {
+  background: var(--accent-hot);
+  box-shadow: 0 0 8px var(--accent-hot-glow);
+  display: block;
+  height: 100%;
+  width: 0;
+}
+
+/* ── Feed ── */
+
+.home-feed-group {
+  color: var(--accent-color);
+  font-family: var(--font-ui);
+  font-size: 0.74rem;
+  letter-spacing: 0.12em;
+  margin: 8px 0 4px;
+  text-transform: uppercase;
+}
+
+.home-feed-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.home-feed-list li {
+  align-items: baseline;
+  color: var(--muted-color);
+  display: flex;
+  gap: 8px;
+  padding: 6px 0;
+}
+
+.home-feed-ph {
+  color: var(--text-fog-1);
+}
+
+.home-feed-date {
+  color: var(--text-fog-1);
+  flex: 0 0 auto;
+  font-family: var(--font-ui);
+  font-size: 0.74rem;
+  margin-left: auto;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.home-feed-list a {
+  color: var(--muted-color);
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-feed-list a:hover {
+  color: var(--text-color);
+}
+
+/* ── Discography ── */
+
+.home-block-wide {
+  grid-column: 1 / -1;
+}
+
+.home-disk-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.home-disk-list li {
+  align-items: baseline;
+  display: flex;
+  gap: 10px;
+  padding: 3px 0;
+}
+
+.home-disk-list a {
+  color: var(--muted-color);
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-disk-list a:hover {
+  color: var(--text-color);
+  text-shadow: 0 0 8px var(--text-glow-soft), var(--bleed-fringe);
+}
+
+.home-disk-date {
+  color: var(--text-fog-1);
+  flex-shrink: 0;
+  font-family: var(--font-ui);
+  font-size: 0.74rem;
+}
+
+.home-disk-type {
+  color: var(--accent-color);
+  flex-shrink: 0;
+  font-family: var(--font-ui);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+}
+
+.home-disk-count {
+  color: var(--text-fog-1);
+  flex-shrink: 0;
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+}
+
+/* ── Production status ── */
+
+.home-prod {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.home-prod-group {
+  color: var(--accent-color);
+  font-family: var(--font-ui);
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  margin: 8px 0 1px;
+  text-transform: uppercase;
+}
+
+.home-prod-row {
+  align-items: baseline;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
+  min-width: 0;
+  padding: 1px 0;
+}
+
+.home-prod-status {
+  flex-shrink: 0;
+  font-family: var(--font-ui);
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+}
+
+.home-prod-name {
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-prod-uptime {
+  color: var(--text-fog-1);
+  flex-shrink: 0;
+  font-family: var(--font-ui);
+  font-size: 0.7rem;
+}
+
+.home-prod-up .home-prod-status {
+  color: var(--ok-color);
+}
+
+.home-prod-up .home-prod-name {
+  color: var(--muted-color);
+}
+
+.home-prod-down .home-prod-status {
+  color: var(--muted-color);
+}
+
+.home-prod-down .home-prod-name {
+  color: var(--text-fog-1);
+}
+
+.home-prod-error .home-prod-status {
+  color: var(--danger-color);
+  text-shadow: 0 0 8px var(--text-fog-4), var(--bleed-fringe);
+}
+
+.home-prod-error .home-prod-name {
+  color: var(--danger-color);
+}
+
+.home-prod-up:hover .home-prod-name,
+.home-prod-down:hover .home-prod-name,
+.home-prod-error:hover .home-prod-name {
+  color: var(--text-color);
+  text-shadow: 0 0 8px var(--text-glow-soft), var(--bleed-fringe);
+}
+
+/* ── Footer ── */
+
+.site-footer {
+  border-top: 1px solid var(--ui-border);
+  color: var(--muted-color);
+  font-family: var(--font-ui);
+  font-size: 0.76rem;
+  letter-spacing: 0.06em;
+  margin-top: auto;
+  padding: 14px 0 20px;
+}
+
+.footer-line {
+  align-items: baseline;
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.footer-dot {
+  color: var(--accent-hot);
+}
+
+.footer-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 12px;
+}
+
+.footer-stat {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 12px;
+  font-family: var(--font-ui);
+  font-size: 0.76rem;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.footer-stat-label {
+  color: var(--accent-color);
+  flex: 0 0 10ch;
+  flex-shrink: 0;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.footer-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: 100%;
+}
+
+.footer-badges a {
+  display: inline-block;
+  text-decoration: none;
+}
+
+.footer-badge {
+  background: #000;
+  border: 1px solid var(--ui-border);
+  height: 31px;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  width: 88px;
+}
+
+.footer-badge:hover {
+  border-color: var(--accent-hot);
+  box-shadow: 0 0 8px var(--accent-hot-glow);
+}
+
+.footer-copy {
+  color: var(--text-fog-1);
+  margin-top: 10px;
+  text-transform: uppercase;
+}
+
+@media (max-width: 760px) {
+  .home-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .home-block-wide {
+    grid-column: auto;
+  }
+
+  .home-commit-repo,
+  .home-commit-date {
+    display: none;
+  }
+}

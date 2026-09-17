@@ -1,0 +1,30 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "workspaces": {
+    ".": {
+      "project": [
+        "src/**/*.{ts,tsx}",
+        "server/**/*.{ts,js}",
+        "scripts/**/*.ts"
+      ],
+      "ignore": [
+        ".bun/**"
+      ]
+    },
+    "packages/admin": {
+      "entry": ["src/**/*.{ts,tsx}"]
+    },
+    "worker": {
+      "project": ["**/*.ts"]
+    }
+  },
+  "ignoreBinaries": ["ffmpeg", "ffprobe"],
+  "rules": {
+    "files": "error",
+    "dependencies": "error",
+    "devDependencies": "error",
+    "unlisted": "error",
+    "binaries": "error",
+    "unresolved": "error"
+  }
+}

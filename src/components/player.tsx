@@ -1,18 +1,23 @@
-import { For, Show, createMemo, createSignal } from 'solid-js'
-import { Pause, Play, Settings, Download } from 'lucide-solid'
+import { For, Show, createEffect, createMemo, createSignal, onCleanup } from 'solid-js'
+import { Portal } from 'solid-js/web'
+import { Pause, Play, Settings, Download, Lock, Star, Heart } from 'lucide-solid'
 import type { Lang, ReleaseEntry, AudioFormat, AudioBitDepth, AudioChannels, AudioResampler, AudioBitrateMode } from '@/types/content'
 import { buildPlayerQueueFromRelease } from '@/player/queue'
-import { downloadRelease, downloadTrack, type DownloadFormatArgs } from '@/lib/releaseDownloads'
+import { downloadReleaseWithProgress, downloadTrackWithProgress, type DownloadFormatArgs, type DownloadProgressEvent } from '@/lib/releaseDownloads'
 import { usePlayer } from '@/features/player/usePlayer'
 import { UiSelect, type UiSelectOption } from '@/components/ui-select'
+import { isPreOrder, isTrackLocked, parseReleaseDate } from '@/lib/releasePreorder'
+import type { LikesData, MetricsData } from '@/lib/api/social'
+import { fetchSocialData } from '@/components/player/PlayerSocial'
 
-const FORMATS: AudioFormat[] = ['wav', 'flac', 'ogg-opus', 'ogg-vorbis', 'aiff', 'raw']
+const FORMATS: AudioFormat[] = ['wav', 'flac', 'ogg-opus', 'ogg-vorbis', 'mp3', 'aiff', 'raw']
 
 const FORMAT_LABELS: Record<AudioFormat, string> = {
   'wav': 'WAV',
   'flac': 'FLAC',
   'ogg-opus': 'Opus',
   'ogg-vorbis': 'Vorbis',
+  'mp3': 'MP3',
   'aiff': 'AIFF',
   'raw': 'RAW PCM',
 }
@@ -41,12 +46,22 @@ const BITRATE_MODE_OPTIONS: { value: AudioBitrateMode; label: string }[] = [
 
 const BITRATE_OPTIONS = [64, 96, 112, 128, 160, 192, 224, 256, 320, 512]
 
+const NORMALIZE_OPTIONS: { value: 'standard' | 'loud' | 'off'; labelEn: string; labelRu: string }[] = [
+  { value: 'standard', labelEn: 'Standard (-14 LUFS)', labelRu: 'Станд. (-14 LUFS)' },
+  { value: 'loud', labelEn: 'Loud (-11 LUFS)', labelRu: 'Громко (-11 LUFS)' },
+  { value: 'off', labelEn: 'Off', labelRu: 'Выкл' },
+]
+
 function isLossyFormat(fmt: AudioFormat): boolean {
-  return fmt === 'ogg-opus' || fmt === 'ogg-vorbis'
+  return fmt === 'ogg-opus' || fmt === 'ogg-vorbis' || fmt === 'mp3'
 }
 
 function isPcmFormat(fmt: AudioFormat): boolean {
   return fmt === 'wav' || fmt === 'aiff' || fmt === 'raw'
+}
+
+function needsBitDepth(fmt: AudioFormat): boolean {
+  return isPcmFormat(fmt) || fmt === 'flac'
 }
 
 function fmtTime(seconds: number | null): string {
@@ -66,11 +81,23 @@ function ratioFromPointer(event: PointerEvent, target: HTMLElement): number {
   return (event.clientX - rect.left) / rect.width
 }
 
-export function ReleasePlayer(props: { lang: Lang; release: ReleaseEntry }) {
+export function ReleasePlayer(props: { lang: Lang; release: ReleaseEntry; navigate: (href: string, event?: MouseEvent) => void }) {
   const player = usePlayer()
+  let downloadAbort: AbortController | null = null
+  onCleanup(() => {
+    // The user navigated away mid-download: close the progress stream so the
+    // server cancels the conversion instead of burning CPU on tracks nobody
+    // will ever receive.
+    downloadAbort?.abort()
+    downloadAbort = null
+  })
   const [downloadError, setDownloadError] = createSignal<string | null>(null)
   const [isDownloading, setIsDownloading] = createSignal(false)
   const [isTrackDownloading, setIsTrackDownloading] = createSignal(false)
+  const [downloadPhase, setDownloadPhase] = createSignal<'idle' | 'preparing' | 'converting' | 'zipping' | 'downloading' | 'done' | 'error'>('idle')
+  const [downloadTracks, setDownloadTracks] = createSignal<{ index: number; title: string; status: 'pending' | 'converting' | 'done' | 'error'; progress?: number }[]>([])
+  const [downloadZipProgress, setDownloadZipProgress] = createSignal(0)
+  const [downloadResultMsg, setDownloadResultMsg] = createSignal('')
   const [seekDragRatio, setSeekDragRatio] = createSignal<number | null>(null)
   const [showOptions, setShowOptions] = createSignal(false)
   const [format, setFormat] = createSignal<AudioFormat>('flac')
@@ -83,8 +110,115 @@ export function ReleasePlayer(props: { lang: Lang; release: ReleaseEntry }) {
   const [customSr, setCustomSr] = createSignal('')
   const [showCustomSrInput, setShowCustomSrInput] = createSignal(false)
   const [activeTab, setActiveTab] = createSignal<'basic' | 'advanced'>('basic')
+  const [normalize, setNormalize] = createSignal<'standard' | 'loud' | 'off'>('off')
+  const [lightboxOpen, setLightboxOpen] = createSignal(false)
+  const [coverLoaded, setCoverLoaded] = createSignal(false)
+
+  const [likesData, setLikesData] = createSignal<LikesData | null>(null)
+  const [metricsData, setMetricsData] = createSignal<MetricsData | null>(null)
+  const [likesLoading, setLikesLoading] = createSignal(true)
 
   const isRu = createMemo(() => props.lang === 'ru')
+
+  const preOrderActive = createMemo(() => isPreOrder(props.release))
+  const preOrderDate = createMemo(() => parseReleaseDate(props.release.releaseDate))
+  const preOrderLabel = createMemo(() => {
+    const d = preOrderDate()
+    if (!d) return ''
+    return d.toLocaleDateString(undefined, { day: '2-digit', month: '2-digit', year: 'numeric' })
+  })
+
+  const socialHidden = createMemo(() => likesData()?.hidden === true || metricsData()?.hidden === true)
+
+  createEffect(() => {
+    const slug = props.release.slug
+    let cancelled = false
+    fetchSocialData(slug).then(({ likesData: l, metricsData: m }) => {
+      if (cancelled) return
+      setLikesData(l)
+      setMetricsData(m)
+      setLikesLoading(false)
+    }).catch(() => {})
+    onCleanup(() => { cancelled = true })
+  })
+
+  async function handleAlbumLike() {
+    try {
+      const { toggleLike } = await import('@/lib/api/social')
+      const res = await toggleLike('album', props.release.slug)
+      const l = likesData()
+      if (l) {
+        setLikesData({
+          ...l,
+          userAlbumLiked: res.liked,
+          albumLikes: l.albumLikes + (res.liked ? 1 : -1),
+        })
+      }
+    } catch { console.warn('Failed to toggle album like') }
+  }
+
+  async function handleTrackLike(trackIndex: number) {
+    try {
+      const { toggleLike } = await import('@/lib/api/social')
+      const res = await toggleLike('track', props.release.slug, trackIndex)
+      const l = likesData()
+      if (l) {
+        const updated = { ...l.trackLikes }
+        const current = updated[trackIndex] || 0
+        updated[trackIndex] = Math.max(0, current + (res.liked ? 1 : -1))
+        const userLiked = res.liked
+          ? [...l.userTrackLiked, trackIndex]
+          : l.userTrackLiked.filter((i) => i !== trackIndex)
+        setLikesData({ ...l, trackLikes: updated, userTrackLiked: userLiked })
+      }
+    } catch { console.warn('Failed to toggle track like') }
+  }
+
+  // Play tracking: records skip/partial/full listen events per track.
+  {
+    let lastTrackIndex = -1
+    let lastPlayPct = 0
+    let trackRecorded = false
+    const releaseSlug = createMemo(() => props.release.slug)
+    const recordIfNeeded = (slug: string, trackIndex: number, pct: number) => {
+      if (trackIndex < 0) return
+      const cat = pct >= 0.9 ? 'full' as const : pct >= 0.3 ? 'partial' as const : 'skip' as const
+      import('@/lib/api/social').then((m) => m.recordPlay(slug, trackIndex, cat)).catch(() => {})
+    }
+    createEffect(() => {
+      const ct = player.state.currentTime
+      const dur = player.state.duration
+      if (isActiveQueue() && player.state.playing && dur > 0) {
+        lastPlayPct = ct / dur
+      }
+    })
+    createEffect(() => {
+      const idx = player.state.currentIndex
+      if (isActiveQueue() && idx !== lastTrackIndex) {
+        if (!trackRecorded && lastTrackIndex >= 0) recordIfNeeded(releaseSlug(), lastTrackIndex, lastPlayPct)
+        lastTrackIndex = idx
+        trackRecorded = false
+      }
+    })
+    createEffect(() => {
+      const slug = releaseSlug()
+      const ct = player.state.currentTime
+      const dur = player.state.duration
+      if (isActiveQueue() && dur > 0 && ct >= dur - 0.5 && ct > 0 && lastTrackIndex >= 0 && !trackRecorded) {
+        import('@/lib/api/social').then((m) => m.recordPlay(slug, lastTrackIndex, 'full')).catch(() => {})
+        trackRecorded = true
+      }
+    })
+    onCleanup(() => {
+      if (!trackRecorded && lastTrackIndex >= 0 && isActiveQueue()) recordIfNeeded(releaseSlug(), lastTrackIndex, lastPlayPct)
+    })
+  }
+
+  function trackPlaysForIndex(trackIndex: number): number {
+    const tp = metricsData()?.trackPlays
+    if (!tp) return 0
+    return tp.filter((p) => p.track_index === trackIndex).reduce((acc, p) => acc + p.count, 0)
+  }
 
   const maxSampleRate = createMemo(() => {
     const track = props.release.tracks[0]
@@ -95,7 +229,7 @@ export function ReleasePlayer(props: { lang: Lang; release: ReleaseEntry }) {
     SAMPLE_RATES.filter((sr) => sr <= maxSampleRate())
   )
 
-  const formatOptions = createMemo<UiSelectOption[]>(() => 
+  const formatOptions = createMemo<UiSelectOption[]>(() =>
     FORMATS.map((fmt) => ({ value: fmt, label: FORMAT_LABELS[fmt] }))
   )
 
@@ -125,8 +259,19 @@ export function ReleasePlayer(props: { lang: Lang; release: ReleaseEntry }) {
   )
 
   const queuePayload = createMemo(() => buildPlayerQueueFromRelease(props.release, props.lang))
-  const isActiveQueue = createMemo(() => player.state.queue?.queueKey === props.release.slug)
-  const activeIndex = createMemo(() => (isActiveQueue() ? player.state.currentIndex : 0))
+  // The queue must match the CURRENT release data, not just the slug: a queue
+  // built before pre-order flags changed (or before a track list edit) has
+  // different indices and would map list positions onto the wrong tracks.
+  const isActiveQueue = createMemo(() => {
+    const q = player.state.queue
+    if (!q || q.queueKey !== props.release.slug) return false
+    const expected = queuePayload().tracks
+    if (q.tracks.length !== expected.length) return false
+    return expected.every((track, i) => q.tracks[i]?.index === track.index)
+  })
+  // Original (1-based) track index of the currently active queue item.
+  const activeTrackIndex = createMemo(() => (isActiveQueue() ? (player.state.queue?.tracks[player.state.currentIndex]?.index ?? 0) : 0))
+  const currentTrackIndex = createMemo(() => player.state.queue?.tracks[player.state.currentIndex]?.index ?? 0)
   const activePosition = createMemo(() => (isActiveQueue() ? player.state.currentTime : 0))
   const activeDuration = createMemo(() => (isActiveQueue() ? player.state.duration : 0))
   const progress = createMemo(() => {
@@ -152,35 +297,45 @@ export function ReleasePlayer(props: { lang: Lang; release: ReleaseEntry }) {
   const downloadOpts = createMemo((): DownloadFormatArgs => ({
     format: format(),
     sampleRate: showCustomSrInput() ? Number(customSr()) || sampleRate() : sampleRate(),
-    bitDepth: isPcmFormat(format()) ? bitDepth() : 16,
+    bitDepth: needsBitDepth(format()) ? bitDepth() : 16,
     channels: channels(),
     resampler: resampler(),
     bitrateMode: isLossyFormat(format()) ? bitrateMode() : 'vbr',
     bitrate: isLossyFormat(format()) ? bitrate() : 192,
+    normalize: normalize(),
   }))
 
   function toggleMainPlayPause() {
-    if (queuePayload().tracks.length === 0) return
+    const payload = queuePayload()
+    if (payload.tracks.length === 0) return
     if (!isActiveQueue()) {
-      player.setQueue(queuePayload())
-      player.playTrack(0)
+      player.setQueue(payload)
+      // Big play button: start with the starred main track when it is
+      // available, otherwise the first available (unlocked) track.
+      const mainPos = payload.tracks.findIndex((t) => t.isMain)
+      player.playTrack(mainPos >= 0 ? mainPos : 0)
       return
     }
     player.togglePlayPause()
   }
 
   function playTrackFromList(index: number) {
-    if (!queuePayload().tracks[index]) return
+    const track = props.release.tracks[index]
+    if (!track || isTrackLocked(props.release, track)) return
+    // Map the list position onto the queue position: during pre-order the
+    // queue only contains unlocked tracks, so indexes diverge.
+    const pos = queuePayload().tracks.findIndex((t) => t.index === track.index)
+    if (pos < 0) return
     if (!isActiveQueue()) {
       player.setQueue(queuePayload())
-      player.playTrack(index)
+      player.playTrack(pos)
       return
     }
-    if (index === player.state.currentIndex) {
+    if (pos === player.state.currentIndex) {
       player.togglePlayPause()
       return
     }
-    player.playTrack(index)
+    player.playTrack(pos)
   }
 
   function onTimelinePointerDown(event: PointerEvent) {
@@ -214,28 +369,104 @@ export function ReleasePlayer(props: { lang: Lang; release: ReleaseEntry }) {
     setSeekDragRatio(null)
   }
 
+  function triggerDownload(blob: Blob, filename: string) {
+    const objectUrl = URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+    anchor.href = objectUrl
+    anchor.download = filename
+    document.body.appendChild(anchor)
+    anchor.click()
+    anchor.remove()
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 30000)
+  }
+
   async function handleDownload() {
     setIsDownloading(true)
     setDownloadError(null)
+    setDownloadPhase('preparing')
+    setDownloadZipProgress(0)
+    setDownloadResultMsg('')
+    setDownloadTracks([])
+
+    const ac = new AbortController()
+    downloadAbort = ac
+
+    const onProgress = (event: DownloadProgressEvent) => {
+      if (event.type === 'meta') {
+        setDownloadTracks(event.tracks.map((t) => ({ ...t, status: 'pending' as const })))
+      } else if (event.type === 'convert-start') {
+        setDownloadPhase('converting')
+        setDownloadTracks((prev) => prev.map((t) => t.index === event.track ? { ...t, status: 'converting' as const } : t))
+      } else if (event.type === 'convert-progress') {
+        setDownloadTracks((prev) => prev.map((t) => t.index === event.track ? { ...t, status: 'converting' as const, progress: event.progress } : t))
+      } else if (event.type === 'convert-done') {
+        setDownloadTracks((prev) => prev.map((t) => t.index === event.track ? { ...t, status: 'done' as const, progress: 1 } : t))
+      } else if (event.type === 'zip-progress') {
+        setDownloadPhase('zipping')
+        setDownloadZipProgress(event.progress)
+      } else if (event.type === 'done') {
+        setDownloadPhase('downloading')
+      } else if (event.type === 'error') {
+        setDownloadPhase('error')
+        setDownloadResultMsg(event.error)
+      }
+    }
+
     try {
-      await downloadRelease(props.release, downloadOpts())
+      const blob = await downloadReleaseWithProgress(props.release, downloadOpts(), onProgress, ac.signal)
+      setDownloadPhase('done')
+      setDownloadResultMsg(isRu() ? 'Готово' : 'Done')
+      triggerDownload(blob, (blob as Blob & { name?: string }).name || `${props.release.slug}-${format()}.zip`)
     } catch (error) {
-      setDownloadError(error instanceof Error ? error.message : 'Unexpected download error')
+      if (ac.signal.aborted) return
+      setDownloadPhase('error')
+      setDownloadResultMsg(error instanceof Error ? error.message : 'Download failed')
     } finally {
+      if (downloadAbort === ac) downloadAbort = null
       setIsDownloading(false)
     }
   }
 
   async function handleTrackDownload() {
-    const track = props.release.tracks[activeIndex()]
-    if (!track) return
+    const track = props.release.tracks.find((t) => t.index === activeTrackIndex())
+    if (!track || isTrackLocked(props.release, track)) return
     setIsTrackDownloading(true)
     setDownloadError(null)
+    setDownloadPhase('preparing')
+    setDownloadResultMsg('')
+    setDownloadZipProgress(0)
+    setDownloadTracks([])
+
+    const ac = new AbortController()
+    downloadAbort = ac
+
+    const onProgress = (event: DownloadProgressEvent) => {
+      if (event.type === 'meta') {
+        setDownloadTracks([{ index: track.index, title: track.title, status: 'pending' as const }])
+      } else if (event.type === 'convert-start') {
+        setDownloadPhase('converting')
+        setDownloadTracks((prev) => prev.map((t) => t.index === event.track ? { ...t, status: 'converting' as const } : t))
+      } else if (event.type === 'convert-done') {
+        setDownloadTracks((prev) => prev.map((t) => t.index === event.track ? { ...t, status: 'done' as const } : t))
+      } else if (event.type === 'done') {
+        setDownloadPhase('downloading')
+      } else if (event.type === 'error') {
+        setDownloadPhase('error')
+        setDownloadResultMsg(event.error)
+      }
+    }
+
     try {
-      await downloadTrack(props.release, track.index, downloadOpts())
+      const blob = await downloadTrackWithProgress(props.release, track.index, downloadOpts(), onProgress, ac.signal)
+      setDownloadPhase('done')
+      setDownloadResultMsg(isRu() ? 'Готово' : 'Done')
+      triggerDownload(blob, (blob as Blob & { name?: string }).name || `${props.release.slug}-${track.index}.${format()}`)
     } catch (error) {
-      setDownloadError(error instanceof Error ? error.message : 'Unexpected track download error')
+      if (ac.signal.aborted) return
+      setDownloadPhase('error')
+      setDownloadResultMsg(error instanceof Error ? error.message : 'Track download failed')
     } finally {
+      if (downloadAbort === ac) downloadAbort = null
       setIsTrackDownloading(false)
     }
   }
@@ -246,19 +477,72 @@ export function ReleasePlayer(props: { lang: Lang; release: ReleaseEntry }) {
     if (fmt === 'aiff') return `AIFF ${bitDepth()}-bit / ${sampleRate()}Hz`
     if (fmt === 'raw') return `RAW PCM ${bitDepth()}-bit / ${sampleRate()}Hz`
     if (fmt === 'ogg-opus') return `Opus ${bitrate()}k ${bitrateMode().toUpperCase()} / ${sampleRate()}Hz`
-    return `Vorbis ${bitrate()}k ${bitrateMode().toUpperCase()} / ${sampleRate()}Hz`
+    if (fmt === 'ogg-vorbis') return `Vorbis ${bitrate()}k ${bitrateMode().toUpperCase()} / ${sampleRate()}Hz`
+    return `MP3 ${bitrate()}k ${bitrateMode().toUpperCase()} / ${sampleRate()}Hz`
+  }
+
+  function trackLinks(track: ReleaseEntry['tracks'][number]) {
+    const l = track.links || {}
+    return (['spotify', 'yandexMusic', 'bandcamp', 'soundcloud'] as const)
+      .map((key) => ({ key, url: l[key] }))
+      .filter((x) => x.url)
   }
 
   return (
     <section class="release-player" aria-label={`${props.release.albumName} player`}>
-      <Show when={isDownloading()}>
-        <div class="release-download-modal" role="status" aria-live="polite">
+      <Portal>
+        <Show when={isDownloading() || isTrackDownloading()}>
+          <div class="release-download-modal" role="status" aria-live="polite">
           <div class="release-download-modal-card">
-            <div class="release-download-spinner" />
-            <p>{isRu() ? 'Конвертируем...' : 'Converting...'}</p>
+            <Show when={downloadPhase() === 'error'}>
+              <div class="release-download-modal-icon-error">✕</div>
+              <p>{downloadResultMsg()}</p>
+              <button type="button" class="shop-btn" onClick={() => { setDownloadPhase('idle'); setDownloadResultMsg('') }}>
+                {isRu() ? 'Закрыть' : 'Close'}
+              </button>
+            </Show>
+            <Show when={downloadPhase() !== 'error'}>
+              <Show when={downloadPhase() === 'done'}>
+                <div class="release-download-modal-icon-success">✓</div>
+                <p>{downloadResultMsg()}</p>
+              </Show>
+              <Show when={downloadPhase() !== 'done'}>
+                <div class="release-download-spinner" />
+                <p>
+                  {downloadPhase() === 'preparing' && (isRu() ? 'Подготовка...' : 'Preparing...')}
+                  {downloadPhase() === 'converting' && (isRu() ? 'Конвертируем...' : 'Converting...')}
+                  {downloadPhase() === 'zipping' && (isRu() ? 'Упаковываем...' : 'Zipping...')}
+                  {downloadPhase() === 'downloading' && (isRu() ? 'Скачиваем...' : 'Downloading...')}
+                </p>
+              </Show>
+              <Show when={downloadTracks().length > 0}>
+                <div class="release-download-modal-tracks">
+                  <For each={downloadTracks()}>
+                    {(track) => (
+                      <div class="release-download-modal-track">
+                        <span class="release-download-modal-track-idx">{track.index + 1}</span>
+                        <span class="release-download-modal-track-title">{track.title}</span>
+                        <span class="release-download-modal-track-status">
+                          <Show when={track.status === 'pending'}><span class="release-download-modal-icon-pending">○</span></Show>
+                          <Show when={track.status === 'converting'}><span class="release-download-modal-icon-converting">●</span></Show>
+                          <Show when={track.status === 'done'}><span class="release-download-modal-icon-done">✓</span></Show>
+                          <Show when={track.status === 'error'}><span class="release-download-modal-icon-error">✕</span></Show>
+                        </span>
+                      </div>
+                    )}
+                  </For>
+                </div>
+              </Show>
+              <Show when={downloadPhase() === 'zipping'}>
+                <div class="release-download-modal-progress">
+                  <span style={{ width: `${Math.round(downloadZipProgress() * 100)}%` }} />
+                </div>
+              </Show>
+            </Show>
           </div>
-        </div>
-      </Show>
+          </div>
+        </Show>
+      </Portal>
 
       <div class="release-player-top">
         <div class="progressive-cover release-player-cover-large" style={{ 'background-image': `url(${props.release.coverPreviewUrl || props.release.coverUrl})` }}>
@@ -269,6 +553,7 @@ export function ReleasePlayer(props: { lang: Lang; release: ReleaseEntry }) {
             width="154"
             height="154"
             onLoad={(e) => e.currentTarget.classList.add('loaded')}
+            onClick={() => setLightboxOpen(true)}
           />
         </div>
 
@@ -290,10 +575,43 @@ export function ReleasePlayer(props: { lang: Lang; release: ReleaseEntry }) {
               <div class="release-player-album">{props.release.albumName}</div>
               <div class="release-player-meta-bottom">
                 <div class="release-player-date">{props.release.releaseDate}</div>
-                <div class="release-player-genre">#{isRu() ? props.release.genre.ru : props.release.genre.en}</div>
+                <div class="release-player-genres">
+                  <For each={props.release.genres?.main?.length ? props.release.genres.main : [props.release.genre.en ? (isRu() ? props.release.genre.ru : props.release.genre.en) : 'electronic']}>
+                    {(g) => <a class="release-player-genre" href={`/${props.lang}/music/tag/${encodeURIComponent(g)}`} onClick={(e) => props.navigate(`/${props.lang}/music/tag/${encodeURIComponent(g)}`, e)}>#{g}</a>}
+                  </For>
+                </div>
               </div>
+              <Show when={!socialHidden() && !likesLoading()}>
+                <div class="release-player-social" style="margin-top:5px;display:flex;gap:10px;align-items:center">
+                  <Show when={likesData()}>
+                    <button
+                      type="button"
+                      class={`release-player-like-btn${likesData()!.userAlbumLiked ? ' is-liked' : ''}`}
+                      onClick={handleAlbumLike}
+                      aria-label="Like album"
+                    >
+                      <Heart size={14} aria-hidden="true" />
+                      <span class="release-player-like-count">{likesData()!.albumLikes}</span>
+                    </button>
+                  </Show>
+                  <Show when={metricsData()}>
+                    <span class="release-player-metric">
+                      <span class="release-player-metric-icon">▶</span>
+                      <span class="release-player-metric-count">{metricsData()!.plays.total}</span>
+                    </span>
+                  </Show>
+                </div>
+              </Show>
             </div>
           </header>
+
+          <Show when={preOrderActive()}>
+            <div class="release-preorder-badge" role="status">
+              {isRu()
+                ? `ПРЕДЗАКАЗ · релиз ${preOrderLabel()} — доступны только превью-треки`
+                : `PRE-ORDER · out ${preOrderLabel()} — only preview tracks are playable`}
+            </div>
+          </Show>
 
           <div class="release-player-timeline-wrap">
             <div class="release-player-time">{displayPosition()}</div>
@@ -318,32 +636,91 @@ export function ReleasePlayer(props: { lang: Lang; release: ReleaseEntry }) {
           <div class="release-player-content">
             <ul class="release-player-list">
               <For each={props.release.tracks}>
-                {(track, index) => (
-                  <li class={isActiveQueue() && index() === activeIndex() ? 'is-active' : undefined}>
-                    <button type="button" class="release-player-track" onClick={() => playTrackFromList(index())}>
-                      <span class="release-player-thumb-wrap">
-                        <div class="progressive-cover" style={{ 'background-image': `url(${props.release.coverPreviewUrl || props.release.coverUrl})` }}>
-                          <img
-                            src={props.release.coverUrl || props.release.coverPreviewUrl || ''}
-                            alt=""
-                            class="release-player-thumb"
-                            width="28"
-                            height="28"
-                            onLoad={(e) => e.currentTarget.classList.add('loaded')}
-                          />
-                        </div>
-                        <span class="release-player-thumb-overlay" title={isActiveQueue() && index() === activeIndex() && player.state.playing ? 'Pause' : 'Play'}>
-                          <span class={isActiveQueue() && index() === activeIndex() && player.state.playing ? 'release-player-icon-pause' : 'release-player-icon-play'} />
+                {(track, index) => {
+                  const locked = () => isTrackLocked(props.release, track)
+                  const isActive = () => isActiveQueue() && track.index === activeTrackIndex()
+                  const isCurrent = () => isActiveQueue() && track.index === currentTrackIndex() && player.state.playing
+                  const links = () => trackLinks(track)
+                  return (
+                    <li classList={{ 'is-active': isActive(), 'is-locked': locked(), 'is-main': track.isMain === true }}>
+                      <button
+                        type="button"
+                        class="release-player-track"
+                        onClick={() => playTrackFromList(index())}
+                        disabled={locked()}
+                        aria-current={isActive() ? 'true' : undefined}
+                        aria-label={locked() ? `Locked: ${track.title}` : `Play ${track.title}`}
+                      >
+                        <span class="release-player-thumb-wrap">
+                          <div class="progressive-cover" style={{ 'background-image': `url(${props.release.coverPreviewUrl || props.release.coverUrl})` }}>
+                            <img
+                              src={props.release.coverUrl || props.release.coverPreviewUrl || ''}
+                              alt=""
+                              class="release-player-thumb"
+                              width="28"
+                              height="28"
+                              onLoad={(e) => e.currentTarget.classList.add('loaded')}
+                            />
+                          </div>
+                          <span class="release-player-thumb-overlay" aria-hidden="true" title={isCurrent() ? 'Pause' : 'Play'}>
+                            <Show when={locked()} fallback={
+                              <span class={isCurrent() ? 'release-player-icon-pause' : 'release-player-icon-play'} />
+                            }>
+                              <Lock size={12} />
+                            </Show>
+                          </span>
                         </span>
-                      </span>
-                      <span class="release-player-track-name">{index() + 1}. {track.title}</span>
-                    </button>
-                  </li>
-                )}
+                        <span class="release-player-track-name">
+                          {index() + 1}. {track.title}
+                          <Show when={track.isMain === true}>
+                            <Star size={12} class="release-player-track-star" aria-label="Main track" />
+                          </Show>
+                          <Show when={!socialHidden() && metricsData()}>
+                            <span class="release-player-track-plays">{trackPlaysForIndex(track.index)}</span>
+                          </Show>
+                          <Show when={locked()}>
+                            <span class="release-player-track-locked-label">
+                              {preOrderDate() ? `available ${preOrderLabel()}` : 'available at release'}
+                            </span>
+                          </Show>
+                        </span>
+                      </button>
+                      <Show when={!locked() && !socialHidden() && !likesLoading()}>
+                        <button
+                          type="button"
+                          class={`release-player-track-like${likesData()?.userTrackLiked.includes(track.index) ? ' is-liked' : ''}`}
+                          onClick={(e) => { e.stopPropagation(); handleTrackLike(track.index) }}
+                          aria-label="Like track"
+                        >
+                          <Heart size={12} aria-hidden="true" />
+                          <Show when={(likesData()?.trackLikes[track.index] ?? 0) > 0}>
+                            <span class="release-player-track-like-count">{likesData()?.trackLikes[track.index] ?? 0}</span>
+                          </Show>
+                        </button>
+                      </Show>
+                      <Show when={links().length > 0}>
+                        <span class="release-player-track-links">
+                          <For each={links()}>
+                            {(l) => (
+                              <a
+                                class="release-player-track-link"
+                                href={l.url!}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title={l.key}
+                                onClick={(e) => e.stopPropagation()}
+                              >{l.key === 'yandexMusic' ? 'YM' : l.key === 'spotify' ? 'SP' : l.key === 'soundcloud' ? 'SC' : 'BC'}</a>
+                            )}
+                          </For>
+                        </span>
+                      </Show>
+                    </li>
+                  )
+                }}
               </For>
             </ul>
 
-            <aside class="release-download-panel" aria-label="Release download">
+            <aside class={`release-download-panel${showOptions() ? ' is-expanded' : ''}`} aria-label="Release download">
               <div class="release-download-header">
                 <h4>{isRu() ? 'Скачать' : 'Download'}</h4>
                 <button
@@ -429,7 +806,7 @@ export function ReleasePlayer(props: { lang: Lang; release: ReleaseEntry }) {
                       />
                     </label>
 
-                    <Show when={isPcmFormat(format())}>
+                    <Show when={needsBitDepth(format())}>
                       <label class="form-field">
                         <span class="form-label">{isRu() ? 'Битность' : 'Bit Depth'}</span>
                         <UiSelect
@@ -440,6 +817,25 @@ export function ReleasePlayer(props: { lang: Lang; release: ReleaseEntry }) {
                         />
                       </label>
                     </Show>
+
+                    <div class="release-download-normalize">
+                      <div class="release-download-normalize-label">
+                        <span>{isRu() ? 'Нормализация' : 'Normalize'}</span>
+                      </div>
+                      <div class="release-download-tabs" style="margin-top:6px;margin-bottom:0">
+                        <For each={NORMALIZE_OPTIONS}>
+                          {(opt) => (
+                            <button
+                              type="button"
+                              class={`release-download-tab${normalize() === opt.value ? ' is-active' : ''}`}
+                              onClick={() => setNormalize(opt.value)}
+                            >
+                              {isRu() ? opt.labelRu : opt.labelEn}
+                            </button>
+                          )}
+                        </For>
+                      </div>
+                    </div>
                   </Show>
 
                   <Show when={activeTab() === 'advanced'}>
@@ -500,6 +896,38 @@ export function ReleasePlayer(props: { lang: Lang; release: ReleaseEntry }) {
           </div>
         </div>
       </div>
+
+      <Show when={props.release.genres?.sub?.length}>
+        <div class="release-player-tags">
+          <span class="release-player-tags-label">{isRu() ? 'теги' : 'tags'}</span>
+          <For each={props.release.genres!.sub}>
+            {(tag) => <a class="release-player-genre" href={`/${props.lang}/music/tag/${encodeURIComponent(tag)}`} onClick={(e) => props.navigate(`/${props.lang}/music/tag/${encodeURIComponent(tag)}`, e)}>#{tag}</a>}
+          </For>
+        </div>
+      </Show>
+
+      <Show when={lightboxOpen()}>
+        <Portal>
+          <div
+            class="shop-lightbox"
+            ref={(el) => { el?.focus() }}
+            role="dialog"
+            aria-modal="true"
+            tabIndex={-1}
+            aria-label="Cover preview"
+            onClick={(e) => { if (e.currentTarget === e.target) setLightboxOpen(false) }}
+            onKeyDown={(e) => { if (e.key === 'Escape') setLightboxOpen(false) }}
+          >
+            <button type="button" class="overlay-close" aria-label="close" onClick={() => setLightboxOpen(false)}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            </button>
+            <Show when={!coverLoaded()}>
+              <div class="overlay-loading" />
+            </Show>
+            <img class="shop-lightbox-img" src={props.release.coverUrl || props.release.coverPreviewUrl || ''} alt={`${props.release.albumName} cover`} onLoad={() => setCoverLoaded(true)} />
+          </div>
+        </Portal>
+      </Show>
     </section>
   )
 }

@@ -1,9 +1,48 @@
-import { Match, Show, Switch, createEffect, createMemo, createSignal, onCleanup, onMount } from 'solid-js'
-import { getLocaleDictionary, getLocaleDictionarySync } from './lib/i18n'
+import { Match, Show, Suspense, Switch, createEffect, createMemo, createSignal, lazy, onCleanup, onMount } from 'solid-js'
+import { getLocaleDictionary } from './lib/i18n'
 import { getPageMarkdown } from './lib/pages'
 import { renderSimpleMarkdown } from './lib/simpleMarkdown'
 import { getUiCopy } from './lib/uiText'
-import { ProjectsIndex, OssMigrationWizard } from './components'
+import { reloadManifest } from './lib/releaseManifest'
+import { getReleaseBySlug } from './lib/releaseManifest'
+import { getShopProductDetails } from './lib/shop'
+import { getBlogPostBySlug, getNewsPostBySlug } from './lib/blog'
+import { NowPlayingBar } from './components/now-playing-bar'
+import { SiteFooter } from './components/site-footer'
+import { PageSkeleton } from './components/skeleton'
+import { SiteSettingsMenu } from './components/site-settings-menu'
+import { Settings } from 'lucide-solid'
+
+const AdminPanel = lazy(() => import('./components/admin-panel').then((m) => ({ default: m.AdminPanel })))
+const HomePage = lazy(() => import('./components/pages/home').then((m) => ({ default: m.HomePage })))
+const LinksPage = lazy(() => import('./components/pages/links').then((m) => ({ default: m.LinksPage })))
+const ShopPage = lazy(() => import('./components/pages/shop').then((m) => ({ default: m.ShopPage })))
+const ShopProductPage = lazy(() => import('./components/pages/shop').then((m) => ({ default: m.ShopProductPage })))
+const CartPage = lazy(() => import('./components/pages/cart').then((m) => ({ default: m.CartPage })))
+const AccountPage = lazy(() => import('./components/pages/account').then((m) => ({ default: m.AccountPage })))
+const MusicPage = lazy(() => import('./components/pages/music').then((m) => ({ default: m.MusicPage })))
+const MusicTagPage = lazy(() => import('./components/pages/music').then((m) => ({ default: m.MusicTagPage })))
+const ReleasePage = lazy(() => import('./components/pages/music').then((m) => ({ default: m.ReleasePage })))
+const NewsIndex = lazy(() => import('./components/pages/news').then((m) => ({ default: m.NewsIndex })))
+const NewsPost = lazy(() => import('./components/pages/news').then((m) => ({ default: m.NewsPost })))
+const BlogIndex = lazy(() => import('./components/pages/blog').then((m) => ({ default: m.BlogIndex })))
+const BlogPost = lazy(() => import('./components/pages/blog').then((m) => ({ default: m.BlogPost })))
+const GalleryPage = lazy(() => import('./components/pages/gallery').then((m) => ({ default: m.GalleryPage })))
+const GalleryEntryPage = lazy(() => import('./components/pages/gallery').then((m) => ({ default: m.GalleryEntryPage })))
+const VideoPage = lazy(() => import('./components/pages/videos').then((m) => ({ default: m.VideoPage })))
+const VideoEntryPage = lazy(() => import('./components/pages/videos').then((m) => ({ default: m.VideoEntryPage })))
+const RadioPage = lazy(() => import('./components/pages/radio').then((m) => ({ default: m.RadioPage })))
+const ProjectsIndex = lazy(() => import('./components/projects-index').then((m) => ({ default: m.ProjectsIndex })))
+const OssMigrationWizard = lazy(() => import('./components/oss-migrator').then((m) => ({ default: m.OssMigrationWizard })))
+const NotFoundPage = lazy(() => import('./components/pages/not-found').then((m) => ({ default: m.NotFoundPage })))
+
+function safeDecodeTag(raw: string): string {
+  try {
+    return decodeURIComponent(raw)
+  } catch {
+    return raw
+  }
+}
 import {
   adminLogin,
   adminLogout,
@@ -36,19 +75,21 @@ import {
   getAdminUsers,
   updateAdminUser,
   deleteAdminUser,
+  getAdminSubmissions,
+  reviewAdminSubmission,
+  getAdminArtists,
+  verifyAdminArtist,
+  getAdminSupportTickets,
+  updateAdminSupportTicket,
   type AdminOrder,
   type AdminBanner,
   type AdminUser,
 } from './lib/api/admin'
-import { AdminPanel } from './components/admin-panel'
 import { getSession } from './lib/api/auth'
 import { getMyOrders, type OrderSummary } from './lib/api/orders'
 import { getPublicConfig, type PublicConfig } from './lib/api/config'
-import { ShopPage, ShopProductPage, CartPage, AccountPage, NowPlayingBar, MusicPage, ReleasePage, NewsIndex, NewsPost, BlogIndex, BlogPost } from './components'
-import { GalleryPage, GalleryEntryPage } from './components/pages/gallery'
-import { VideoPage, VideoEntryPage } from './components/pages/videos'
-import { RadioPage } from './components/pages/radio'
 import { persistPreferredLanguage } from './lib/languagePreference'
+import { applySiteSettings, loadSiteSettings, saveSiteSettings, type SiteSettings } from './lib/site-settings'
 import type { AuthState } from './types/auth'
 import type { AdminRelease, AdminShopProduct } from './types/admin'
 import type { Lang, LocaleDictionary } from './types/content'
@@ -56,9 +97,8 @@ import type { CartItem, ShopProductStatus } from './types/shop'
 
 type RouteState = { lang: Lang; route: string }
 
-const SITE_TITLE = import.meta.env.VITE_SITE_TITLE || 'd7tun6.site'
+const SITE_TITLE = import.meta.env.VITE_SITE_TITLE || 'D7TUN6'
 const CART_STORAGE_KEY = `${SITE_TITLE}.cart.v1`
-const THEME_STORAGE_KEY = `${SITE_TITLE}.theme.v1`
 
 function parsePathname(pathname: string): RouteState {
   const parts = pathname.split('/').filter(Boolean)
@@ -67,14 +107,47 @@ function parsePathname(pathname: string): RouteState {
   return { lang, route }
 }
 
-function loadTheme(): 'dark' | 'light' {
-  if (typeof window === 'undefined') return 'dark'
-  try {
-    const stored = window.localStorage.getItem(THEME_STORAGE_KEY)
-    return stored === 'light' ? 'light' : 'dark'
-  } catch {
-    return 'dark'
+const SECTION_TITLES: Record<string, { en: string; ru: string }> = {
+  main: { en: '', ru: '' },
+  bio: { en: 'Bio', ru: 'Био' },
+  music: { en: 'Music', ru: 'Музыка' },
+  news: { en: 'News', ru: 'Новости' },
+  blog: { en: 'Blog', ru: 'Блог' },
+  shop: { en: 'Shop', ru: 'Магазин' },
+  links: { en: 'Links', ru: 'Ссылки' },
+  legal: { en: 'Legal', ru: 'Инфо' },
+  contact: { en: 'Contact', ru: 'Контакты' },
+  gallery: { en: 'Gallery', ru: 'Галерея' },
+  radio: { en: 'Radio', ru: 'Радио' },
+  donate: { en: 'Donate', ru: 'Донат' },
+  projects: { en: 'Projects', ru: 'Проекты' },
+  video: { en: 'Video', ru: 'Видео' },
+  cart: { en: 'Cart', ru: 'Корзина' },
+  account: { en: 'Account', ru: 'Аккаунт' },
+  admin: { en: 'Admin', ru: 'Админ' },
+  git: { en: 'Git', ru: 'Git' },
+}
+
+function resolvePageTitle(route: string, lang: Lang): string {
+  const section = route.split('/')[0]
+  const label = SECTION_TITLES[section]
+  if (!label) return `404 - ${SITE_TITLE}`
+  const paragraph = label[lang]
+  if (!paragraph) return SITE_TITLE
+  if (section === 'music' && route.startsWith('music/')) {
+    const release = getReleaseBySlug(route.slice('music/'.length))
+    if (release) return `${release.albumName} - ${SITE_TITLE}`
+  } else if (section === 'shop' && route.startsWith('shop/') && route.replace('shop/', '')) {
+    const product = getShopProductDetails(lang, route.slice('shop/'.length))
+    if (product) return `${product.title} - ${SITE_TITLE}`
+  } else if (section === 'news' && route.startsWith('news/')) {
+    const post = getNewsPostBySlug(lang, route.slice('news/'.length))
+    if (post) return `${post.title} - ${SITE_TITLE}`
+  } else if (section === 'blog' && route.startsWith('blog/')) {
+    const post = getBlogPostBySlug(lang, route.slice('blog/'.length))
+    if (post) return `${post.title} - ${SITE_TITLE}`
   }
+  return `${paragraph} - ${SITE_TITLE}`
 }
 
 function loadCart(): CartItem[] {
@@ -102,17 +175,16 @@ function formatCount(count: number): string {
   return String(Math.max(0, Math.floor(count)))
 }
 
-const initialLang: Lang = window.location.pathname.split('/').filter(Boolean)[0] === 'ru' ? 'ru' : 'en'
-
 function App() {
   const [path, setPath] = createSignal(window.location.pathname)
   const parsed = createMemo(() => parsePathname(path()))
   const lang = createMemo(() => parsed().lang)
   const route = createMemo(() => parsed().route)
-  const [dict, setDict] = createSignal<LocaleDictionary | null>(getLocaleDictionarySync(initialLang))
+  const [dict, setDict] = createSignal<LocaleDictionary | null>(null)
   const [session, setSession] = createSignal<AuthState>({ authenticated: false, user: null })
   const [isAdmin, setIsAdmin] = createSignal(false)
-  const [theme, setTheme] = createSignal<'dark' | 'light'>(loadTheme())
+  const [settings, setSettings] = createSignal<SiteSettings>(loadSiteSettings())
+  const [settingsOpen, setSettingsOpen] = createSignal(false)
   const [cart, setCart] = createSignal<CartItem[]>(loadCart())
   const [adminReleases, setAdminReleases] = createSignal<AdminRelease[]>([])
   const [adminShop, setAdminShop] = createSignal<AdminShopProduct[]>([])
@@ -131,7 +203,7 @@ function App() {
   const [adminSiteConfig, setAdminSiteConfig] = createSignal<Record<string, string | boolean>>({})
   const [adminOrderEdit, setAdminOrderEdit] = createSignal<Record<string, { status: string; trackingNumber: string; trackingStatus: string; shippingEta: string; comment: string }>>({})
   const [releaseEditOpen, setReleaseEditOpen] = createSignal<string | null>(null)
-  const [releaseEdit, setReleaseEdit] = createSignal({ albumName: '', notes: '', releaseType: 'album', releaseDate: '', hidden: false })
+  const [releaseEdit, setReleaseEdit] = createSignal({ albumName: '', notes: '', releaseType: 'album', releaseDate: '', hidden: false, links: { spotify: '', yandexMusic: '', bandcamp: '', soundcloud: '' }, trackMeta: {} as Record<string, { previewable: boolean; isMain: boolean }>, genres: { main: [] as string[], sub: [] as string[] } })
   const [shopEditOpen, setShopEditOpen] = createSignal<string | null>(null)
   const [shopEdit, setShopEdit] = createSignal({
     title: '',
@@ -145,12 +217,8 @@ function App() {
   })
 
   createEffect(() => {
-    document.documentElement.dataset.theme = theme()
-    try {
-      window.localStorage.setItem(THEME_STORAGE_KEY, theme())
-    } catch {
-      
-    }
+    applySiteSettings(settings())
+    saveSiteSettings(settings())
   })
 
   createEffect(() => {
@@ -205,6 +273,10 @@ function App() {
     onCleanup(() => window.removeEventListener('popstate', onPop))
   })
 
+  createEffect(() => {
+    document.title = resolvePageTitle(route(), lang())
+  })
+
   const navigate = (href: string, event?: MouseEvent) => {
     event?.preventDefault()
     if (href === window.location.pathname) return
@@ -213,10 +285,6 @@ function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const switchLangHref = createMemo(() => {
-    const suffix = route() === 'main' ? '' : `/${route()}`
-    return `/${lang() === 'ru' ? 'en' : 'ru'}${suffix}`
-  })
   const copy = createMemo(() => getUiCopy(lang()))
 
   const mainTitle = createMemo(() => dict()?.site.title || 'D7TUN6.SITE')
@@ -229,8 +297,8 @@ function App() {
   const isAdminRoute = createMemo(() => route() === 'admin')
 
   const pageHtml = createMemo(() => {
-    if (route() === 'main' || route() === 'bio' || route() === 'links' || route() === 'legal' || route() === 'contact' || route() === 'git') {
-      return renderSimpleMarkdown(getPageMarkdown(lang(), route() as 'main' | 'bio' | 'links' | 'legal' | 'contact' | 'git'))
+    if (route() === 'main' || route() === 'bio' || route() === 'legal' || route() === 'contact' || route() === 'git' || route() === 'donate') {
+      return renderSimpleMarkdown(getPageMarkdown(lang(), route() as 'main' | 'bio' | 'links' | 'legal' | 'contact' | 'git' | 'donate'))
     }
     return ''
   })
@@ -251,7 +319,6 @@ function App() {
     // Reload public config for navbar and banners
     try { const pc = await getPublicConfig(); setPublicConfig(pc) } catch {}
     // Reload release manifest after admin actions
-    const { reloadManifest } = await import('@/lib/releaseManifest')
     try { await reloadManifest() } catch {}
   }
 
@@ -298,18 +365,30 @@ function App() {
       releaseType: release.releaseType || 'album',
       releaseDate: release.releaseDate || '',
       hidden: release.hidden || false,
+      links: {
+        spotify: release.links?.spotify ?? '',
+        yandexMusic: release.links?.yandexMusic ?? '',
+        bandcamp: release.links?.bandcamp ?? '',
+        soundcloud: release.links?.soundcloud ?? '',
+      },
+      trackMeta: Object.fromEntries((release.tracks ?? []).map((t) => [t.filename, { previewable: t.previewable ?? false, isMain: t.isMain ?? false }])),
+      genres: {
+        main: release.genres?.main ?? [],
+        sub: release.genres?.sub ?? [],
+      },
     })
   }
 
-  async function saveReleaseEditor(release: AdminRelease) {
-    await updateAdminRelease(release.slug, releaseEdit())
+  async function saveReleaseEditor(release: AdminRelease): Promise<string> {
+    const res = await updateAdminRelease(release.slug, releaseEdit())
+    const newSlug = (res as { slug?: string })?.slug || release.slug
     setReleaseEditOpen(null)
-    await loadAdminData()
+    // Don't reload yet – caller (admin-releases-panel) will handle reorder then reload
+    // to avoid showing stale order before track reorder completes.
+    return newSlug
   }
 
   async function removeRelease(release: AdminRelease) {
-    const ok = window.confirm(lang() === 'ru' ? `Удалить релиз «${release.albumName}»?` : `Delete release "${release.albumName}"?`)
-    if (!ok) return
     await deleteAdminRelease(release.slug)
     await loadAdminData()
   }
@@ -340,8 +419,6 @@ function App() {
   }
 
   async function removeShopProduct(product: AdminShopProduct) {
-    const ok = window.confirm(lang() === 'ru' ? `Удалить товар «${product.title}»?` : `Delete product "${product.title}"?`)
-    if (!ok) return
     await deleteAdminShopProduct(product.slug)
     await loadAdminData()
   }
@@ -357,6 +434,11 @@ function App() {
     await loadAdminData()
   }
 
+  async function setShopCover(product: AdminShopProduct, filename: string) {
+    await updateAdminShopProduct(product.slug, { coverImage: filename })
+    await loadAdminData()
+  }
+
 
   createEffect(() => {
     if (!session().authenticated) {
@@ -366,23 +448,48 @@ function App() {
     void getMyOrders().then((r) => setOrders(r.orders || [])).catch(() => setOrders([]))
   })
 
-  function toggleTheme() {
-    setTheme((value) => (value === 'dark' ? 'light' : 'dark'))
-  }
-
   return (
-    <Show when={dict()} fallback={<div class="container"><main class="content"><h1>Loading</h1></main></div>}>
+    <Show when={dict()} fallback={<div class="container"><main class="content"><PageSkeleton route={route()} /></main></div>}>
       {(d) => (
+        <Show when={publicConfig()} fallback={<div class="container"><main class="content"><PageSkeleton route={route()} /></main></div>}>
         <div class="container page-layout">
           <div class="controls">
             <a class={`control-btn ${isAccountRoute() ? 'control-active' : ''}`} href={`/${lang()}/account`} onClick={(e) => navigate(`/${lang()}/account`, e)}>{copy().account}</a>
             <a class={`control-btn ${isCartRoute() ? 'control-active' : ''}`} href={`/${lang()}/cart`} onClick={(e) => navigate(`/${lang()}/cart`, e)}>{`${copy().cart} (${formatCount(cartTotalItems())})`}</a>
-            <button class="control-btn" type="button" onClick={toggleTheme}>{theme() === 'dark' ? copy().light : copy().dark}</button>
-            <a class="control-btn" href={switchLangHref()} onClick={(e) => navigate(switchLangHref(), e)}>{lang() === 'ru' ? 'EN' : 'RU'}</a>
+            <button
+              class={`control-btn control-gear${settingsOpen() ? ' control-active' : ''}`}
+              type="button"
+              onClick={() => setSettingsOpen((value) => !value)}
+              aria-haspopup="dialog"
+              aria-expanded={settingsOpen()}
+              aria-label={copy().settingsTitle}
+              title={copy().settingsTitle}
+              data-site-settings-trigger="true"
+            >
+              <Settings aria-hidden="true" />
+            </button>
           </div>
+          <Show when={settingsOpen()}>
+            <SiteSettingsMenu
+              settings={settings()}
+              lang={lang()}
+              copy={copy()}
+              onPatch={(patch) => setSettings((cur) => ({ ...cur, ...patch }))}
+              onSelectLang={(target) => {
+                const suffix = route() === 'main' ? '' : `/${route()}`
+                const href = `/${target}${suffix}`
+                if (href !== window.location.pathname) {
+                  window.history.pushState({}, '', href)
+                  setPath(window.location.pathname)
+                  window.scrollTo({ top: 0, behavior: 'smooth' })
+                }
+              }}
+              onClose={() => setSettingsOpen(false)}
+            />
+          </Show>
 
           <header class="site-header">
-            <h1><a class="site-title-link" href={`/${lang()}`} onClick={(e) => navigate(`/${lang()}`, e)}>{mainTitle()}</a></h1>
+            <h1><a class="site-title-link" href={`/${lang()}`} onClick={(e) => navigate(`/${lang()}`, e)}><img class="site-title-img" src="/media/image/site-pixel.png?v=3" alt={mainTitle()} width="64" height="24" /></a></h1>
           </header>
 
           <nav class="main-nav" aria-label="Primary">
@@ -399,6 +506,7 @@ function App() {
                 <li><a class={isBlogRoute() ? 'nav-active' : ''} href={`/${lang()}/blog`} onClick={(e) => navigate(`/${lang()}/blog`, e)}>{d().nav.blog}</a></li>
               </Show>
               <li><a class={route() === 'links' ? 'nav-active' : ''} href={`/${lang()}/links`} onClick={(e) => navigate(`/${lang()}/links`, e)}>{d().nav.links}</a></li>
+              <li><a class={route() === 'donate' ? 'nav-active' : ''} href={`/${lang()}/donate`} onClick={(e) => navigate(`/${lang()}/donate`, e)}>{d().nav.donate}</a></li>
               <Show when={publicConfig()?.features?.projects !== false}>
                 <li><a class={route() === 'projects' || route().startsWith('projects/') ? 'nav-active' : ''} href={`/${lang()}/projects`} onClick={(e) => navigate(`/${lang()}/projects`, e)}>{d().nav.projects}</a></li>
               </Show>
@@ -417,14 +525,23 @@ function App() {
             </ul>
           </nav>
 
-          <main class="content">
+<main id="main-content" class="content" tabindex="-1">
+            <Suspense fallback={<PageSkeleton route={route()} />}>
             <Switch>
-              <Match when={route() === 'main' || route() === 'bio' || route() === 'links' || route() === 'legal' || route() === 'contact' || route() === 'git'}>
+              <Match when={route() === 'main'}>
+                <HomePage lang={lang()} navigate={navigate} />
+              </Match>
+
+              <Match when={route() === 'links'}>
+                <LinksPage lang={lang()} />
+              </Match>
+
+              <Match when={route() === 'bio' || route() === 'legal' || route() === 'contact' || route() === 'git' || route() === 'donate'}>
                 <article class="markdown-content" innerHTML={pageHtml()} />
               </Match>
 
               <Match when={route() === 'projects'}>
-                <ProjectsIndex lang={lang()} />
+                <ProjectsIndex lang={lang()} navigate={navigate} />
               </Match>
 
               <Match when={route() === 'projects/oss-migrator'}>
@@ -436,6 +553,10 @@ function App() {
               </Match>
               <Match when={route() === 'music' && publicConfig()?.features?.releases !== false}>
                 <MusicPage lang={lang()} navigate={navigate} publicConfig={publicConfig()} />
+              </Match>
+
+              <Match when={route().startsWith('music/tag/') && publicConfig()?.features?.releases !== false}>
+                <MusicTagPage lang={lang()} tag={safeDecodeTag(route().slice('music/tag/'.length))} navigate={navigate} musicBack={copy().musicBack} />
               </Match>
 
               <Match when={route().startsWith('music/') && publicConfig()?.features?.releases !== false}>
@@ -455,7 +576,7 @@ function App() {
               </Match>
 
               <Match when={route().startsWith('blog/')}>
-                <BlogPost lang={lang()} slug={route().replace('blog/', '')} navigate={navigate} blogBack={copy().blogBack} />
+                <BlogPost lang={lang()} slug={route().replace('blog/', '')} navigate={navigate} blogBack={copy().blogBack} artistName={publicConfig()?.websiteArtist ?? 'D7TUN6'} />
               </Match>
 
               <Match when={route() === 'gallery' && publicConfig()?.features?.gallery === false}>
@@ -549,6 +670,7 @@ function App() {
 
               <Match when={isAdminRoute()}>
                 <h1>{copy().adminTitle}</h1>
+                <Suspense fallback={<p class="page-loading">Loading admin…</p>}>
                 <AdminPanel
                   lang={lang()}
                   isAdmin={isAdmin()}
@@ -585,6 +707,7 @@ function App() {
                   removeShopProduct={removeShopProduct}
                   uploadShopImages={uploadShopImages}
                   removeShopImage={removeShopImage}
+                  setShopCover={setShopCover}
                   createAdminMockOrder={createAdminMockOrder}
                   updateAdminOrder={updateAdminOrder}
                   adminBanners={adminBanners}
@@ -607,17 +730,27 @@ function App() {
                   getAdminUsers={getAdminUsers}
                   updateAdminUser={updateAdminUser}
                   deleteAdminUser={deleteAdminUser}
+                  getAdminSubmissions={getAdminSubmissions}
+                  reviewAdminSubmission={reviewAdminSubmission}
+                  getAdminArtists={getAdminArtists}
+                  verifyAdminArtist={verifyAdminArtist}
+getAdminSupportTickets={getAdminSupportTickets}
+                  updateAdminSupportTicket={updateAdminSupportTicket}
                 />
+                </Suspense>
               </Match>
 
               <Match when={true}>
-                <article class="markdown-content" innerHTML={pageHtml()} />
+                <NotFoundPage lang={lang()} path={route()} navigate={navigate} />
               </Match>
             </Switch>
-            
+            </Suspense>
+
           </main>
+          <SiteFooter />
           <NowPlayingBar isMusicRoute={isMusicRoute()} />
         </div>
+        </Show>
       )}
     </Show>
   )

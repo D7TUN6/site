@@ -1,45 +1,31 @@
-import crypto from 'node:crypto'
-import { createWriteStream } from 'node:fs'
+import { timingSafeEqual } from 'node:crypto'
 import { mkdir, readdir, rm, writeFile, readFile, access } from 'node:fs/promises'
 import path from 'node:path'
-import sharp from 'sharp'
+import { slugify } from '../../lib/slugify.js'
+import { createRateLimiter } from '../../lib/rate-limit.js'
 
 export const ROOT = process.cwd()
+
+// Lazy-load sharp (native libvips binary needs libstdc++ at runtime); see
+// server/lib/media/image-processor.ts.
+async function loadSharp(): Promise<typeof import('sharp').default> {
+  const mod = await import('sharp')
+  return mod.default
+}
 
 export const SHOP_IMG_EXT = new Set(['.jpg', '.jpeg', '.png', '.webp', '.avif'])
 export const SHOP_CONVERT_EXTS = new Set(['.jpg', '.jpeg', '.png'])
 export const SHOP_ROOT = path.join(ROOT, 'public', 'media', 'shop')
 
-export const loginRateLimitMap = new Map<string, { count: number; resetAt: number }>()
-const RATE_LIMIT_WINDOW = 60_000
-const RATE_LIMIT_MAX = 5
+export const checkLoginRateLimit = createRateLimiter(5, 60_000)
 
-export function checkLoginRateLimit(key: string): boolean {
-  const now = Date.now()
-  const entry = loginRateLimitMap.get(key)
-  if (!entry || now > entry.resetAt) {
-    loginRateLimitMap.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW })
-    return true
-  }
-  if (entry.count >= RATE_LIMIT_MAX) return false
-  entry.count++
-  return true
-}
-
-setInterval(() => {
-  const now = Date.now()
-  for (const [key, entry] of loginRateLimitMap) if (now > entry.resetAt) loginRateLimitMap.delete(key)
-}, 300_000).unref()
-
-export function slugify(value: string) {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').replace(/--+/g, '-')
-}
+export { slugify }
 export const shopSlugify = slugify
 
 export function normalizeEmail(raw: unknown) { return typeof raw === 'string' ? raw.trim().toLowerCase() : '' }
 export function safeEqual(a: string, b: string) {
   const A = Buffer.from(String(a)); const B = Buffer.from(String(b))
-  return A.length === B.length && crypto.timingSafeEqual(A, B)
+  return A.length === B.length && timingSafeEqual(A, B)
 }
 
 export function normalizeParam(value: string | string[] | undefined, pattern: RegExp): string {
@@ -91,6 +77,7 @@ export async function regenerateShopManifestLite() {
         slug: d.name,
         title: String(data.title || ''),
         category: String(data.category || ''),
+        artistSlug: String(data.artistSlug || ''),
         price: { currency: 'RUB', value: Math.floor(Number(data.price || 0) / 100) },
         unitAmount: Math.floor(Number(data.price || 0)),
         status: String(data.status || 'available'),
@@ -120,6 +107,7 @@ export async function writeProductJson(slug: string, data: unknown) {
 }
 
 export async function processShopImage(src: string, destDir: string): Promise<{ webp: string; preview: string }> {
+  const sharp = await loadSharp()
   const ext = path.extname(src).toLowerCase()
   const base = path.basename(src, ext)
   const webpFilename = `${base}.webp`

@@ -1,14 +1,14 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from 'bun:test'
 import { isLocaleDictionary } from '@/lib/i18n'
 
 describe('isLocaleDictionary', () => {
   const validDictionary = {
     site: { title: 'Test' },
-    nav: {
-      main: 'Main', bio: 'Bio', music: 'Music', news: 'News',
-      blog: 'Blog', links: 'Links', shop: 'Shop', projects: 'Projects',
-      gallery: 'Gallery', video: 'Video', radio: 'Radio',
-    },
+      nav: {
+        main: 'Main', bio: 'Bio', music: 'Music', news: 'News',
+        blog: 'Blog', links: 'Links', donate: 'Donate', shop: 'Shop',
+        projects: 'Projects', gallery: 'Gallery', video: 'Video', radio: 'Radio',
+      },
     loader: {
       detecting: 'Detecting', fallback: 'Fallback', english: 'English', russian: 'Russian',
     },

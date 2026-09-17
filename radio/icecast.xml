@@ -1,0 +1,72 @@
+<icecast>
+  <location>Earth</location>
+  <admin>admin@d7tun6.site</admin>
+
+  <limits>
+    <clients>100</clients>
+    <sources>2</sources>
+    <queue-size>524288</queue-size>
+    <client-timeout>30</client-timeout>
+    <header-timeout>15</header-timeout>
+    <source-timeout>10</source-timeout>
+    <burst-on-connect>1</burst-on-connect>
+    <burst-size>65536</burst-size>
+  </limits>
+
+  <authentication>
+    <source-password>${ICE_SOURCE_PASSWORD}</source-password>
+    <relay-password>${ICE_RELAY_PASSWORD}</relay-password>
+    <admin-user>admin</admin-user>
+    <admin-password>${ICE_ADMIN_PASSWORD}</admin-password>
+  </authentication>
+
+  <hostname>radio.d7tun6.site</hostname>
+  <listen-socket>
+    <port>8000</port>
+    <bind-address>0.0.0.0</bind-address>
+  </listen-socket>
+
+  <http-headers>
+    <header name="Access-Control-Allow-Origin" value="*" />
+    <header name="Access-Control-Allow-Headers" value="Origin, Accept, X-Requested-With" />
+    <header name="Access-Control-Allow-Methods" value="GET, OPTIONS" />
+  </http-headers>
+
+  <mount type="default">
+    <public>1</public>
+    <intro>/intro.mp3</intro>
+    <max-listener-duration>3600000</max-listener-duration>
+    <authentication type="url">
+      <option name="listener_add" value="http://localhost:8000/auth" />
+    </authentication>
+  </mount>
+
+  <mount>
+    <mount-name>/stream</mount-name>
+    <charset>UTF-8</charset>
+    <public>1</public>
+    <stream-name>d7tun6 radio</stream-name>
+    <stream-description>24/7 d7tun6 broadcast</stream-description>
+    <stream-url>https://radio.d7tun6.site/stream</stream-url>
+    <genre>Electronic</genre>
+  </mount>
+
+  <fileserve>1</fileserve>
+
+  <paths>
+    <basedir>/var/lib/icecast</basedir>
+    <logdir>/var/log/icecast</logdir>
+    <webroot>/var/lib/icecast/webroot</webroot>
+    <adminroot>/var/lib/icecast/adminroot</adminroot>
+  </paths>
+
+  <logging>
+    <accesslog>access.log</accesslog>
+    <errorlog>error.log</errorlog>
+    <loglevel>3</loglevel>
+  </logging>
+
+  <security>
+    <chroot>0</chroot>
+  </security>
+</icecast>

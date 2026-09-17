@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from 'bun:test'
 
 describe('IMAGE_CONVERT_EXTS set', () => {
   it('contains common raster image extensions', () => {

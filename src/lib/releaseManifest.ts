@@ -1,22 +1,17 @@
 import { createRoot, createSignal } from 'solid-js'
 import manifest from '@/generated/release-manifest.json'
 import { compareReleasesByDateDesc } from '@/lib/music'
-import type { ReleaseEntry } from '@/types/content'
-
-export type ReleaseManifest = {
-  generatedAt: string
-  releases: ReleaseEntry[]
-}
+import type { ReleaseEntry, ReleaseManifest } from '@/types/content'
 
 const typedManifest = manifest as ReleaseManifest
 
 // Module-level signal so UI reactively updates when manifest changes
 const [manifestSignal, setManifestSignal] = createRoot(() => createSignal<ReleaseManifest>(typedManifest))
 
-export const releaseManifest = typedManifest
-
-export function getReleaseRoutes(): string[] {
-  return manifestSignal().releases.map((release) => `music/${release.slug}`)
+// The bundled manifest is a build-time snapshot; refresh from the live API so
+// newly added/edited releases show up without waiting for a rebuild.
+if (typeof window !== 'undefined') {
+  fetchLiveManifest().then(setManifestSignal).catch(() => { /* keep bundled snapshot */ })
 }
 
 export function getAllReleases(): ReleaseEntry[] {
@@ -27,7 +22,7 @@ export function getReleaseBySlug(slug: string): ReleaseEntry | null {
   return manifestSignal().releases.find((r) => r.slug === slug) ?? null
 }
 
-export async function fetchLiveManifest(): Promise<ReleaseManifest> {
+async function fetchLiveManifest(): Promise<ReleaseManifest> {
   const res = await fetch('/api/releases/manifest')
   if (!res.ok) throw new Error(`Failed to fetch manifest: ${res.status}`)
   return res.json() as Promise<ReleaseManifest>

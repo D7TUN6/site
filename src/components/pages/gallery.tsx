@@ -1,12 +1,14 @@
 import { For, Show, createMemo, createResource, createSignal } from 'solid-js'
 import { getGalleryEntries, getGalleryEntry } from '@/lib/api/gallery'
+import { UiSelect, type UiSelectOption } from '@/components/ui-select'
+import { SkeletonBlock } from '@/components/skeleton'
 import type { Lang } from '@/types/content'
 
 export function GalleryPage(props: {
   lang: Lang
   navigate: (href: string, event?: MouseEvent) => void
 }) {
-  const [entries] = createResource(getGalleryEntries)
+  const [entries] = createResource(() => getGalleryEntries())
   const [tagFilter, setTagFilter] = createSignal('all')
 
   const allTags = createMemo(() => {
@@ -16,6 +18,11 @@ export function GalleryPage(props: {
     for (const e of data.entries) for (const t of e.tags) tags.add(t)
     return [...tags].sort()
   })
+
+  const tagOptions = createMemo<UiSelectOption[]>(() => [
+    { value: 'all', label: props.lang === 'ru' ? 'все' : 'all' },
+    ...allTags().map((tag) => ({ value: tag, label: tag })),
+  ])
 
   const filtered = createMemo(() => {
     const data = entries()
@@ -29,14 +36,36 @@ export function GalleryPage(props: {
   return (
     <>
       <h1>{props.lang === 'ru' ? 'галерея' : 'gallery'}</h1>
+      <Show when={!entries.loading} fallback={
+        <div>
+          <div class="shop-filters">
+            <div class="form-field shop-filter">
+              <SkeletonBlock height="11px" width="48px" style={{ 'margin-bottom': '5px' }} />
+              <SkeletonBlock height="30px" />
+            </div>
+          </div>
+          <div class="skeleton-grid skeleton-grid--gallery">
+            {Array.from({ length: 8 }, () => (
+              <div class="gallery-card" aria-hidden="true">
+                <SkeletonBlock height="0" style={{ 'padding-bottom': '75%' }} />
+                <div style={{ padding: '6px 0' }}>
+                  <SkeletonBlock height="10px" width="70%" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      }>
       <Show when={allTags().length > 0}>
         <div class="shop-filters">
           <label class="form-field shop-filter">
             <span class="form-label">{props.lang === 'ru' ? 'теги' : 'tags'}</span>
-            <select class="form-input" value={tagFilter()} onChange={(e) => setTagFilter(e.currentTarget.value)}>
-              <option value="all">{props.lang === 'ru' ? 'все' : 'all'}</option>
-              <For each={allTags()}>{(tag) => <option value={tag}>{tag}</option>}</For>
-            </select>
+            <UiSelect
+              modelValue={tagFilter()}
+              options={tagOptions()}
+              onChange={(v) => setTagFilter(v)}
+              ariaLabel={props.lang === 'ru' ? 'теги' : 'tags'}
+            />
           </label>
         </div>
       </Show>
@@ -47,13 +76,14 @@ export function GalleryPage(props: {
             {(entry) => (
               <div class="gallery-card">
                 <a href={`/${props.lang}/gallery/${entry.slug}`} onClick={(e) => props.navigate(`/${props.lang}/gallery/${entry.slug}`, e)}>
-                  <img class="gallery-card-cover" src={entry.cover || `/media/gallery/${entry.slug}/${entry.images[0]}`} alt={entry.title} loading="lazy" decoding="async" />
+                  <img class="gallery-card-cover" src={entry.cover || (entry.images[0] ? `/media/gallery/${entry.slug}/${entry.images[0]}` : '')} alt={entry.title} loading="lazy" decoding="async" />
                   <span class="gallery-card-title">{entry.title}</span>
                 </a>
               </div>
             )}
           </For>
         </div>
+      </Show>
       </Show>
     </>
   )
@@ -65,11 +95,21 @@ export function GalleryEntryPage(props: {
   navigate: (href: string, event?: MouseEvent) => void
   back: string
 }) {
-  const [data] = createResource(() => props.slug, getGalleryEntry)
+  const [data] = createResource(() => props.slug, (slug) => getGalleryEntry(slug))
   const [lightbox, setLightbox] = createSignal<number | null>(null)
 
   return (
-    <Show when={data()}>
+    <Show when={data()} fallback={
+      <div style={{ display: 'flex', 'flex-direction': 'column', gap: '11px' }}>
+        <SkeletonBlock height="11px" width="80px" />
+        <SkeletonBlock height="22px" width="50%" />
+        <div class="skeleton-grid skeleton-grid--gallery">
+          {Array.from({ length: 6 }, () => (
+            <SkeletonBlock height="0" style={{ 'padding-bottom': '75%' }} />
+          ))}
+        </div>
+      </div>
+    }>
       {(d) => {
         const entry = () => d().entry
         const images = () => entry().images

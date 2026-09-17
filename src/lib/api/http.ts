@@ -9,18 +9,19 @@ export async function apiFetchJson<T>(url: string, init: RequestInit = {}): Prom
   }
 
   const response = await fetch(url, {
-    credentials: 'include',
+    credentials: init?.credentials || 'same-origin',
     ...init,
     headers,
   })
 
   const text = await response.text()
-  const data = text.trim() ? JSON.parse(text) : null
+  let data: { error?: string } | null
+  try { data = text.trim() ? JSON.parse(text) : null } catch { data = null }
 
   if (!response.ok) {
     const message = data?.error || `Request failed: ${response.status}`
     throw new Error(message)
   }
 
-  return data as T
+  return data as unknown as T
 }

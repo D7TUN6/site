@@ -3,6 +3,9 @@ dist/
 public/media/music/
 src/generated/
 server/generated/
+server/generated/app.db
+server/generated/app.db-shm
+server/generated/app.db-wal
 
 public/robots.txt
 public/sitemap.xml
@@ -35,3 +38,46 @@ photo_*.jpg
 photo_*.jpeg
 photo_*.png
 .aider*
+*~
+*.old
+
+# Compiled artifacts
+server/routes/*.js
+server/routes/*.js.map
+dist-server/
+
+# Logs
+server.log
+
+# Lock files
+package-lock.json
+
+# Runtime / generated media (local filesystem only)
+public/media/radio/
+public/media/radio.tmp-*/
+public/media/blog/
+public/media/video/
+public/media/gallery/
+public/media/projects/
+
+# Streaming fragments / HLS / playlists
+public/media/**/hls/
+public/media/**/*.m3u8
+public/media/**/*.m3u
+public/media/**/*.ts
+public/**/*.m3u8
+public/**/*.m3u
+*.m3u8
+*.m3u
+
+# Legacy background revisions
+public/media/background/old/
+
+# Runtime caches
+.bun/
+.pm2/
+scripts/__pycache__/
+
+# Internal artifacts (keep locally, do not publish)
+AUDIT-REPORT.md
+AGENTS.md

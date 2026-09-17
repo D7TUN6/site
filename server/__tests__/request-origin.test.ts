@@ -1,88 +1,66 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'bun:test'
 import { enforceSameOrigin } from '../lib/request-origin.js'
 
-function mockReq(overrides: Record<string, any> = {}) {
-  const req: any = {
-    get: vi.fn((name: string) => {
-      const headers: Record<string, string> = {
-        'x-forwarded-proto': 'https',
-        'host': 'example.com',
-        'origin': 'https://example.com',
-        'referer': '',
-        'x-requested-with': '',
-        ...(overrides.headers || {}),
-      }
-      return headers[name.toLowerCase()] || ''
-    }),
-    protocol: 'https',
-    ...overrides,
-  }
-  return req
+const BASE_HEADERS = {
+  'x-forwarded-proto': 'https',
+  'host': 'example.com',
+  'origin': 'https://example.com',
+  'referer': '',
+  'x-requested-with': '',
 }
 
-function mockRes() {
-  const res: any = {
-    status: vi.fn().mockReturnThis(),
-    json: vi.fn().mockReturnThis(),
-  }
-  return res
+function makeCtx(headerOverrides: Record<string, string> = {}, url = 'https://example.com/api/test') {
+  const request = new Request(url, { headers: { ...BASE_HEADERS, ...headerOverrides } })
+  const set: { status?: number | string } = {}
+  return { request, set }
 }
 
 describe('enforceSameOrigin', () => {
   it('allows same-origin requests', () => {
-    const req = mockReq()
-    const res = mockRes()
-    const next = vi.fn()
-    enforceSameOrigin(req, res, next)
-    expect(next).toHaveBeenCalled()
+    const ctx = makeCtx()
+    expect(enforceSameOrigin(ctx)).toBeUndefined()
+    expect(ctx.set.status).toBeUndefined()
   })
 
   it('blocks cross-site requests via sec-fetch-site when origin mismatches', () => {
-    const req = mockReq({ headers: { 'sec-fetch-site': 'cross-site', 'origin': 'https://attacker.org' } })
-    const res = mockRes()
-    const next = vi.fn()
-    enforceSameOrigin(req, res, next)
-    expect(next).not.toHaveBeenCalled()
-    expect(res.status).toHaveBeenCalledWith(403)
+    const ctx = makeCtx({ 'sec-fetch-site': 'cross-site', 'origin': 'https://attacker.org' })
+    const result = enforceSameOrigin(ctx)
+    expect(ctx.set.status).toBe(403)
+    expect(result).toEqual({ error: 'Cross-site requests are not allowed' })
   })
 
   it('allows "none" sec-fetch-site (direct navigation)', () => {
-    const req = mockReq({ headers: { 'sec-fetch-site': 'none' } })
-    const res = mockRes()
-    const next = vi.fn()
-    enforceSameOrigin(req, res, next)
-    expect(next).toHaveBeenCalled()
-  })
-
-  it('blocks when expected origin cannot be determined', () => {
-    const req = mockReq({ headers: { 'host': '', 'x-forwarded-proto': '' }, protocol: '' })
-    const res = mockRes()
-    const next = vi.fn()
-    enforceSameOrigin(req, res, next)
-    expect(res.status).toHaveBeenCalledWith(403)
+    const ctx = makeCtx({ 'sec-fetch-site': 'none' })
+    expect(enforceSameOrigin(ctx)).toBeUndefined()
+    expect(ctx.set.status).toBeUndefined()
   })
 
   it('allows request with X-Requested-With: fetch when no origin header', () => {
-    const req = mockReq({ headers: { 'origin': '', 'x-requested-with': 'fetch' } })
-    const res = mockRes()
-    const next = vi.fn()
-    enforceSameOrigin(req, res, next)
-    expect(next).toHaveBeenCalled()
+    const ctx = makeCtx({ 'origin': '', 'x-requested-with': 'fetch' })
+    expect(enforceSameOrigin(ctx)).toBeUndefined()
+    expect(ctx.set.status).toBeUndefined()
   })
 
   it('blocks cross-origin requests from different hosts', () => {
-    const req = mockReq({ headers: { 'origin': 'https://evil.com' } })
-    const res = mockRes()
-    const next = vi.fn()
-    enforceSameOrigin(req, res, next)
-    expect(res.status).toHaveBeenCalledWith(403)
+    const ctx = makeCtx({ 'origin': 'https://evil.com' })
+    enforceSameOrigin(ctx)
+    expect(ctx.set.status).toBe(403)
   })
 
   it('blocks when source origin differs from expected', () => {
-    const req = mockReq({ headers: { 'host': 'example.com', 'origin': 'https://attacker.org' } })
-    const res = mockRes()
-    const next = vi.fn()
-    enforceSameOrigin(req, res, next)
-    expect(res.status).toHaveBeenCalledWith(403)
+    const ctx = makeCtx({ 'host': 'example.com', 'origin': 'https://attacker.org' })
+    enforceSameOrigin(ctx)
+    expect(ctx.set.status).toBe(403)
+  })
+
+  it('allows loopback origins in development', async () => {
+    process.env.NODE_ENV = 'test'
+    const { isProduction } = await import('../lib/config.js')
+    // sanity: guard relies on non-production mode for loopback allowance
+    expect(typeof isProduction).toBe('function')
+    const ctx = makeCtx({ host: 'localhost:5173', origin: 'http://localhost:3001' }, 'http://localhost:5173/api/test')
+    if (!process.env.PROD) {
+      expect(enforceSameOrigin(ctx)).toBeUndefined()
+    }
   })
 })

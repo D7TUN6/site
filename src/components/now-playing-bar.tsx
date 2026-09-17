@@ -1,9 +1,11 @@
 import { For, Show, createEffect, createMemo, createSignal, onCleanup, onMount } from 'solid-js'
+import { Portal } from 'solid-js/web'
 import {
-  ListMusic, Pause, Play, Repeat, Repeat1, Shuffle,
+  ListMusic, Pause, Play, Repeat, Repeat1, Settings, Shuffle,
   SkipBack, SkipForward, Volume2, VolumeX, X,
 } from 'lucide-solid'
 import { usePlayer } from '@/features/player/usePlayer'
+import { AudioSettingsPanel } from '@/components/audio-settings-panel'
 
 function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value))
@@ -27,13 +29,35 @@ export function NowPlayingBar(props: { isMusicRoute: boolean; lang?: string }) {
   const [nextUpOpen, setNextUpOpen] = createSignal(false)
   const [fullscreenOpen, setFullscreenOpen] = createSignal(false)
   const [volumeOpen, setVolumeOpen] = createSignal(false)
+  const [audioSettingsOpen, setAudioSettingsOpen] = createSignal(false)
   const [seekDragRatio, setSeekDragRatio] = createSignal<number | null>(null)
+  const [coverLightboxOpen, setCoverLightboxOpen] = createSignal(false)
   let panelRef: HTMLDivElement | undefined
   let nextUpButtonRef: HTMLButtonElement | undefined
   let volumeBoxRef: HTMLDivElement | undefined
   let volumeCloseTimer: number | null = null
 
-  const shouldShow = createMemo(() => Boolean(player.state.queue && player.currentTrack() && (props.isMusicRoute || player.state.hasStartedPlayback)))
+  const shouldShow = createMemo(() => (Boolean(player.state.queue && player.currentTrack() && (props.isMusicRoute || player.state.hasStartedPlayback)) || (player.state.radioActive && player.state.hasStartedPlayback)))
+  const isRadio = () => player.state.radioActive
+  const coverUrl = () => (player.state.radioActive ? (player.state.radioTrack?.coverUrl ?? '') : player.state.queue!.coverUrl)
+  const trackTitle = () => (player.state.radioActive ? (player.state.radioTrack?.title ?? '—') : player.currentTrack()!.title)
+  const artistLabel = () => {
+    if (player.state.radioActive) {
+      const artist = player.state.radioTrack?.artist
+      return artist ? `${artist} · radio` : 'D7TUN6 · radio'
+    }
+    return player.state.queue!.artist
+  }
+  const albumLabel = () => player.state.radioActive ? (player.state.radioTrack?.album || 'live broadcast') : player.state.queue!.albumTitle
+  const radioElapsed = () => player.state.radioTrack?.elapsed ?? 0
+  const radioDuration = () => player.state.radioTrack?.duration ?? 0
+  const radioProgressPct = () => {
+    const d = radioDuration()
+    if (d <= 0) return 0
+    return Math.max(0, Math.min(100, (radioElapsed() / d) * 100))
+  }
+  const radioElapsedReadout = () => isRadio() ? fmtTime(radioElapsed()) : displayCurrentTime()
+  const radioDurationReadout = () => isRadio() ? fmtTime(radioDuration()) : fmtTime(player.state.duration)
   const progress = createMemo(() => {
     if (player.state.duration <= 0) return 0
     return Math.max(0, Math.min(100, (player.state.currentTime / player.state.duration) * 100))
@@ -146,7 +170,7 @@ export function NowPlayingBar(props: { isMusicRoute: boolean; lang?: string }) {
   })
 
   return (
-    <Show when={shouldShow() && player.state.queue && player.currentTrack()}>
+    <Show when={shouldShow()}>
       <Show when={nextUpOpen()}>
         <div ref={panelRef} class="now-playing-nextup" role="dialog" aria-label="Next up">
           <div class="now-playing-nextup-head">
@@ -155,56 +179,89 @@ export function NowPlayingBar(props: { isMusicRoute: boolean; lang?: string }) {
               <X class="now-playing-icon" />
             </button>
           </div>
-          <Show when={player.upcomingTracks().length > 0} fallback={<p class="now-playing-nextup-empty">Queue is empty.</p>}>
-            <ul>
-              <For each={player.upcomingTracks()}>
-                {(item) => (
-                  <li>
-                    <button type="button" onClick={() => player.playTrack(item.index)}>
-                      <div class="progressive-cover" style={{ 'background-image': `url(${player.state.queue!.coverUrl})`, width: '36px', height: '36px', 'border-radius': '2px', 'flex-shrink': '0' }}>
-                        <img src={player.state.queue!.coverUrl} alt="" width="36" height="36" onLoad={(e) => e.currentTarget.classList.add('loaded')} />
-                      </div>
-                      <div>
-                        <span>{player.state.queue!.artist}</span>
-                        <strong>{item.track.title}</strong>
-                      </div>
-                      <time>{fmtTime(item.duration)}</time>
-                    </button>
-                  </li>
-                )}
-              </For>
-            </ul>
+          <Show when={isRadio()}>
+            <Show
+              when={(player.state.radioTrack?.upcoming?.length ?? 0) > 0}
+              fallback={<p class="now-playing-nextup-empty">Upcoming tracks will appear here.</p>}
+            >
+              <ul>
+                <For each={player.state.radioTrack?.upcoming ?? []}>
+                  {(item) => (
+                    <li>
+                      <button type="button" disabled>
+                        <div class="progressive-cover" style={{ 'background-image': `url(${item.coverUrl})`, width: '22px', height: '22px', 'flex-shrink': '0' }}>
+                          <img src={item.coverUrl} alt="" width="36" height="36" onLoad={(e) => e.currentTarget.classList.add('loaded')} />
+                        </div>
+                        <div>
+                          <span>{item.artist || 'D7TUN6'}</span>
+                          <strong>{item.title}</strong>
+                        </div>
+                        <time>{fmtTime(item.duration)}</time>
+                      </button>
+                    </li>
+                  )}
+                </For>
+              </ul>
+            </Show>
+          </Show>
+          <Show when={!isRadio()}>
+            <Show when={player.upcomingTracks().length > 0} fallback={<p class="now-playing-nextup-empty">Queue is empty.</p>}>
+              <ul>
+                <For each={player.upcomingTracks()}>
+                  {(item) => (
+                    <li>
+                      <button type="button" onClick={() => player.playTrack(item.index)}>
+                        <div class="progressive-cover" style={{ 'background-image': `url(${player.state.queue!.coverUrl})`, width: '29px', height: '29px', 'flex-shrink': '0' }}>
+                          <img src={player.state.queue!.coverUrl} alt="" width="36" height="36" onLoad={(e) => e.currentTarget.classList.add('loaded')} />
+                        </div>
+                        <div>
+                          <span>{player.state.queue!.artist}</span>
+                          <strong>{item.track.title}</strong>
+                        </div>
+                        <time>{fmtTime(item.duration)}</time>
+                      </button>
+                    </li>
+                  )}
+                </For>
+              </ul>
+            </Show>
           </Show>
         </div>
       </Show>
 
       <Show when={fullscreenOpen()}>
-        <div class="now-playing-fullscreen" role="dialog" aria-modal="true" aria-label="Now playing fullscreen">
-          <button type="button" class="now-playing-fullscreen-close" aria-label="Close fullscreen player" onClick={() => setFullscreenOpen(false)}>
-            <X class="now-playing-icon" />
+        <div class="now-playing-fullscreen" role="dialog" aria-modal="true" aria-label="Now playing fullscreen" onClick={(event) => { if (event.target === event.currentTarget) setFullscreenOpen(false) }}>
+          <button type="button" class="overlay-close" aria-label="Close fullscreen player" onClick={() => setFullscreenOpen(false)}>
+            <X />
           </button>
           <div class="now-playing-fullscreen-shell">
             <section class="now-playing-fullscreen-hero">
-              <div class="now-playing-fullscreen-art-card">
-                <div class="now-playing-fullscreen-art">
-                  <div class="progressive-cover" style={{ 'background-image': `url(${player.state.queue!.coverUrl})` }}>
-                    <img src={player.state.queue!.coverUrl} alt={`${player.state.queue!.albumTitle} cover`} width="320" height="320" onLoad={(e) => e.currentTarget.classList.add('loaded')} />
+<div class="now-playing-fullscreen-art-card">
+                <Show when={coverUrl()} fallback={<div class="now-playing-fullscreen-art now-playing-fullscreen-art-fallback" />}>
+                  <div class="now-playing-fullscreen-art" style={{ cursor: 'pointer' }} onClick={() => coverUrl() && setCoverLightboxOpen(true)}>
+                    <img
+                      src={coverUrl()}
+                      alt={`${trackTitle()} cover`}
+                      width="320"
+                      height="320"
+                      onLoad={(e) => e.currentTarget.classList.add('loaded')}
+                    />
                   </div>
-                </div>
+                </Show>
                 <div class="now-playing-fullscreen-meta">
-                  <div class="now-playing-fullscreen-artist">{player.state.queue!.artist}</div>
-                  <h2>{player.currentTrack()!.title}</h2>
-                  <p>{player.state.queue!.albumTitle}</p>
+                  <div class="now-playing-fullscreen-artist">{artistLabel()}</div>
+                  <h2>{trackTitle()}</h2>
+                  <p>{albumLabel()}</p>
                 </div>
               </div>
             </section>
             <section class="now-playing-fullscreen-panel">
               <div class="now-playing-fullscreen-toolbar">
                 <div class="now-playing-fullscreen-modes">
-                  <button type="button" class={`now-playing-btn now-playing-btn-small${player.state.shuffleEnabled ? ' is-active' : ''}`} aria-label="Shuffle" onClick={player.toggleShuffle}>
+                  <button type="button" class={`now-playing-btn now-playing-btn-small${player.state.shuffleEnabled ? ' is-active' : ''}`} aria-label="Shuffle" disabled={isRadio()} onClick={player.toggleShuffle}>
                     <Shuffle class="now-playing-icon" />
                   </button>
-                  <button type="button" class={`now-playing-btn now-playing-btn-small${player.state.repeatMode !== 'off' ? ' is-active' : ''}`} aria-label={repeatLabel()} onClick={player.cycleRepeatMode}>
+                  <button type="button" class={`now-playing-btn now-playing-btn-small${player.state.repeatMode !== 'off' ? ' is-active' : ''}`} aria-label={repeatLabel()} disabled={isRadio()} onClick={player.cycleRepeatMode}>
                     <Show when={player.state.repeatMode === 'one'} fallback={<Repeat class="now-playing-icon" />}>
                       <Repeat1 class="now-playing-icon" />
                     </Show>
@@ -213,35 +270,36 @@ export function NowPlayingBar(props: { isMusicRoute: boolean; lang?: string }) {
               </div>
               <div class="now-playing-fullscreen-playback">
                 <div class="now-playing-fullscreen-progress">
-                  <div class="now-playing-time">{displayCurrentTime()}</div>
+                  <div class="now-playing-time">{radioElapsedReadout()}</div>
                   <div
-                    class={`now-playing-progress${seekDragRatio() !== null ? ' is-dragging' : ''}`}
-                    role="slider"
+                    class={`now-playing-progress${seekDragRatio() !== null ? ' is-dragging' : ''}${isRadio() ? ' is-static' : ''}`}
+                    role={isRadio() ? 'progressbar' : 'slider'}
                     aria-valuemin={0}
-                    aria-valuemax={Math.max(player.state.duration, 1)}
-                    aria-valuenow={seekDragRatio() == null ? player.state.currentTime : player.state.duration * seekDragRatio()!}
+                    aria-valuemax={isRadio() ? Math.max(radioDuration(), 1) : Math.max(player.state.duration, 1)}
+                    aria-valuenow={isRadio() ? radioElapsed() : seekDragRatio() == null ? player.state.currentTime : player.state.duration * seekDragRatio()!}
                     aria-label="Playback position"
-                    onPointerDown={onSeekPointerDown}
-                    onPointerMove={onSeekPointerMove}
-                    onPointerUp={onSeekPointerUp}
-                    onPointerCancel={onSeekPointerUp}
+                    onPointerDown={isRadio() ? undefined : onSeekPointerDown}
+                    onPointerMove={isRadio() ? undefined : onSeekPointerMove}
+                    onPointerUp={isRadio() ? undefined : onSeekPointerUp}
+                    onPointerCancel={isRadio() ? undefined : onSeekPointerUp}
                   >
-                    <span class="now-playing-progress-buffer" style={{ width: `${buffered()}%` }} />
-                    <span class="now-playing-progress-fill" style={{ width: `${displayProgress()}%` }} />
-                    <span class="now-playing-progress-knob" style={{ left: `${displayProgress()}%` }} />
+                    <Show when={!isRadio()}><span class="now-playing-progress-buffer" style={{ width: `${buffered()}%` }} /></Show>
+                    <span class="now-playing-progress-fill" style={{ width: isRadio() ? `${radioProgressPct()}%` : `${displayProgress()}%` }} />
+                    <Show when={!isRadio()}><span class="now-playing-progress-knob" style={{ left: `${displayProgress()}%` }} /></Show>
                   </div>
-                  <div class="now-playing-time">{fmtTime(player.state.duration)}</div>
+                  <div class="now-playing-time">{radioDurationReadout()}</div>
                 </div>
                 <div class="now-playing-fullscreen-controls">
-                  <button type="button" class="now-playing-btn" aria-label="Previous track" onClick={player.prevTrack}><SkipBack class="now-playing-icon" /></button>
+                  <button type="button" class="now-playing-btn" aria-label="Previous track" disabled={isRadio()} onClick={player.prevTrack}><SkipBack class="now-playing-icon" /></button>
                   <button type="button" class="now-playing-btn now-playing-btn-main" aria-label={player.state.playing ? 'Pause' : 'Play'} onClick={player.togglePlayPause}>
                     <Show when={player.state.playing} fallback={<Play class="now-playing-icon now-playing-icon-play" />}>
                       <Pause class="now-playing-icon now-playing-icon-pause" />
                     </Show>
                   </button>
-                  <button type="button" class="now-playing-btn" aria-label="Next track" onClick={player.nextTrack}><SkipForward class="now-playing-icon" /></button>
+                  <button type="button" class="now-playing-btn" aria-label="Next track" disabled={isRadio()} onClick={player.nextTrack}><SkipForward class="now-playing-icon" /></button>
                 </div>
               </div>
+              <Show when={isRadio()} fallback={
               <div class="now-playing-fullscreen-tracklist">
                 <div class="now-playing-fullscreen-tracklist-head">Tracklist</div>
                 <ul>
@@ -258,6 +316,29 @@ export function NowPlayingBar(props: { isMusicRoute: boolean; lang?: string }) {
                   </For>
                 </ul>
               </div>
+              }>
+              <div class="now-playing-fullscreen-tracklist">
+                <div class="now-playing-fullscreen-tracklist-head">Upcoming</div>
+                <Show
+                  when={(player.state.radioTrack?.upcoming?.length ?? 0) > 0}
+                  fallback={<p class="now-playing-nextup-empty">Upcoming tracks will appear here.</p>}
+                >
+                  <ul>
+                    <For each={player.state.radioTrack?.upcoming ?? []}>
+                      {(item, index) => (
+                        <li>
+                          <button type="button" disabled>
+                            <span class="now-playing-fullscreen-track-index">{index() + 1}</span>
+                            <span class="now-playing-fullscreen-track-title">{item.title}</span>
+                            <span class="now-playing-fullscreen-track-time">{fmtTime(item.duration)}</span>
+                          </button>
+                        </li>
+                      )}
+                    </For>
+                  </ul>
+                </Show>
+              </div>
+              </Show>
             </section>
           </div>
         </div>
@@ -266,46 +347,56 @@ export function NowPlayingBar(props: { isMusicRoute: boolean; lang?: string }) {
       <div class="now-playing-bar" role="region" aria-label="Now playing" onClick={onBarClick}>
         <div class="now-playing-bar-inner">
           <div class="now-playing-controls" data-no-fullscreen>
-            <button type="button" class="now-playing-btn" aria-label="Previous track" onClick={(e) => { e.stopPropagation(); player.prevTrack() }}><SkipBack class="now-playing-icon" /></button>
+            <button type="button" class="now-playing-btn" aria-label="Previous track" disabled={isRadio()} onClick={(e) => { e.stopPropagation(); player.prevTrack() }}><SkipBack class="now-playing-icon" /></button>
             <button type="button" class="now-playing-btn now-playing-btn-main" aria-label={player.state.playing ? 'Pause' : 'Play'} onClick={(e) => { e.stopPropagation(); player.togglePlayPause() }}>
               <Show when={player.state.playing} fallback={<Play class="now-playing-icon now-playing-icon-play" />}>
                 <Pause class="now-playing-icon now-playing-icon-pause" />
               </Show>
             </button>
-            <button type="button" class="now-playing-btn" aria-label="Next track" onClick={(e) => { e.stopPropagation(); player.nextTrack() }}><SkipForward class="now-playing-icon" /></button>
-            <button type="button" class={`now-playing-btn now-playing-btn-small${player.state.shuffleEnabled ? ' is-active' : ''}`} aria-label="Shuffle" onClick={(e) => { e.stopPropagation(); player.toggleShuffle() }}><Shuffle class="now-playing-icon" /></button>
-            <button type="button" class={`now-playing-btn now-playing-btn-small${player.state.repeatMode !== 'off' ? ' is-active' : ''}`} aria-label="Repeat" onClick={(e) => { e.stopPropagation(); player.cycleRepeatMode() }}>
+            <button type="button" class="now-playing-btn" aria-label="Next track" disabled={isRadio()} onClick={(e) => { e.stopPropagation(); player.nextTrack() }}><SkipForward class="now-playing-icon" /></button>
+            <button type="button" class={`now-playing-btn now-playing-btn-small${player.state.shuffleEnabled ? ' is-active' : ''}`} aria-label="Shuffle" disabled={isRadio()} onClick={(e) => { e.stopPropagation(); player.toggleShuffle() }}><Shuffle class="now-playing-icon" /></button>
+            <button type="button" class={`now-playing-btn now-playing-btn-small${player.state.repeatMode !== 'off' ? ' is-active' : ''}`} aria-label="Repeat" disabled={isRadio()} onClick={(e) => { e.stopPropagation(); player.cycleRepeatMode() }}>
               <Show when={player.state.repeatMode === 'one'} fallback={<Repeat class="now-playing-icon" />}>
                 <Repeat1 class="now-playing-icon" />
               </Show>
             </button>
           </div>
           <div class="now-playing-info">
-            <div class="progressive-cover now-playing-cover" style={{ 'background-image': `url(${player.state.queue!.coverUrl})` }}>
-              <img src={player.state.queue!.coverUrl} alt="" width="28" height="28" onLoad={(e) => e.currentTarget.classList.add('loaded')} />
+            <div class="progressive-cover now-playing-cover" style={{ 'background-image': `url(${coverUrl()})`, cursor: coverUrl() ? 'pointer' : undefined }} data-no-fullscreen onClick={(e) => { e.stopPropagation(); if (coverUrl()) setCoverLightboxOpen(true) }}>
+              <Show when={coverUrl()} fallback={<span class="now-playing-cover-fallback" />}>
+                <img src={coverUrl()} alt="" width="28" height="28" onLoad={(e) => e.currentTarget.classList.add('loaded')} />
+              </Show>
             </div>
             <div class="now-playing-meta">
-              <div class="now-playing-title">{player.currentTrack()!.title}</div>
-              <div class="now-playing-artist">{player.state.queue!.artist}</div>
+              <div class="now-playing-title">{trackTitle()}</div>
+              <div class="now-playing-artist">{artistLabel()}</div>
             </div>
           </div>
           <div class="now-playing-seek" data-no-fullscreen onClick={(e) => e.stopPropagation()}>
-            <div class="now-playing-seek-bar"
-              role="slider"
-              aria-valuemin={0}
-              aria-valuemax={Math.max(player.state.duration, 1)}
-              aria-valuenow={seekDragRatio() == null ? player.state.currentTime : player.state.duration * seekDragRatio()!}
-              aria-label="Playback position"
-              onPointerDown={onSeekPointerDown}
-              onPointerMove={onSeekPointerMove}
-              onPointerUp={onSeekPointerUp}
-              onPointerCancel={onSeekPointerUp}
-            >
-              <span class="now-playing-progress-buffer" style={{ width: `${buffered()}%` }} />
-              <span class="now-playing-progress-fill" style={{ width: `${displayProgress()}%` }} />
-              <span class="now-playing-progress-knob" style={{ left: `${displayProgress()}%` }} />
+            <Show when={isRadio()} fallback={
+              <div class="now-playing-seek-bar"
+                role="slider"
+                aria-valuemin={0}
+                aria-valuemax={Math.max(player.state.duration, 1)}
+                aria-valuenow={seekDragRatio() == null ? player.state.currentTime : player.state.duration * seekDragRatio()!}
+                aria-label="Playback position"
+                onPointerDown={onSeekPointerDown}
+                onPointerMove={onSeekPointerMove}
+                onPointerUp={onSeekPointerUp}
+                onPointerCancel={onSeekPointerUp}
+              >
+                <span class="now-playing-progress-buffer" style={{ width: `${buffered()}%` }} />
+                <span class="now-playing-progress-fill" style={{ width: `${displayProgress()}%` }} />
+                <span class="now-playing-progress-knob" style={{ left: `${displayProgress()}%` }} />
+              </div>
+            }>
+              <div class="now-playing-seek-bar is-static" role="progressbar" aria-valuemin={0} aria-valuemax={Math.max(radioDuration(), 1)} aria-valuenow={radioElapsed()} aria-label="Radio position">
+                <span class="now-playing-progress-fill" style={{ width: `${radioProgressPct()}%` }} />
+              </div>
+            </Show>
+            <div class="now-playing-seek-time">
+              <Show when={isRadio()} fallback={displayCurrentTime()}>{`${fmtTime(radioElapsed())} · ${fmtTime(radioDuration())}`}</Show>
             </div>
-            <div class="now-playing-seek-time">{displayCurrentTime()}</div>
           </div>
           <div class="now-playing-actions" data-no-fullscreen>
             <div
@@ -326,6 +417,9 @@ export function NowPlayingBar(props: { isMusicRoute: boolean; lang?: string }) {
                 <input class="now-playing-volume-slider" type="range" min="0" max="1" step="0.01" value={player.state.muted ? 0 : player.state.volume} aria-label="Volume" onInput={(e) => player.setVolume(Number(e.currentTarget.value))} />
               </div>
             </div>
+            <button type="button" class={`now-playing-btn now-playing-btn-small${audioSettingsOpen() ? ' is-active' : ''}`} aria-label="Audio settings" onClick={(e) => { e.stopPropagation(); setAudioSettingsOpen(!audioSettingsOpen()) }}>
+              <Settings class="now-playing-icon" />
+            </button>
             <button ref={nextUpButtonRef} type="button" class={`now-playing-btn now-playing-btn-small${nextUpOpen() ? ' is-active' : ''}`} aria-label="Next up" onClick={(e) => { e.stopPropagation(); setNextUpOpen(!nextUpOpen()) }}>
               <ListMusic class="now-playing-icon" />
             </button>
@@ -335,6 +429,28 @@ export function NowPlayingBar(props: { isMusicRoute: boolean; lang?: string }) {
           </div>
         </div>
       </div>
+      <Show when={audioSettingsOpen()}>
+        <AudioSettingsPanel onClose={() => setAudioSettingsOpen(false)} />
+      </Show>
+      <Show when={coverLightboxOpen()}>
+        <Portal>
+          <div
+            class="shop-lightbox"
+            ref={(el) => { el?.focus() }}
+            role="dialog"
+            aria-modal="true"
+            tabIndex={-1}
+            aria-label="Cover preview"
+            onClick={(e) => { if (e.currentTarget === e.target) setCoverLightboxOpen(false) }}
+            onKeyDown={(e) => { if (e.key === 'Escape') setCoverLightboxOpen(false) }}
+          >
+            <button type="button" class="overlay-close" aria-label="Close cover preview" onClick={() => setCoverLightboxOpen(false)}>
+              <X />
+            </button>
+            <img class="shop-lightbox-img" src={coverUrl()} alt={`${trackTitle()} cover`} onLoad={(e) => e.currentTarget.classList.add('loaded')} />
+          </div>
+        </Portal>
+      </Show>
     </Show>
   )
 }

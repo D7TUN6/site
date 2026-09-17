@@ -1,7 +1,17 @@
 import crypto from 'node:crypto'
 import { requireEnv } from './config.js'
+import { serverFetch } from './http-agent.js'
 
-const API_BASE = 'https://api.yookassa.ru'
+type YooKassaPaymentPayload = {
+  id: string
+  status: string
+  paid: boolean
+  confirmation: { type: string; confirmation_token: string; confirmation_url?: string }
+  amount: { value: string; currency: string }
+  description?: string
+}
+
+const API_BASE = process.env.YOOKASSA_API_BASE || 'https://api.yookassa.ru'
 
 function authHeader() {
   const shopId = requireEnv('YOOKASSA_SHOP_ID')
@@ -17,7 +27,7 @@ export function minorToYooKassaValue(minor: number) {
 }
 
 export async function createEmbeddedPayment({ amountMinor, currency = 'RUB', description, metadata }: { amountMinor: number; currency?: string; description: string; metadata: Record<string, unknown> }) {
-  const response = await fetch(`${API_BASE}/v3/payments`, {
+  const response = await serverFetch(`${API_BASE}/v3/payments`, {
     method: 'POST',
     headers: {
       Authorization: authHeader(),
@@ -32,18 +42,18 @@ export async function createEmbeddedPayment({ amountMinor, currency = 'RUB', des
       metadata,
     }),
   })
-  const payload = await response.json().catch(() => null) as any
+  const payload: YooKassaPaymentPayload | null = await response.json().catch(() => null)
   if (!response.ok) throw new Error(String(payload?.description || 'Unable to create payment'))
   if (!payload?.confirmation?.confirmation_token) throw new Error('Missing confirmation_token from YooKassa')
-  return { paymentId: payload.id as string, status: payload.status as string, confirmationToken: payload.confirmation.confirmation_token as string }
+  return { paymentId: payload.id, status: payload.status, confirmationToken: payload.confirmation.confirmation_token }
 }
 
 export async function fetchPayment(paymentId: string) {
-  const response = await fetch(`${API_BASE}/v3/payments/${encodeURIComponent(paymentId)}`, {
+  const response = await serverFetch(`${API_BASE}/v3/payments/${encodeURIComponent(paymentId)}`, {
     method: 'GET',
     headers: { Authorization: authHeader() },
   })
-  const payload = await response.json().catch(() => null)
-  if (!response.ok) throw new Error(String((payload as any)?.description || 'Unable to fetch payment'))
-  return payload as any
+  const payload: YooKassaPaymentPayload | null = await response.json().catch(() => null)
+  if (!response.ok) throw new Error(String(payload?.description || 'Unable to fetch payment'))
+  return payload
 }

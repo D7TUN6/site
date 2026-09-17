@@ -1,4 +1,4 @@
-export type SessionUser = {
+type SessionUser = {
   id: number
   email: string
   role: 'admin' | 'user'

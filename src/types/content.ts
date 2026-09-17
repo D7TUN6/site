@@ -1,9 +1,5 @@
 export type Lang = "en" | "ru";
 
-export type BaseRoute = "main" | "bio" | "music" | "news" | "blog" | "links" | "shop" | "legal" | "contact" | "projects" | "gallery" | "video" | "radio";
-
-export type RouteKey = BaseRoute | "cart" | "account" | "admin" | `music/${string}` | `blog/${string}` | `news/${string}` | `shop/${string}` | `projects/${string}` | `gallery/${string}` | `video/${string}`;
-
 export type LocaleDictionary = {
   site: {
     title: string;
@@ -15,6 +11,7 @@ export type LocaleDictionary = {
     news: string;
     blog: string;
     links: string;
+    donate: string;
     shop: string;
     projects: string;
     gallery: string;
@@ -27,23 +24,54 @@ export type LocaleDictionary = {
     english: string;
     russian: string;
   };
+  audio?: {
+    quality: string;
+    equalizer: string;
+    effects: string;
+    bitcrusher: string;
+    delay: string;
+    reverb: string;
+    chorus: string;
+    comb: string;
+    tape: string;
+    preset: string;
+    bitDepth: string;
+    reduction: string;
+    mix: string;
+    feedback: string;
+    time: string;
+    enabled: string;
+  };
+  admin?: {
+    articles: string;
+    gallery: string;
+    releases: string;
+    videos: string;
+    shop: string;
+    submissions: string;
+    pages: string;
+    create: string;
+    edit: string;
+    delete: string;
+    save: string;
+    cancel: string;
+    title: string;
+    content: string;
+    date: string;
+    slug: string;
+    excerpt: string;
+    search: string;
+    category: string;
+    artist: string;
+    tags: string;
+  };
 };
 
-export type AudioFormat = 'wav' | 'flac' | 'ogg-opus' | 'ogg-vorbis' | 'aiff' | 'raw'
+export type AudioFormat = 'wav' | 'flac' | 'ogg-opus' | 'ogg-vorbis' | 'mp3' | 'aiff' | 'raw'
 export type AudioBitDepth = 8 | 16 | 24 | 32 | 64
 export type AudioChannels = 1 | 2 | 4 | 8
 export type AudioResampler = 'none' | 'sinc' | 'r8brain'
 export type AudioBitrateMode = 'cbr' | 'vbr'
-
-export type DownloadOptions = {
-  format: AudioFormat
-  sampleRate: number
-  bitDepth: AudioBitDepth
-  channels: AudioChannels
-  resampler: AudioResampler
-  bitrateMode: AudioBitrateMode
-  bitrate: number
-}
 
 export type ReleaseTrack = {
   index: number;
@@ -55,12 +83,16 @@ export type ReleaseTrack = {
   duration: number | null;
   sourceSampleRate: number | null;
   sourceBitDepth: number | null;
+  trackLoudness?: number | null;
+  albumLoudness?: number | null;
   links: {
     spotify: string | null;
     yandexMusic: string | null;
     bandcamp: string | null;
     soundcloud: string | null;
   };
+  previewable?: boolean;
+  isMain?: boolean;
 };
 
 export type ReleaseEntry = {
@@ -72,9 +104,14 @@ export type ReleaseEntry = {
   releaseDate: string;
   releaseType: string | null;
   notes: string;
+  artist?: string;
   genre: {
     en: string;
     ru: string;
+  };
+  genres?: {
+    main: string[];
+    sub: string[];
   };
   playlistM3uUrl: string | null;
   playlistM3u8Url: string | null;
@@ -89,6 +126,11 @@ export type ReleaseEntry = {
   };
 };
 
+export type ReleaseManifest = {
+  generatedAt: string;
+  releases: ReleaseEntry[];
+};
+
 export type BlogPostEntry = {
   slug: string;
   title: string;
@@ -96,44 +138,9 @@ export type BlogPostEntry = {
   publishedAt: string;
   content: string;
   lang: Lang;
-};
-
-export type ProjectEntry = {
-  slug: string;
-  title: Record<Lang, string>;
-  description: Record<Lang, string>;
-  icon: string;
-};
-
-export type OssQuestionOption = {
-  id: string;
-  label: Record<Lang, string>;
-  weight: number;
-  profile?: string[];
-  software?: string[];
-};
-
-export type OssQuestion = {
-  id: string;
-  question: Record<Lang, string>;
-  options: OssQuestionOption[];
-};
-
-export type OssAlternative = {
-  proprietary: string;
-  openSource: string;
-  category: string;
-  difficulty: number;
-  url: string;
-};
-
-export type OssResult = {
-  readinessScore: number;
-  profile: string;
-  recommendedDistro: { name: string; url: string };
-  recommendedAudio: { name: string; url: string }[];
-  alternatives: Array<{ from: string; to: string; url: string }>;
-  communities: Array<{ name: string; url: string; lang: Lang }>;
+  updatedAt?: string;
+  tags?: string[];
+  wordCount?: number;
 };
 
 export type GalleryEntry = {
@@ -152,6 +159,7 @@ export type VideoEntry = {
   duration: number | null;
   thumbnail: string;
   sources: Array<{ url: string; type: string; resolution?: string }>;
+  description: string;
 };
 
 export type RadioState = {
@@ -172,7 +180,12 @@ export type NowPlayingInfo = {
   coverUrl?: string;
   duration?: number;
   elapsed?: number;
-  position?: number;
+  /** Epoch ms (server clock) at which the current track began — the client
+   *  derives a live position from it instead of polling a deep offset. */
+  startTimestamp?: number;
+  source?: 'live' | 'estimated';
+  upcoming?: { title: string; artist: string; album: string; coverUrl: string; duration: number }[];
+  regeneratedAt?: string | null;
 };
 
 export type StorageFile = {

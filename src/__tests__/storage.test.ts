@@ -1,6 +1,6 @@
 
 // @vitest-environment jsdom
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach } from 'bun:test'
 import { readPersistedPlayerState, writePersistedPlayerState, clearPersistedPlayerState, PLAYER_STORAGE_KEY } from '@/player/storage'
 import type { PersistedPlayerState } from '@/player/storage'
 
@@ -26,11 +26,10 @@ beforeEach(() => {
 
 describe('readPersistedPlayerState', () => {
   it('returns null when window is undefined', () => {
-    const { window: _win } = globalThis
     const origWindow = globalThis.window
-    delete (globalThis as any).window
+    delete (globalThis as { window?: unknown }).window
     expect(readPersistedPlayerState()).toBeNull()
-    ;(globalThis as any).window = origWindow
+    ;(globalThis as { window?: unknown }).window = origWindow
   })
 
   it('returns null when no stored state', () => {
@@ -64,9 +63,9 @@ describe('writePersistedPlayerState', () => {
 
   it('does not throw when window is undefined', () => {
     const origWindow = globalThis.window
-    delete (globalThis as any).window
+    delete (globalThis as { window?: unknown }).window
     expect(() => writePersistedPlayerState(mockState)).not.toThrow()
-    ;(globalThis as any).window = origWindow
+    ;(globalThis as { window?: unknown }).window = origWindow
   })
 })
 
@@ -83,8 +82,8 @@ describe('clearPersistedPlayerState', () => {
 
   it('does not throw when window is undefined', () => {
     const origWindow = globalThis.window
-    delete (globalThis as any).window
+    delete (globalThis as { window?: unknown }).window
     expect(() => clearPersistedPlayerState()).not.toThrow()
-    ;(globalThis as any).window = origWindow
+    ;(globalThis as { window?: unknown }).window = origWindow
   })
 })

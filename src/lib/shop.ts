@@ -23,9 +23,3 @@ export function getShopProductDetails(lang: Lang, slug: string): ShopProductDeta
   const descriptionMarkdown = product.description?.[lang] ?? product.descriptionMarkdown ?? ''
   return { ...product, lang, descriptionMarkdown }
 }
-
-export async function fetchLiveShopManifest(): Promise<ShopManifest> {
-  const res = await fetch('/api/shop/manifest')
-  if (!res.ok) throw new Error(`Failed to fetch shop manifest: ${res.status}`)
-  return res.json() as Promise<ShopManifest>
-}

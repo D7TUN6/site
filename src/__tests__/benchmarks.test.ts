@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from 'bun:test'
 import { renderSimpleMarkdown } from '@/lib/simpleMarkdown'
 import { buildShuffledOrder } from '@/player/order'
 import { parseFrontmatter } from '@/lib/blog'
@@ -28,7 +28,7 @@ describe('benchmark smoke tests — verify functions handle large inputs', () =>
       return `Paragraph number ${i} with some **bold** content.`
     }).join('\n\n')
     const result = renderSimpleMarkdown(input)
-    expect(result).toContain('<h2>')
+    expect(result).toContain('<h2 id=')
     expect(result).toContain('<li>')
     expect(result).toContain('<p>')
     expect(result).toContain('<strong>')

@@ -1,13 +1,6 @@
 import type { Lang } from '@/types/content'
 
-export type ProjectEntry = {
-  slug: string
-  title: Record<Lang, string>
-  description: Record<Lang, string>
-  icon: string
-}
-
-export type OssQuestionOption = {
+type OssQuestionOption = {
   id: string
   label: Record<Lang, string>
   weight: number

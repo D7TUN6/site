@@ -1,10 +1,22 @@
 import { For, Show, createEffect, createMemo, createSignal, onCleanup } from 'solid-js'
 import { getPublicConfig } from './lib/api/config'
 import { searchPickupPoints, type PickupPoint } from './lib/api/shipping'
-import { loadYandexMaps } from './lib/yandexMaps'
+import { loadYandexMaps, type YMapsApi } from './lib/yandexMaps'
 import { loadYooKassaWidgetScript } from './lib/yookassaWidget'
 import type { Lang } from './types/content'
-export { UiSelect, type UiSelectOption } from '@/components/ui-select'
+
+type YmapsGeoResult = {
+  geometry?: { getCoordinates?: () => number[] }
+  properties?: { get?: (key: string) => string }
+  getAddressLine?: () => string
+}
+type YooMoneyWidget = {
+  render(containerId: string): void
+  on?(event: 'success' | 'fail', cb: () => void): void
+  destroy?(): void
+}
+
+export { UiSelect } from '@/components/ui-select'
 export { ProjectsIndex } from '@/components/projects-index'
 export { OssMigrationWizard } from '@/components/oss-migrator'
 export { NowPlayingBar } from '@/components/now-playing-bar'
@@ -22,7 +34,23 @@ export function PickupPointPicker(props: { lang: Lang; provider: string; city: s
   const [cfg, setCfg] = createSignal<{ yandexMapsApiKey: string | null } | null>(null)
 
   createEffect(() => { void getPublicConfig().then((v) => setCfg({ yandexMapsApiKey: v.yandexMapsApiKey })).catch(() => setCfg(null)) })
-  createEffect(() => { props.onChange(null); setPoints([]); setMsg('') })
+
+  // Track the previous provider/city to avoid resetting on every render
+  let prevProvider: string | null = null
+  let prevCity: string | null = null
+  createEffect(() => {
+    const provider = props.provider
+    const city = props.city
+    const providerChanged = prevProvider !== null && provider !== prevProvider
+    const cityChanged = prevCity !== null && city !== prevCity
+    prevProvider = provider
+    prevCity = city
+    if (providerChanged || cityChanged) {
+      props.onChange(null)
+      setPoints([])
+      setMsg('')
+    }
+  })
 
   const canSearch = createMemo(() => Boolean(props.provider !== 'custom' && props.city.trim()))
   const fallbackLabel = () => {
@@ -44,10 +72,10 @@ export function PickupPointPicker(props: { lang: Lang; provider: string; city: s
     const key = cfg()?.yandexMapsApiKey
     if (!key) throw new Error(props.lang === 'ru' ? 'Не задан ключ Яндекс.Карт' : 'Yandex Maps API key is missing')
     const ymaps = await loadYandexMaps(key, props.lang === 'ru' ? 'ru_RU' : 'en_US')
-    const result = await Promise.resolve(ymaps.geocode?.(text, { results: 40 }) as any)
-    const geoObjects = result?.geoObjects
+    const result = await Promise.resolve(ymaps.geocode?.(text, { results: 40 }))
+    const geoObjects = (result as { geoObjects?: { toArray: () => unknown } } | undefined)?.geoObjects
     const items = typeof geoObjects?.toArray === 'function' ? geoObjects.toArray() : []
-    const mapped = items.map((obj: any) => {
+    const mapped = (items as YmapsGeoResult[]).map((obj: YmapsGeoResult) => {
       const coords = obj?.geometry?.getCoordinates?.()
       const lat = Array.isArray(coords) && Number.isFinite(coords[0]) ? Number(coords[0]) : null
       const lon = Array.isArray(coords) && Number.isFinite(coords[1]) ? Number(coords[1]) : null
@@ -76,6 +104,7 @@ export function PickupPointPicker(props: { lang: Lang; provider: string; city: s
         setPoints(fallback.filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lon)))
         setMsg('')
       } catch {
+        console.warn('Yandex Maps geocode search failed')
         setPoints([])
         setMsg(e instanceof Error ? e.message : 'Search failed')
       }
@@ -83,9 +112,9 @@ export function PickupPointPicker(props: { lang: Lang; provider: string; city: s
   }
 
   let mapEl: HTMLDivElement | undefined
-  let map: any = null
-  let ymapsRef: any = null
-  let marks: any[] = []
+  let map: InstanceType<YMapsApi['Map']> | null = null
+  let ymapsRef: YMapsApi | null = null
+  let marks: unknown[] = []
 
   const clearMarks = () => {
     for (const m of marks) map?.geoObjects?.remove?.(m)
@@ -94,23 +123,25 @@ export function PickupPointPicker(props: { lang: Lang; provider: string; city: s
 
   createEffect(() => {
     const key = cfg()?.yandexMapsApiKey
+    const lang = props.lang
     if (!key || !mapEl) return
-    void loadYandexMaps(key, props.lang === 'ru' ? 'ru_RU' : 'en_US')
+    void loadYandexMaps(key, lang === 'ru' ? 'ru_RU' : 'en_US')
       .then((ymaps) => {
         ymapsRef = ymaps
         if (!map) map = new ymaps.Map(mapEl!, { center: [55.751244, 37.618423], zoom: 9, controls: ['zoomControl'] })
         setMsg('')
       })
-      .catch(() => setMsg(props.lang === 'ru' ? 'Карта не загрузилась (проверь ключ/csp)' : 'Map failed to load (check key/csp)'))
+      .catch(() => setMsg(lang === 'ru' ? 'Карта не загрузилась (проверь ключ/csp)' : 'Map failed to load (check key/csp)'))
   })
 
   createEffect(() => {
     const list = points()
+    const onChange = props.onChange
     if (!map || !ymapsRef) return
     clearMarks()
     for (const p of list) {
       const mark = new ymapsRef.Placemark([p.lat, p.lon], { balloonContent: `<b>${p.name}</b><br/>${p.address}` }, { preset: 'islands#blueIcon' })
-      mark.events.add('click', () => props.onChange(p))
+      mark.events.add('click', () => onChange(p))
       map.geoObjects.add(mark)
       marks.push(mark)
     }
@@ -132,7 +163,7 @@ export function PickupPointPicker(props: { lang: Lang; provider: string; city: s
     <Show when={msg()}><p class='checkout-hint'>{msg()}</p></Show>
     <div class='pickup-grid'>
       <div class='pickup-list'>
-        <For each={points()}>{(p) => <button type='button' class={`pickup-item ${props.value?.id === p.id ? 'is-active' : ''}`} onClick={() => props.onChange(p)}><div class='pickup-name'>{p.name}</div><div class='pickup-address'>{p.address}</div></button>}</For>
+        <For each={points()}>{(p) => <button type='button' class={`pickup-item ${props.value?.id === p.id ? 'is-active' : ''}`} aria-pressed={props.value?.id === p.id} onClick={() => props.onChange(p)}><div class='pickup-name'>{p.name}</div><div class='pickup-address'>{p.address}</div></button>}</For>
       </div>
       <div class='pickup-map'><div ref={mapEl} class='pickup-map-inner' /></div>
     </div>
@@ -142,16 +173,17 @@ export function PickupPointPicker(props: { lang: Lang; provider: string; city: s
 export function YooKassaWidget(props: { confirmationToken: string; returnUrl: string; onSuccess: () => void; onFail: () => void; onError: (m: string) => void }) {
   const containerId = `payment-form-${Math.random().toString(16).slice(2)}`
   createEffect(() => {
-    let widget: any
+    const { confirmationToken, returnUrl, onSuccess, onFail, onError } = props
+    let widget: YooMoneyWidget | undefined
     void loadYooKassaWidgetScript().then(() => {
-      const Ctor = window.YooMoneyCheckoutWidget as any
-      if (!Ctor) return props.onError('YooKassa widget is not available')
-      widget = new Ctor({ confirmation_token: props.confirmationToken, return_url: props.returnUrl })
-      widget.on?.('success', props.onSuccess)
-      widget.on?.('fail', props.onFail)
+      const Ctor = window.YooMoneyCheckoutWidget!
+      if (!Ctor) return onError('YooKassa widget is not available')
+      widget = new Ctor({ confirmation_token: confirmationToken, return_url: returnUrl }) as YooMoneyWidget
+      widget.on?.('success', onSuccess)
+      widget.on?.('fail', onFail)
       return Promise.resolve(widget.render(containerId))
-    }).catch((e) => props.onError(e instanceof Error ? e.message : 'Unable to load widget'))
-    onCleanup(() => { try { widget?.destroy?.() } catch { } })
+    }).catch((e) => onError(e instanceof Error ? e.message : 'Unable to load widget'))
+    onCleanup(() => { try { widget?.destroy?.() } catch { console.warn('Failed to destroy YooKassa widget') } })
   })
   return <div class='yookassa'><div id={containerId} class='yookassa-container' /></div>
 }

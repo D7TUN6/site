@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from 'bun:test'
 import { IMAGE_CONVERT_EXTS, exists } from '../lib/media-convert.js'
 
 describe('IMAGE_CONVERT_EXTS', () => {

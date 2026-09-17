@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from 'bun:test'
 
 // simplified listener counter logic from server/routes/radio.ts
 function createListenerCounter() {

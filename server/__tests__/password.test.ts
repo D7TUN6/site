@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from 'bun:test'
 import { hashPassword, verifyPassword } from '../lib/password.js'
 
 describe('hashPassword', () => {
@@ -31,7 +31,7 @@ describe('hashPassword', () => {
   })
 
   it('throws for non-string input', () => {
-    expect(() => hashPassword(123 as any)).toThrow('Password too short')
+    expect(() => hashPassword(123 as unknown as string)).toThrow('Password too short')
   })
 })
 
@@ -47,11 +47,11 @@ describe('verifyPassword', () => {
   })
 
   it('returns false for non-string password', () => {
-    expect(verifyPassword(123 as any, 'scrypt$16384$8$1$salt$hash')).toBe(false)
+    expect(verifyPassword(123 as unknown as string, 'scrypt$16384$8$1$salt$hash')).toBe(false)
   })
 
   it('returns false for non-string stored', () => {
-    expect(verifyPassword('pass', 123 as any)).toBe(false)
+    expect(verifyPassword('pass', 123 as unknown as string)).toBe(false)
   })
 
   it('returns false for malformed stored hash (wrong parts)', () => {

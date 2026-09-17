@@ -31,6 +31,18 @@ export type UiCopy = {
   accountTitle: string
   login: string
   register: string
+  switchLangLabel: string
+  cartDisabledTitle: string
+  cartDisabledMessage: string
+  settingsTitle: string
+  settingsLanguage: string
+  settingsTheme: string
+  settingsPerformance: string
+  settingsPerformanceHint: string
+  settingsEffects: string
+  settingsEffectsDesc: string
+  settingsA11y: string
+  settingsA11yDesc: string
 }
 
 const copy: Record<Lang, UiCopy> = {
@@ -65,6 +77,18 @@ const copy: Record<Lang, UiCopy> = {
     accountTitle: 'account',
     login: 'login',
     register: 'register',
+    switchLangLabel: 'Switch to English',
+    cartDisabledTitle: 'Orders temporarily unavailable',
+    cartDisabledMessage: 'Please try again later.',
+    settingsTitle: 'SETTINGS',
+    settingsLanguage: 'LANGUAGE',
+    settingsTheme: 'THEME',
+    settingsPerformance: 'PERFORMANCE',
+    settingsPerformanceHint: 'lower = lighter, higher = richer',
+    settingsEffects: 'CRT EFFECTS',
+    settingsEffectsDesc: 'rgb bleed / noise / rolling bar / bloom',
+    settingsA11y: 'LOW-VISION MODE',
+    settingsA11yDesc: 'high contrast, larger text, no flicker',
   },
   ru: {
     account: 'КАБИНЕТ',
@@ -97,6 +121,18 @@ const copy: Record<Lang, UiCopy> = {
     accountTitle: 'личный кабинет',
     login: 'вход',
     register: 'регистрация',
+    switchLangLabel: 'Переключить на русский',
+    cartDisabledTitle: 'Оформление заказов временно недоступно',
+    cartDisabledMessage: 'Пожалуйста, попробуйте позже.',
+    settingsTitle: 'НАСТРОЙКИ',
+    settingsLanguage: 'ЯЗЫК',
+    settingsTheme: 'ТЕМА',
+    settingsPerformance: 'ПРОИЗВОДИТЕЛЬНОСТЬ',
+    settingsPerformanceHint: 'ниже = легче, выше = богаче',
+    settingsEffects: 'ЭФФЕКТЫ ЭЛТ',
+    settingsEffectsDesc: 'rgb bleed / noise / rolling bar / bloom',
+    settingsA11y: 'РЕЖИМ СЛАБОВИДЯЩИХ',
+    settingsA11yDesc: 'высокий контраст, крупный текст, без мерцания',
   },
 }
 

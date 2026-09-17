@@ -1,22 +1,22 @@
-import { mkdir, readdir, readFile, writeFile, rm } from 'node:fs/promises'
-import { createWriteStream } from 'node:fs'
+import { readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import busboy from 'busboy'
-import express from 'express'
+import { Elysia } from 'elysia'
 import { enforceSameOrigin } from '../../lib/request-origin.js'
 import { requireAdmin } from '../../middleware/require-auth.js'
 import { ROOT } from './shared.js'
-import { runFfmpeg, spawnRebuild, exists, probeAudioDuration } from '../../lib/media-convert.js'
+import { exists, spawnRebuild } from '../../lib/media-convert.js'
+import { isTrackLocked } from '../../lib/release-availability.js'
+import { regenerateRadioStream } from '../../lib/radio/stream-generator.js'
 
 const RADIO_ROOT = path.join(ROOT, 'public', 'media', 'radio')
-const AUDIO_EXTS = new Set(['.mp3', '.flac', '.wav', '.ogg', '.m4a', '.aac', '.wma'])
 
-type ManifestTrack = { index?: number; title: string; sourceUrl: string | null }
+type ManifestTrack = { index?: number; title: string; sourceUrl: string | null; previewable?: boolean }
 type ManifestRelease = {
   sourceDirName?: string
   albumName?: string
   coverUrl?: string
   coverPreviewUrl?: string
+  releaseDate?: string
   tracks: ManifestTrack[]
 }
 
@@ -55,7 +55,7 @@ ${scheduleStr}
   await writeFile(path.join(RADIO_ROOT, 'index.mdx'), mdx, 'utf-8')
 }
 
-export async function collectAllRadioSources(manifestPath: string, shuffle = true): Promise<{ files: string[]; names: string[]; albums: string[]; coverUrls: string[] }> {
+async function collectAllRadioSources(manifestPath: string, shuffle = true): Promise<{ files: string[]; names: string[]; albums: string[]; coverUrls: string[] }> {
   const releases = await readManifest(manifestPath)
   const files: string[] = []
   const names: string[] = []
@@ -69,6 +69,7 @@ export async function collectAllRadioSources(manifestPath: string, shuffle = tru
     const coverUrl = release.coverPreviewUrl || release.coverUrl || ''
     for (const track of sorted) {
       if (!track.sourceUrl) continue
+      if (isTrackLocked(release, track)) continue
       const abs = path.resolve(ROOT, 'public', track.sourceUrl.replace(/^\/+/, ''))
       if (await exists(abs)) {
         files.push(abs)
@@ -95,99 +96,56 @@ export async function collectAllRadioSources(manifestPath: string, shuffle = tru
   return { files, names, albums, coverUrls }
 }
 
-export async function regenerateHlsStream(manifestPath: string) {
-  await mkdir(path.join(RADIO_ROOT, 'segments'), { recursive: true })
-
-  const { files: sourceFiles, names: trackNames, albums, coverUrls } = await collectAllRadioSources(manifestPath)
-  if (sourceFiles.length === 0) return
-
-  const n = sourceFiles.length
-  const filterParts = sourceFiles.map((_, i) =>
-    `[${i}:a]aformat=sample_fmts=s16:sample_rates=44100:channel_layouts=stereo[a${i}]`
-  )
-  const concatInputs = sourceFiles.map((_, i) => `[a${i}]`).join('')
-  const inputs = sourceFiles.flatMap((f) => ['-i', f])
-
-  await runFfmpeg([
-    '-y', ...inputs,
-    '-filter_complex', `${filterParts.join(';')};${concatInputs}concat=n=${n}:v=0:a=1[a]`,
-    '-map', '[a]',
-    '-c:a', 'aac', '-b:a', '128k',
-    '-f', 'hls', '-hls_time', '10', '-hls_list_size', '0',
-    '-hls_base_url', '/media/radio/segments/',
-    '-hls_segment_filename', path.join(RADIO_ROOT, 'segments', 'segment_%03d.ts'),
-    path.join(RADIO_ROOT, 'stream.m3u8'),
-  ])
-
-  // probe durations and build timeline
-  const durations = await Promise.all(sourceFiles.map((f) => probeAudioDuration(f).catch(() => 0)))
-  const timeline: Array<{ title: string; album: string; artist: string; coverUrl: string; duration: number; startOffset: number }> = []
-  let offset = 0
-  for (let i = 0; i < trackNames.length; i++) {
-    const d = durations[i] || 0
-    timeline.push({
-      title: trackNames[i],
-      album: albums[i] || '',
-      artist: 'D7TUN6',
-      coverUrl: coverUrls[i] || '',
-      duration: d,
-      startOffset: offset,
-    })
-    offset += d
-  }
-
-  try {
-    await writeFile(
-      path.join(RADIO_ROOT, '.catalog.json'),
-      JSON.stringify({
-        tracks: trackNames, count: trackNames.length, generatedAt: new Date().toISOString(),
-        totalDuration: offset, regeneratedAtEpoch: Date.now(), timeline,
-      }, null, 2),
-      'utf-8',
-    )
-  } catch (e) { console.error('radio catalog write failed', e) }
-
+async function regenerateHlsStream(manifestPath: string) {
+  // Delegate to the guarded generator: single-flight + cross-process lock,
+  // locked-track filtering and atomic tmp-swap of segments/stream.m3u8.
+  // Encoding takes many minutes, so this is fire-and-forget.
+  const started = regenerateRadioStream(manifestPath, { force: true })
+  started.catch((err) => console.error('admin radio regeneration failed', err))
+  return started
 }
 
 export function createAdminRadioRouter({ manifestPath }: { manifestPath: string }) {
-  const router = express.Router()
+  return new Elysia({ prefix: '/api/admin/radio' })
+    .get('/', async ({ set }) => {
+      try {
+        const { names: trackNames } = await collectAllRadioSources(manifestPath, false)
+        const schedule = await readScheduleJson()
+        return { ok: true, tracks: trackNames, schedule }
+      } catch (err) {
+        console.error('admin radio list failed', err)
+        set.status = 500
+        return { error: 'Unable to list radio data' }
+      }
+    }, { beforeHandle: requireAdmin })
+    .post('/schedule', async ({ body, set }) => {
+      const b = (body || {}) as Record<string, unknown>
+      const schedule = Array.isArray(b.schedule) ? b.schedule as Array<{ day: string; start: string; end: string; label: string }> : []
+      if (schedule.length === 0) {
+        set.status = 400
+        return { error: 'schedule is required' }
+      }
 
-  router.get('/', requireAdmin, async (_req, res) => {
-    try {
-      const { names: trackNames } = await collectAllRadioSources(manifestPath, false)
-      const schedule = await readScheduleJson()
-      return res.status(200).json({ ok: true, tracks: trackNames, schedule })
-    } catch (err) {
-      console.error('admin radio list failed', err)
-      return res.status(500).json({ error: 'Unable to list radio data' })
-    }
-  })
-
-  router.post('/schedule', enforceSameOrigin, requireAdmin, async (req, res) => {
-    const schedule = Array.isArray(req.body?.schedule) ? req.body.schedule as Array<{ day: string; start: string; end: string; label: string }> : []
-    if (schedule.length === 0) return res.status(400).json({ error: 'schedule is required' })
-
-    try {
-      await writeScheduleJson(schedule)
-      const { names: releaseTrackNames } = await collectAllRadioSources(manifestPath, false)
-      await writeRadioMdx([], releaseTrackNames, schedule)
-      spawnRebuild()
-      return res.json({ ok: true })
-    } catch (err) {
-      console.error('admin radio schedule failed', err)
-      return res.status(500).json({ error: 'Unable to update schedule' })
-    }
-  })
-
-  router.post('/regenerate-stream', enforceSameOrigin, requireAdmin, async (_req, res) => {
-    try {
-      await regenerateHlsStream(manifestPath)
-      return res.json({ ok: true })
-    } catch (err) {
-      console.error('admin radio regenerate stream failed', err)
-      return res.status(500).json({ error: 'Unable to regenerate stream' })
-    }
-  })
-
-  return router
+      try {
+        await writeScheduleJson(schedule)
+        const { names: releaseTrackNames } = await collectAllRadioSources(manifestPath, false)
+        await writeRadioMdx([], releaseTrackNames, schedule)
+        spawnRebuild()
+        return { ok: true }
+      } catch (err) {
+        console.error('admin radio schedule failed', err)
+        set.status = 500
+        return { error: 'Unable to update schedule' }
+      }
+    }, { beforeHandle: [enforceSameOrigin, requireAdmin] })
+    .post('/regenerate-stream', async ({ set }) => {
+      try {
+        await regenerateHlsStream(manifestPath)
+        return { ok: true }
+      } catch (err) {
+        console.error('admin radio regenerate stream failed', err)
+        set.status = 500
+        return { error: 'Unable to regenerate stream' }
+      }
+    }, { beforeHandle: [enforceSameOrigin, requireAdmin] })
 }

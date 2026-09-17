@@ -1,35 +1,21 @@
 import { readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
-import express from 'express'
+import { Elysia } from 'elysia'
+import type { DatabaseSync } from '../lib/sqlite.js'
 import type { GalleryEntry } from '../../src/types/content.js'
+import { parseFrontmatter } from '../lib/frontmatter.js'
+import { galleryCacheEvents, GALLERY_INVALIDATE_EVENT } from '../lib/gallery-cache.js'
+import { DedupeCache, MemoryCache } from '../lib/in-memory-cache.js'
 
 const ROOT = process.cwd()
 const GALLERY_DIR = path.join(ROOT, 'public', 'media', 'gallery')
 
-let cached: GalleryEntry[] | null = null
-let cachePromise: Promise<GalleryEntry[]> | null = null
+const galleryCache = new MemoryCache<GalleryEntry[]>(Infinity)
+const galleryDedupe = new DedupeCache<GalleryEntry[]>()
 
-function parseFrontmatter(raw: string): Record<string, unknown> {
-  const match = raw.match(/^---\n([\s\S]*?)\n---\n?/)
-  if (!match) return {}
-  const body = match[1]
-  const attrs: Record<string, unknown> = {}
-  for (const line of body.split('\n')) {
-    const sep = line.indexOf(':')
-    if (sep === -1) continue
-    const key = line.slice(0, sep).trim()
-    let raw: string = line.slice(sep + 1).trim()
-    let val: unknown = raw.replace(/^["']|["']$/g, '')
-    if (raw === 'true') val = true
-    else if (raw === 'false') val = false
-    else if (/^\d+$/.test(raw)) val = Number(raw)
-    else if (raw.startsWith('[') && raw.endsWith(']')) {
-      val = raw.slice(1, -1).split(',').map((s: string) => s.trim().replace(/^["']|["']$/g, '')).filter(Boolean)
-    }
-    attrs[key] = val
-  }
-  return attrs
-}
+galleryCacheEvents.on(GALLERY_INVALIDATE_EVENT, () => {
+  galleryCache.invalidate()
+})
 
 async function loadAllEntries(): Promise<GalleryEntry[]> {
   let dirs: import('node:fs').Dirent[]
@@ -38,67 +24,134 @@ async function loadAllEntries(): Promise<GalleryEntry[]> {
   } catch {
     return []
   }
-  const entries: GalleryEntry[] = []
-  for (const dirent of dirs) {
-    if (!dirent.isDirectory()) continue
+  const directories = dirs.filter((d) => d.isDirectory())
+  const entries = await Promise.all(directories.map(async (dirent) => {
     const slug = dirent.name
     const mdxPath = path.join(GALLERY_DIR, slug, 'index.mdx')
     try {
       const raw = await readFile(mdxPath, 'utf-8')
       const attrs = parseFrontmatter(raw)
-      entries.push({
+      return {
         slug,
         title: String(attrs.title ?? slug),
         date: String(attrs.date ?? ''),
         tags: Array.isArray(attrs.tags) ? (attrs.tags as string[]) : [],
         images: Array.isArray(attrs.images) ? (attrs.images as string[]) : [],
-        cover: String(attrs.cover ?? ''),
-      })
+        cover: attrs.cover ? (String(attrs.cover).startsWith('/') ? String(attrs.cover) : `/media/gallery/${slug}/${String(attrs.cover)}`) : '',
+      } satisfies GalleryEntry
     } catch {
-      continue
+      return null
     }
-  }
-  entries.sort((a, b) => b.date.localeCompare(a.date))
-  return entries
+  }))
+  const result = entries.filter((e): e is GalleryEntry => e !== null)
+  result.sort((a, b) => b.date.localeCompare(a.date))
+  return result
 }
 
 function getGalleryEntries(): Promise<GalleryEntry[]> {
+  const cached = galleryCache.get()
   if (cached) return Promise.resolve(cached)
-  if (cachePromise) return cachePromise
-  cachePromise = loadAllEntries().then((e) => { cached = e; return e })
-  return cachePromise
+  return galleryDedupe.getOrCreate('gallery', async () => {
+    const entries = await loadAllEntries()
+    galleryCache.set(entries)
+    return entries
+  })
 }
 
-export function createGalleryRouter() {
-  const router = express.Router()
+function getartistid(db: DatabaseSync, slug?: string, id?: string): number | null {
+  if (slug) {
+    const row = db.prepare("select id from artists where slug = ? and status = 'approved'").get(slug) as { id: number } | undefined
+    return row?.id ?? null
+  }
+  if (id) {
+    const n = Number(id)
+    if (!Number.isFinite(n)) return null
+    const row = db.prepare("select id from artists where id = ? and status = 'approved'").get(n) as { id: number } | undefined
+    return row?.id ?? null
+  }
+  const row = db.prepare("select id from artists where slug = 'd7tun6' and status = 'approved'").get() as { id: number } | undefined
+  return row?.id ?? null
+}
 
-  router.get('/entries', async (_req, res) => {
-    try {
-      const entries = await getGalleryEntries()
-      res.json({ ok: true, entries })
-    } catch (err) {
-      console.error('gallery entries failed', err)
-      res.status(500).json({ error: 'Unable to load gallery' })
-    }
-  })
+export function createGalleryRouter({ db }: { db: DatabaseSync }) {
+  return new Elysia({ prefix: '/api/gallery' })
+    .get('/entries', async ({ query }) => {
+      try {
+        const artistSlug = typeof query.artist_slug === 'string' ? query.artist_slug.trim() : ''
+        const artistIdParam = typeof query.artist_id === 'string' ? query.artist_id.trim() : ''
 
-  router.get('/entries/:slug', async (req, res) => {
-    try {
-      const entries = await getGalleryEntries()
-      const entry = entries.find((e) => e.slug === req.params.slug)
-      if (!entry) return res.status(404).json({ error: 'Not found' })
-      res.json({ ok: true, entry })
-    } catch (err) {
-      console.error('gallery entry failed', err)
-      res.status(500).json({ error: 'Unable to load entry' })
-    }
-  })
+        if (!artistSlug && !artistIdParam) {
+          const entries = await getGalleryEntries()
+          return { ok: true, entries }
+        }
 
-  router.post('/invalidate', (_req, res) => {
-    cached = null
-    cachePromise = null
-    res.json({ ok: true })
-  })
+        const aid = getartistid(db, artistSlug || undefined, artistIdParam || undefined)
+        if (!aid) return { ok: true, entries: [] }
 
-  return router
+        const rows = db.prepare(
+          "select slug, title, date, tags, cover, images from photos where artist_id = ? order by date desc"
+        ).all(aid) as Array<{ slug: string; title: string; date: string; tags: string; cover: string; images: string }>
+
+        const entries = rows.map((r) => ({
+          slug: r.slug,
+          title: r.title,
+          date: r.date,
+          tags: (() => { try { return JSON.parse(r.tags) as string[] } catch { return [] } })(),
+          images: (() => { try { return JSON.parse(r.images) as string[] } catch { return [] } })(),
+          cover: r.cover,
+        }))
+
+        return { ok: true, entries }
+      } catch (err) {
+        console.error('gallery entries failed', err)
+        return { error: 'Unable to load gallery' }
+      }
+    })
+    .get('/entries/:s', async ({ params, query, set }) => {
+      try {
+        const slug = params.s
+        const artistSlug = typeof query.artist_slug === 'string' ? query.artist_slug.trim() : ''
+        const artistIdParam = typeof query.artist_id === 'string' ? query.artist_id.trim() : ''
+
+        if (!artistSlug && !artistIdParam) {
+          const entries = await getGalleryEntries()
+          const entry = entries.find((e) => e.slug === slug)
+          if (!entry) {
+            set.status = 404
+            return { error: 'Not found' }
+          }
+          return { ok: true, entry }
+        }
+
+        const aid = getartistid(db, artistSlug || undefined, artistIdParam || undefined)
+        if (!aid) {
+          set.status = 404
+          return { error: 'Not found' }
+        }
+
+        const row = db.prepare(
+          "select slug, title, date, tags, cover, images from photos where artist_id = ? and slug = ? limit 1"
+        ).get(aid, slug) as { slug: string; title: string; date: string; tags: string; cover: string; images: string } | undefined
+        if (!row) {
+          set.status = 404
+          return { error: 'Not found' }
+        }
+
+        return {
+          ok: true,
+          entry: {
+            slug: row.slug,
+            title: row.title,
+            date: row.date,
+            tags: (() => { try { return JSON.parse(row.tags) as string[] } catch { return [] } })(),
+            images: (() => { try { return JSON.parse(row.images) as string[] } catch { return [] } })(),
+            cover: row.cover,
+          },
+        }
+      } catch (err) {
+        console.error('gallery entry failed', err)
+        set.status = 500
+        return { error: 'Unable to load entry' }
+      }
+    })
 }

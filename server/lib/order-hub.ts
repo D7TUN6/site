@@ -1,4 +1,4 @@
-export type OrderHubPayload = { orderId: string; payload: unknown }
+type OrderHubPayload = { orderId: string; payload: unknown }
 
 export type OrderHub = {
   publish: (event: OrderHubPayload) => void

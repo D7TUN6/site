@@ -1,167 +1,232 @@
 <div align="center">
   <img src=".github/assets/d7tun6-avatar.jpg" alt="D7TUN6 avatar" width="120" />
-
   <h1>d7tun6.site</h1>
   <p>Personal artist website for D7TUN6.</p>
   <p>Music, notes, release pages, blog posts, streaming links, shop, auth, and a fullscreen player.</p>
 </div>
 
-<p align="center">
-  <a href="https://open.spotify.com/artist/3kxsK6GeWVOpm90RqqfYZy"><img src=".github/assets/spotify-badge.png" alt="Spotify" height="44" /></a>&nbsp;&nbsp;
-  <a href="https://music.yandex.ru/artist/25225583"><img src=".github/assets/yandex-badge.png" alt="Yandex Music" height="44" /></a>&nbsp;&nbsp;
-  <a href="https://d7tun6.bandcamp.com"><img src=".github/assets/bandcamp-badge.png" alt="Bandcamp" height="44" /></a>&nbsp;&nbsp;
-  <a href="https://soundcloud.com/d7tun6"><img src=".github/assets/soundcloud-badge.webp" alt="SoundCloud" height="42" /></a>
-</p>
+## stack
 
-<br />
+- **frontend**: SolidJS + Vite 8 + Tailwind CSS 4
+- **server**: Bun + Elysia monolith (server/)
+- **storage**: local filesystem (`public/media/`) on self-hosted SSD
+- **cache/queue**: Redis (Upstash or local) - Redis Streams for background jobs
+- **background worker**: Bun + ffmpeg (HLS transcoding, local filesystem)
+- **radio**: Icecast + Liquidsoap (NixOS or manual)
+- **admin panel**: SolidJS SPA (packages/admin)
 
-## Stack
+## architecture
 
-- SolidJS + Vite
-- Express
-- SQLite
-- `sharp` — image resize & format conversion (WebP, AVIF)
-- `ffmpeg` / `ffprobe` — HLS audio/video transcoding & thumbnails
-- filesystem-generated content (no database for media)
+```
+┌──────────────────────────────────────────────────┐
+│  local SSD (public/media/)                       │
+│  Redis (kv + queue streams)                      │
+└────────┬────────────────────────────┬────────────┘
+         │                            │
+  ┌──────▼──────┐            ┌────────▼────────┐
+  │  web app    │            │  background     │
+  │  (Elysia)   │            │  worker         │
+  │  port 3001  │◄────jobs───│  (ffmpeg+hls)   │
+  │  + vite     │            │                 │
+  └──────┬──────┘            └─────────────────┘
+         │
+  ┌──────▼──────┐
+  │  radio      │
+  │  icecast    │
+  │  liquidsoap │
+  └─────────────┘
+```
 
-## What It Does
+## what it does
 
 - localized site under `/en` and `/ru`
-- music release pages generated from `public/media/music`
+- music release pages from `public/media/music`
 - HLS audio streaming with segmented playback
 - fullscreen now-playing player
-- release ZIP and track downloads with on-demand ffmpeg conversion (6 formats, sample rate, bit depth, channels, resampler, bitrate controls)
+- release zip/track downloads with on-demand ffmpeg conversion (6 formats, sample rate, bit depth, channels, resampler, bitrate controls)
 - blog index + per-post routes
 - shop: product pages, cart, checkout + YooKassa widget payments
 - email/password auth
 - user account page with order history
 - gallery with tag filtering, lightbox, and per-entry pages
-- video catalogue with source-format resolution
-- internet radio with schedule, listener count, HLS streaming
-- file/storage browser (list, upload, create, delete, read, write)
-- admin panel for managing orders, gallery, video, radio, shop, releases, storage, and media conversion
+- video catalogue with HLS streaming
+- 24/7 internet radio (Icecast + Liquidsoap)
+- admin panel for managing all content
 
-## Quick Start
+## quick start (local development)
 
-Requirements:
+### prerequisites
 
-- Node.js 24+
-- npm 10+
-- `ffmpeg` and `ffprobe` in `PATH`
+- nix-shell (recommended) or Bun + Node.js + ffmpeg
 
-Install dependencies:
+### setup
 
 ```bash
+# enter dev shell (all deps available)
+nix-shell
+
+# install dependencies
 npm install
-```
 
-Run frontend only:
+# copy and configure env
+cp .env.example .env
+# edit .env with your redis url, admin credentials, etc.
 
-```bash
+# start development server (vite + api)
 npm run dev
 ```
 
-Run frontend + API together:
+open `http://127.0.0.1:5173`
+
+### run tests
 
 ```bash
-npm run dev:all
+npm run test        # vitest
+npm run typecheck   # typescript checks
 ```
 
-Open:
-
-- web: `http://127.0.0.1:5173`
-- API: `http://127.0.0.1:3001`
-
-## Production
+### build
 
 ```bash
+npm run build       # full production build (frontend + server)
+```
+
+### background worker
+
+```bash
+# start the background ffmpeg worker
+cd worker && npm install && npm start
+```
+
+### admin panel
+
+```bash
+cd packages/admin && npm install && npm run dev
+# opens on http://127.0.0.1:5174
+```
+
+## environment variables
+
+see `.env.example` for the full list.
+
+| var | required | description |
+|-----|----------|-------------|
+| `REDIS_URL` | yes | Redis connection string (for worker) |
+| `JWT_SECRET` | yes | JWT signing secret for admin auth |
+| `APP_SECRET` | yes | Session encryption secret |
+| `ADMIN_EMAIL` | yes | Admin login email |
+| `ADMIN_PASSWORD` | yes | Admin login password |
+| `APP_ORIGIN` | yes | Site origin URL (e.g. `https://d7tun6.site`) |
+
+## key scripts
+
+| script | description |
+|--------|-------------|
+| `bun run dev` | Vite dev server + API |
+| `bun run build` | Full production build |
+| `bun run start` | Build + start production server |
+| `bun run test` | Vitest |
+| `bun run typecheck` | TypeScript checks |
+| `bun run generate:releases` | Regenerate release manifest from `public/media/music/` |
+| `bun run generate:shop` | Regenerate shop manifest from `public/media/shop/` |
+
+## deployment
+
+### option a: single-machine nixos (recommended)
+
+```bash
+# copy the module to your nixos config
+cp site.nix /etc/nixos/
+cp radio/nixos-module.nix /etc/nixos/
+
+# add to your configuration.nix:
+#   imports = [ ./site.nix ];
+#   services.d7tun6.enable = true;
+#   # configure all options...
+
+# apply
+nixos-rebuild switch
+```
+
+the module sets up:
+- Redis (local, port 6379)
+- Web app (Elysia on port 3001)
+- Background worker (ffmpeg, HLS, zip)
+- Icecast + Liquidsoap radio (port 8000)
+- Caddy reverse proxy with optional ACME/TLS
+- Hourly rebuild timer
+
+### option b: manual deployment
+
+```bash
+# 1. install dependencies
+npm install
+
+# 2. configure environment
+cp .env.example .env
+# edit .env
+
+# 3. build
 npm run build
-npm run start
+
+# 4. start the server
+bun server/index.ts
+
+# 5. start the worker (separate process)
+cd worker && npm start
+
+# 6. set up radio (icecast + liquidsoap)
+cd radio && # follow radio/README
 ```
 
-The production server serves the built SPA from `dist/` and the API from `/api/*`.
+## project structure
 
-## Environment
-
-Copy `.env.example` to `.env` and fill it in.
-
-Required:
-
-- `APP_SECRET`
-- `ADMIN_EMAIL`
-- `ADMIN_PASSWORD`
-
-Recommended for production:
-
-- `APP_ORIGIN`
-- `DB_PATH`
-- `COOKIE_DOMAIN` if you need cookies across subdomains
-
-Needed for shipping and payments:
-
-- `YANDEX_MAPS_SEARCH_API_KEY`
-- `YOOKASSA_SHOP_ID`
-- `YOOKASSA_SECRET_KEY`
-- `YOOKASSA_RETURN_URL`
-
-Optional:
-
-- `PORT` default `3001`
-- `HOSTNAME` default `127.0.0.1`
-- `YANDEX_MAPS_JS_API_KEY` or `YANDEX_MAPS_API_KEY`
-
-## Main Scripts
-
-- `npm run dev` run Vite locally
-- `npm run dev:all` run API + Vite
-- `npm run build` create production bundle (client + server)
-- `npm run start` full production build + start
-- `npm run start:api` API only (skip client build)
-- `npm run generate:releases` rebuild release manifests
-- `npm run generate:shop` rebuild shop data
-- `npm run build:server` compile server TypeScript
-- `npm run lint` run ESLint
-- `npm run test` run vitest suite (client + server tests)
-- `npm run typecheck` run TypeScript checks
-
-## Release Layout
-
-Each release lives under:
-
-```text
-public/media/music/<Album Name>/
-  cover/
-    cover.jpg
-    cover-preview.webp
-  notes/
-    notes
-  tracks/
-    *.wav
-    wav/
-    flac/
-    mp3/
-    ogg/
-    opus/
-    preview/
-    stream/
-  playlists/
-    full.m3u8
-    full.m3u
-    preview.m3u8
-    preview.m3u
-  links.json
+```
+├── packages/admin/    # admin SPA (SolidJS, Vite)
+├── radio/
+│   ├── icecast.xml    # Icecast stream server config
+│   ├── liquidsoap.liq # Liquidsoap broadcast script
+│   └── nixos-module.nix
+├── scripts/
+│   ├── generate-releases.ts  # scan public/media/music/ → manifest
+│   └── generate-shop.ts      # scan public/media/shop/ → manifest
+├── server/
+│   ├── index.ts       # Bun entry point
+│   ├── app.ts         # Elysia app
+│   ├── lib/           # Server libs (db, media-convert, etc.)
+│   └── routes/        # Elysia route handlers
+├── src/
+│   ├── lib/           # Frontend libs (i18n, player, etc.)
+│   ├── components/    # SolidJS components
+│   └── __tests__/     # Frontend unit tests
+├── worker/
+│   ├── index.ts       # Background worker (Redis Streams → ffmpeg)
+│   └── package.json
+├── site.nix            # Single-machine NixOS deployment (hardened, rootless)
+├── shell.nix          # Nix dev shell
+└── .env.example       # Environment variable template
 ```
 
-## Content Modules
+## content modules
 
-### Gallery
+### releases
 
-Entries live under `public/media/gallery/<slug>/index.mdx`.
+releases live under `public/media/music/<AlbumName>/`:
+- `cover/cover.jpg` - album artwork
+- `cover/cover-preview.webp` - small preview
+- `tracks/*.wav` - source audio files
+- `notes/notes` - release notes
+- `.links` - streaming platform links
+- `.release-date` - release date (DD/MM/YYYY or YYYY-MM-DD)
+- `.release-type` - LP, EP, single, remaster
+- `.release-hidden` - hide from listings
 
-Frontmatter:
-```
+### gallery
+
+entries at `public/media/gallery/<slug>/index.mdx`:
+```yaml
 ---
-title: "Entry title"
+title: "entry title"
 date: "2025-01-01"
 tags: [concert, live]
 cover: cover.jpg
@@ -169,107 +234,30 @@ images: [img1.jpg, img2.jpg]
 ---
 ```
 
-Images are converted to WebP/AVIF on upload; previews (400px WebP) generated automatically.
+### video
 
-### Video
-
-Entries live under `public/media/video/<slug>/index.mdx`.
-
-Frontmatter:
-```
+entries at `public/media/video/<slug>/index.mdx`:
+```yaml
 ---
-title: "Video title"
+title: "video title"
 date: "2025-01-01"
 duration: 120
 thumbnail: thumb.webp
+description: "video description"
 sources:
-  - url: /media/video/example/hls/index.m3u8, type: application/x-mpegURL
-  - url: /media/video/example/video.mp4, type: video/mp4, resolution: 1080p
+  - url: /media/video/example/hls/index.m3u8
+    type: application/vnd.apple.mpegurl
 ---
 ```
 
-Uploaded videos are transcoded to HLS (AAC audio, H.264 video) with a thumbnail generated via `ffmpeg`.
+## download system
 
-### Radio
+on-demand ffmpeg transcoding with cache:
+- formats: wav, flac, ogg-opus, ogg-vorbis, aiff, raw
+- options: sample rate (8k-192k), bit depth (8/16/24/32/64), channels, resampler, bitrate
+- cache: content-addressed by option hash
+- zip: assembled from cached files on request
 
-State and schedule served from `public/media/radio/schedule.json`. Stream segments in `public/media/radio/segments/`. Listener counting via POST `/api/radio/listeners`.
+## license
 
-### Storage
-
-File-system browser under `/api/storage/*`. Supports listing, upload, download, mkdir, remove, read, write within `public/media/uploads/`.
-
-## Download System (Lazy On-Demand Conversion)
-
-Downloads are **no longer pre-generated** at build time. Only source WAV files exist on disk. When a user requests a download, `ffmpeg` transcodes on-the-fly with the exact options chosen, caches the result under `tracks/cache/<hash>/`, and serves it. Subsequent identical requests hit the cache.
-
-### Available Formats
-
-| Format | Container | Encoder | Bit Depth Support | Bitrate Control |
-|---|---|---|---|---|
-| `wav` | WAV | PCM | 8/16/24/32/64-bit | — |
-| `flac` | FLAC | FLAC | 8/16/24/32-bit (s16/s32) | Compression level 5 |
-| `ogg-opus` | OGG | libopus | — | VBR/CBR, 8–512 kbps |
-| `ogg-vorbis` | OGG | libvorbis | — | VBR/CBR, 8–512 kbps |
-| `aiff` | AIFF | PCM | 8/16/24/32/64-bit (big-endian) | — |
-| `raw` | RAW | PCM | 8/16/24/32/64-bit (little-endian) | — |
-
-### Options in the UI
-
-- **Format**: WAV, FLAC, Opus, Vorbis, AIFF, RAW PCM
-- **Sample Rate**: 8000–192000 Hz (limited by source), plus custom input
-- **Channels**: Mono, Stereo, Quad, 8.0
-- **Bit Depth**: 8/16/24/32/64-bit (PCM-based formats only)
-- **Resampler**: None, Sinc (SoX), r8brain free
-- **Bitrate**: VBR/CBR toggle + numeric input 8–512 kbps (lossy formats only)
-
-### Cache
-
-Converted files are cached at:
-```
-public/media/music/<Album>/tracks/cache/<hash>/
-```
-The hash is derived from all options (format, sample rate, bit depth, channels, resampler, bitrate mode, bitrate). If any option changes, a new conversion runs and a new cache entry is created. ZIP archives are assembled from cached files on the fly.
-
-## Media Conversion Pipeline
-
-All media processing lives in `server/lib/media-convert.ts`:
-
-| Function | Tool | Purpose |
-|---|---|---|
-| `processGalleryImage` | `sharp` | Produce WebP (82), AVIF (65), 400px preview WebP |
-| `processCoverImage` | `sharp` | Produce WebP (85), 400px preview WebP |
-| `convertVideoToHls` | `ffmpeg` | 720p H.264 + AAC, segmented HLS, thumbnail |
-| `convertAudioToHls` | `ffmpeg` | AAC 128k, segmented HLS |
-| `convertAudioToFormat` | `ffmpeg` | Lazy on-demand format conversion with full options |
-| `generateVideoThumbnail` | `ffmpeg` | 640px single-frame WebP |
-
-Background rebuild (`spawnRebuild`) runs `vite build` after mutations so the client bundle reflects new content.
-
-## File Layout
-
-- source tracks live under `public/media/music/<release>/tracks/`
-- generated previews live under `public/media/music/<release>/tracks/preview/`
-- generated HLS segments live under `public/media/music/<release>/tracks/stream/`
-- generated downloads are cached under `server/generated/` and `tmp/`
-- app database lives at `server/generated/app.db` unless `DB_PATH` is set
-- gallery entries under `public/media/gallery/<slug>/`
-- video entries under `public/media/video/<slug>/`
-- radio stream & schedule under `public/media/radio/`
-- file storage under `public/media/uploads/`
-
-## Deployment
-
-The repo includes `webserver.nix` for a NixOS host.
-
-It assumes:
-
-- the checkout lives at `/var/www/d7tun6.site`
-- that directory is writable by the `d7tun6` user
-- the app listens on `127.0.0.1:3001`
-- nginx terminates TLS and proxies to the Node server
-
-Set `APP_ORIGIN` to the public origin, for example:
-
-```bash
-APP_ORIGIN=https://d7tun6.site
-```
+all rights reserved

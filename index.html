@@ -2,12 +2,48 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/jpeg" href="/favicon.jpg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>%VITE_SITE_TITLE%</title>
+    <meta name="theme-color" content="#07070c" />
+
+    <link rel="icon" href="/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/favicon-512.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/favicon-180.png" />
+
+    <link rel="preload" as="font" crossorigin href="/media/fonts/AmigaTopaz-subset.woff2?v=20260913-1" />
+
+    <style>
+      body {
+        font-family: "AmigaTopaz", monospace;
+        background: #07070c;
+        color: rgba(246, 246, 255, 0.94);
+        margin: 0;
+        padding: 24px 28px;
+        min-height: 100dvh;
+      }
+      .container {
+        display: flex;
+        flex-direction: column;
+        min-height: 100dvh;
+        position: relative;
+        z-index: 1;
+      }
+      .content { min-height: 40vh; }
+    </style>
   </head>
   <body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
     <div id="root"></div>
+    <noscript>
+      <div style="box-sizing:border-box;max-width:640px;margin:24px auto;padding:18px 22px;background:#0d0d18;border:1px solid #5b52a3;color:#d4d4dc;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.5;">
+        <p style="margin:0 0 10px;font-size:19px;font-weight:bold;color:#e6e6f2;">D7TUN6</p>
+        <p style="margin:0 0 12px;">JavaScript is off or unsupported in this browser. Open the text version of the site:</p>
+        <p style="margin:0;"><a href="?text=1" style="color:#8f7cff;">Open text mode</a></p>
+      </div>
+    </noscript>
     <script type="module" src="/src/index.tsx"></script>
   </body>
 </html>

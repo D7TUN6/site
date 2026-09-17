@@ -1,6 +1,6 @@
 import type { Lang } from '@/types/content'
 
-export type ShopCurrency = 'RUB'
+type ShopCurrency = 'RUB'
 
 export type ShopMoney = {
   currency: ShopCurrency
@@ -13,6 +13,7 @@ export type ShopProduct = {
   slug: string
   title: string
   category: string
+  artistSlug: string | null
   price: ShopMoney
   status: ShopProductStatus
   quantity: number

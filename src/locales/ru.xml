@@ -2,23 +2,94 @@
   <site>
     <title>D7TUN6.site</title>
   </site>
-  <nav>
-    <main>главная</main>
-    <bio>био</bio>
-    <music>музыка</music>
-    <news>новости</news>
-    <blog>блог</blog>
-    <links>ссылки</links>
-    <shop>магазин</shop>
-    <projects>проекты</projects>
-    <gallery>галерея</gallery>
-    <video>видео</video>
-    <radio>радио</radio>
-  </nav>
+<nav>
+  <main>главная</main>
+  <bio>био</bio>
+  <music>музыка</music>
+  <news>новости</news>
+  <blog>блог</blog>
+  <links>ссылки</links>
+  <donate>донат</donate>
+  <shop>магазин</shop>
+  <projects>проекты</projects>
+  <gallery>галерея</gallery>
+  <video>видео</video>
+  <radio>радио</radio>
+</nav>
   <loader>
     <detecting>определяю язык...</detecting>
     <fallback>если редирект не сработал, открой:</fallback>
     <english>english version</english>
     <russian>русская версия</russian>
   </loader>
+  <audio>
+    <heading>Настройки аудио</heading>
+    <quality>качество</quality>
+    <equalizer>эквалайзер</equalizer>
+    <effects>эффекты</effects>
+    <bitcrusher>биткрашер</bitcrusher>
+    <delay>дилей</delay>
+    <reverb>реверб</reverb>
+    <chorus>хорус</chorus>
+    <comb>гребенчатый фильтр</comb>
+    <tape>лента</tape>
+    <preset>пресет</preset>
+    <bitDepth>битность</bitDepth>
+    <reduction>редукция</reduction>
+    <mix>микс</mix>
+    <feedback>фидбек</feedback>
+    <time>время</time>
+    <enabled>вкл</enabled>
+    <tabQuality>Качество</tabQuality>
+    <tabEq>ЭКВ</tabEq>
+    <tabEffects>Эффекты</tabEffects>
+    <headphoneComp>Компенсация наушников (AutoEQ)</headphoneComp>
+    <searchHeadphones>Поиск модели наушников...</searchHeadphones>
+    <resetAutoEq>Сбросить AutoEQ</resetAutoEq>
+    <autoEqLabel>AutoEQ</autoEqLabel>
+    <killSwitch>Kill Switch</killSwitch>
+    <panic>Паника</panic>
+    <tapeEmulation>Эмуляция ленты</tapeEmulation>
+    <saturation>Сатюрация</saturation>
+    <bias>Подмагничивание</bias>
+    <noise>Шум</noise>
+    <wow>Вай</wow>
+    <flutter>Флаттер</flutter>
+    <deckMechanism>Механизм</deckMechanism>
+    <wear>Износ</wear>
+    <chewTape>Жевать ленту</chewTape>
+    <dolbyC>Dolby C</dolbyC>
+    <wetDry>Wet / Dry</wetDry>
+    <lofiFx>Lo-fi FX</lofiFx>
+    <combFilter>Гребенчатый фильтр</combFilter>
+    <delayMs>Задержка (мс)</delayMs>
+    <resonance>Резонанс</resonance>
+    <rate>Частота</rate>
+    <depth>Глубина</depth>
+    <dubDelay>Даб-дилей</dubDelay>
+    <close>Закрыть</close>
+  </audio>
+  <admin>
+    <articles>статьи</articles>
+    <gallery>галерея</gallery>
+    <releases>релизы</releases>
+    <videos>видео</videos>
+    <shop>магазин</shop>
+    <submissions>заявки</submissions>
+    <pages>страницы</pages>
+    <create>создать</create>
+    <edit>редактировать</edit>
+    <delete>удалить</delete>
+    <save>сохранить</save>
+    <cancel>отмена</cancel>
+    <title>заголовок</title>
+    <content>содержание</content>
+    <date>дата</date>
+    <slug>slug</slug>
+    <excerpt>кратко</excerpt>
+    <search>поиск</search>
+    <category>категория</category>
+    <artist>исполнитель</artist>
+    <tags>теги</tags>
+  </admin>
 </locale>

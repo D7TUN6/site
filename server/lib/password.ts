@@ -1,9 +1,9 @@
 import crypto from 'node:crypto'
 
 const SCRYPT_KEYLEN = 64
-const SCRYPT_N = 16384
-const SCRYPT_R = 8
-const SCRYPT_P = 1
+const SCRYPT_N = Number(process.env.SCRYPT_N) || 16384
+const SCRYPT_R = Number(process.env.SCRYPT_R) || 8
+const SCRYPT_P = Number(process.env.SCRYPT_P) || 1
 
 export function hashPassword(password: string) {
   if (typeof password !== 'string' || password.length < 8) throw new Error('Password too short')
@@ -22,5 +22,6 @@ export function verifyPassword(password: string, stored: string) {
   const salt = Buffer.from(parts[4], 'hex')
   const expected = Buffer.from(parts[5], 'hex')
   const derived = crypto.scryptSync(password, salt, expected.length, { N: n, r, p })
+  if (derived.length !== expected.length) return false
   return crypto.timingSafeEqual(expected, derived)
 }

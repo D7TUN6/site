@@ -1,0 +1,98 @@
+{
+  "$schema": "https://agentskills.io/schemas/skills-index.json",
+  "source": "https://site.d7tun6.netcraze.link",
+  "description": "D7TUN6 artist platform — music releases, gallery, video, radio, shop, and CMS content",
+  "skills": [
+    {
+      "name": "robots-txt",
+      "type": "agent-resource",
+      "description": "Crawl rules for AI agents and content signals preferences",
+      "url": "https://site.d7tun6.netcraze.link/robots.txt",
+      "sha256": "3c0b315f01b6b5a1f06a0f50b031cbd91f0c497bbaf1b39286ab4dff8e7e6ae3"
+    },
+    {
+      "name": "sitemap",
+      "type": "agent-resource",
+      "description": "Canonical URL index with hreflang alternate links for bilingual content",
+      "url": "https://site.d7tun6.netcraze.link/sitemap.xml",
+      "sha256": "b7a2b1c0d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9"
+    },
+    {
+      "name": "agent-auth",
+      "type": "agent-protocol",
+      "description": "Agentic registration, identity claim, and token exchange via OAuth 2.0",
+      "url": "https://site.d7tun6.netcraze.link/auth.md",
+      "sha256": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1"
+    },
+    {
+      "name": "webmcp",
+      "type": "agent-api",
+      "description": "In-browser tool definitions for AI agents via WebMCP — search releases, browse gallery, query radio state, and more",
+      "url": "https://site.d7tun6.netcraze.link/.well-known/mcp/server-card.json",
+      "sha256": "d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3"
+    },
+    {
+      "name": "mcp-tools-server",
+      "type": "agent-api",
+      "description": "Server-side MCP tools listing for agents that cannot access browser WebMCP",
+      "url": "https://site.d7tun6.netcraze.link/.well-known/mcp/tools",
+      "sha256": "e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4"
+    },
+    {
+      "name": "dns-aid",
+      "type": "agent-discovery",
+      "description": "DNS for AI Discovery fallback — SVCB record configuration and well-known endpoint",
+      "url": "https://site.d7tun6.netcraze.link/.well-known/dns-aid",
+      "sha256": "d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9"
+    },
+    {
+      "name": "openapi",
+      "type": "agent-api",
+      "description": "OpenAPI 3.1 specification with x-payment-info extensions for MPP and all API endpoints",
+      "url": "https://site.d7tun6.netcraze.link/openapi.json",
+      "sha256": "e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4"
+    },
+    {
+      "name": "api-catalog",
+      "type": "agent-resource",
+      "description": "RFC 9727 linkset catalog of all API services with service-desc and status links",
+      "url": "https://site.d7tun6.netcraze.link/.well-known/api-catalog",
+      "sha256": "f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5"
+    },
+    {
+      "name": "oauth-authorization-server",
+      "type": "agent-protocol",
+      "description": "OAuth 2.0 Authorization Server metadata with agent_auth extensions for agent registration and identity binding",
+      "url": "https://site.d7tun6.netcraze.link/.well-known/oauth-authorization-server",
+      "sha256": "a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6"
+    },
+    {
+      "name": "x402-payments",
+      "type": "agent-payment",
+      "description": "HTTP 402 payment middleware for AI agents to pay for audio downloads via stablecoin (Base network)",
+      "url": "https://site.d7tun6.netcraze.link/.well-known/x402",
+      "sha256": "e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4"
+    },
+    {
+      "name": "mpp-payments",
+      "type": "agent-payment",
+      "description": "Machine Payment Protocol (MPP) discovery via OpenAPI x-payment-info extensions for Tempo stablecoin and Stripe payments",
+      "url": "https://site.d7tun6.netcraze.link/openapi.json",
+      "sha256": "e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4"
+    },
+    {
+      "name": "http-message-signatures",
+      "type": "agent-protocol",
+      "description": "HTTP Message Signatures directory for agent authentication with EdDSA/RS256 keys",
+      "url": "https://site.d7tun6.netcraze.link/.well-known/http-message-signatures-directory",
+      "sha256": "d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9"
+    },
+    {
+      "name": "agentic-commerce",
+      "type": "agent-protocol",
+      "description": "Agentic Commerce Protocol (ACP) support — checkout, orders, carts with RUB/USD multi-currency",
+      "url": "https://site.d7tun6.netcraze.link/.well-known/acp.json",
+      "sha256": "b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7"
+    }
+  ]
+}

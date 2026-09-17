@@ -3,23 +3,94 @@
   <site>
     <title>D7TUN6.site</title>
   </site>
-  <nav>
-    <main>home</main>
-    <bio>bio</bio>
-    <music>music</music>
-    <news>news</news>
-    <blog>blog</blog>
-    <links>links</links>
-    <shop>shop</shop>
-    <projects>projects</projects>
-    <gallery>gallery</gallery>
-    <video>video</video>
-    <radio>radio</radio>
-  </nav>
+<nav>
+  <main>home</main>
+  <bio>bio</bio>
+  <music>music</music>
+  <news>news</news>
+  <blog>blog</blog>
+  <links>links</links>
+  <donate>donate</donate>
+  <shop>shop</shop>
+  <projects>projects</projects>
+  <gallery>gallery</gallery>
+  <video>video</video>
+  <radio>radio</radio>
+</nav>
   <loader>
     <detecting>detecting language...</detecting>
     <fallback>if redirect failed, open:</fallback>
     <english>english version</english>
     <russian>русская версия</russian>
   </loader>
+  <audio>
+    <heading>Audio Settings</heading>
+    <quality>quality</quality>
+    <equalizer>equalizer</equalizer>
+    <effects>effects</effects>
+    <bitcrusher>bitcrusher</bitcrusher>
+    <delay>delay</delay>
+    <reverb>reverb</reverb>
+    <chorus>chorus</chorus>
+    <comb>comb filter</comb>
+    <tape>tape</tape>
+    <preset>preset</preset>
+    <bitDepth>bit depth</bitDepth>
+    <reduction>reduction</reduction>
+    <mix>mix</mix>
+    <feedback>feedback</feedback>
+    <time>time</time>
+    <enabled>enabled</enabled>
+    <tabQuality>Quality</tabQuality>
+    <tabEq>EQ</tabEq>
+    <tabEffects>Effects</tabEffects>
+    <headphoneComp>Headphone Compensation (AutoEQ)</headphoneComp>
+    <searchHeadphones>Search headphone model...</searchHeadphones>
+    <resetAutoEq>Reset AutoEQ</resetAutoEq>
+    <autoEqLabel>AutoEQ</autoEqLabel>
+    <killSwitch>Kill Switch</killSwitch>
+    <panic>Panic</panic>
+    <tapeEmulation>Tape Emulation</tapeEmulation>
+    <saturation>Saturation</saturation>
+    <bias>Bias</bias>
+    <noise>Noise</noise>
+    <wow>Wow</wow>
+    <flutter>Flutter</flutter>
+    <deckMechanism>Deck Mechanism</deckMechanism>
+    <wear>Wear</wear>
+    <chewTape>Chew Tape</chewTape>
+    <dolbyC>Dolby C</dolbyC>
+    <wetDry>Wet / Dry</wetDry>
+    <lofiFx>Lo-fi FX</lofiFx>
+    <combFilter>Comb Filter</combFilter>
+    <delayMs>Delay (ms)</delayMs>
+    <resonance>Resonance</resonance>
+    <rate>Rate</rate>
+    <depth>Depth</depth>
+    <dubDelay>Dub Delay</dubDelay>
+    <close>Close</close>
+  </audio>
+  <admin>
+    <articles>articles</articles>
+    <gallery>gallery</gallery>
+    <releases>releases</releases>
+    <videos>videos</videos>
+    <shop>shop</shop>
+    <submissions>submissions</submissions>
+    <pages>pages</pages>
+    <create>create</create>
+    <edit>edit</edit>
+    <delete>delete</delete>
+    <save>save</save>
+    <cancel>cancel</cancel>
+    <title>title</title>
+    <content>content</content>
+    <date>date</date>
+    <slug>slug</slug>
+    <excerpt>excerpt</excerpt>
+    <search>search</search>
+    <category>category</category>
+    <artist>artist</artist>
+    <tags>tags</tags>
+  </admin>
 </locale>
