@@ -19,6 +19,7 @@ import {
 import { getTrackPlaybackUrl } from '../api/StreamApi.js'
 import { readPersistedPlayerState, writePersistedPlayerState, clearPersistedPlayerState } from '../storage/PlayerStorage.js'
 import { reportListener, getNowPlaying } from '@/lib/api/radio'
+import { RadioHeardClock, type RadioServerTrack } from '@/features/player/radioHeardClock'
 import type { GlobalPlayerQueue, RepeatMode, UpcomingTrack, PersistedPlayerState } from '../types.js'
 
 const LOUD_TARGET_LUFS = -14
@@ -51,6 +52,12 @@ let globalEngine: PlayerEngine | null = null
 // NowPlayingBar must keep observing the stream after the page unmounts.
 let radioPollTimer: number | null = null
 let radioPagehideAttached = false
+// The radio UI must follow the *heard* audio, not the air metadata (the
+// browser's decoded buffer runs ~1-4s ahead of the ear). The heard clock maps
+// the element's currentTime to the playing track; the server poll only orients
+// which track is on air and is never the trigger for a title switch.
+let radioHeardClock: RadioHeardClock | null = null
+let lastRadioHeardCt = 0
 // The DOM <audio> listeners and the engine subscription are shared module-wide
 // in the style of globalState/globalEngine themselves: several components can
 // mount the same core (always-mounted NowPlayingBar + route-level
@@ -337,27 +344,69 @@ export function usePlayerSolid() {
 
   // ── Radio ────────────────────────────────────────────────────────────────
     // The server's NowPlayingTracker records startTimestamp (epoch ms) when the
-    // on-air title changes (+ catalog match), so "elapsed now" is simply
-    // Date.now() - startTimestamp — computed locally at every poll tick, no
-    // deep-catalog offset math needed (that was the HLS VOD era).
+    // on-air title changes (+ catalog match). That wall clock runs ahead of the
+    // ear by the browser's stream buffer, so once the element clock is live it
+    // drives the displayed position and title switches; the server value is the
+    // air anchor for the unfinished first/reconnect track and the paused state.
 
   async function refreshRadioTrack() {
     if (!state.state.radioActive) return
     const np = await getNowPlaying()
     if (!state.state.radioActive || !np.ok || !np.title) return
-    const duration = np.duration ?? 0
-    let elapsed = np.startTimestamp ? (Date.now() - np.startTimestamp) / 1000 : (np.elapsed ?? 0)
+    const now = Date.now()
+    const serverTrack: RadioServerTrack = {
+      title: np.title,
+      artist: np.artist ?? '',
+      album: np.album ?? '',
+      coverUrl: np.coverUrl ?? null,
+      startTimestamp: np.startTimestamp ?? (np.elapsed != null ? now - np.elapsed * 1000 : now),
+      duration: np.duration ?? 0,
+      source: np.source ?? 'live',
+    }
+    const el = engine.audio
+    const usable = radioHeardClock !== null && el != null
+      && Number.isFinite(el.currentTime) && (el.currentTime ?? 0) > 0 && !el.paused
+    const ct = usable ? el.currentTime : 0
+
+    if (usable && radioHeardClock) {
+      // A reload (stall/reconnect) zeroes currentTime mid-song — re-anchor the
+      // clock on the air position for the remainder of that track.
+      if (lastRadioHeardCt > 30 && ct < lastRadioHeardCt - 5) radioHeardClock.reorient(ct, now, serverTrack)
+      lastRadioHeardCt = ct
+      const reading = radioHeardClock.observe(ct, now, serverTrack)
+      if (reading && reading.track.title) {
+        state.setState({
+          radioTrack: {
+            title: reading.track.title,
+            artist: reading.track.artist || 'D7TUN6',
+            album: reading.track.album,
+            coverUrl: reading.track.coverUrl,
+            elapsed: reading.elapsed,
+            duration: reading.track.duration,
+            upcoming: np.upcoming ?? [],
+            source: reading.track.source,
+          },
+        })
+        return
+      }
+    } else {
+      lastRadioHeardCt = 0
+    }
+
+    // Element clock unavailable (paused, pre-roll, stalled) — server air snapshot.
+    const duration = serverTrack.duration
+    let elapsed = (now - serverTrack.startTimestamp) / 1000
     if (duration > 0) elapsed = Math.max(0, Math.min(elapsed, duration))
     state.setState({
       radioTrack: {
-        title: np.title,
-        artist: np.artist ?? '',
-        album: np.album ?? '',
-        coverUrl: np.coverUrl ?? null,
+        title: serverTrack.title,
+        artist: serverTrack.artist || 'D7TUN6',
+        album: serverTrack.album,
+        coverUrl: serverTrack.coverUrl,
         elapsed,
         duration,
         upcoming: np.upcoming ?? [],
-        source: np.source ?? 'live',
+        source: serverTrack.source,
       },
     })
   }
@@ -388,6 +437,9 @@ export function usePlayerSolid() {
   }
 
   async function doStartRadio(): Promise<void> {
+    if (!radioHeardClock) radioHeardClock = new RadioHeardClock()
+    radioHeardClock.reset()
+    lastRadioHeardCt = 0
     state.updateField('hasStartedPlayback', true)
     state.updateField('radioActive', true)
     state.updateField('radioTrack', null)
