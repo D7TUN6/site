@@ -56,7 +56,15 @@ export const DEFAULT_SPECIAL: SpecialData = {
     { id: 'matbeq', name: 'matbeq', role: t('anykey, d7tun6 music enjoyer', 'эникей, любитель музыки d7tun6'), avatar: 'matbeq.webp', url: 'https://t.me/matbeq332', text: t('helped hunt bugs, provided analog release formats as extras for the site, supported the vpn infrastructure', 'помогал с поиском багов, поставлял аналоговые версии релизов как дополнение на сайт, поддерживал инфраструктуру (оплата vpn)') },
     { id: 'therest', name: 'the rest', role: t('everyone else', 'все остальные'), avatar: 'therest.webp', url: '', text: t('even if i forgot someone — you are all awesome, thanks for everything', 'даже если я кого-то забыл — все прекрасны и спасибо за всё') },
   ],
-  webring: [],
+  webring: [
+    {
+      id: 'emilumiq',
+      name: 'emilumiq',
+      url: 'https://emilumiq.github.io',
+      badge: '/media/image/badges/emilumiq-88x31.gif',
+      owner: '',
+    },
+  ],
   bannerHtml: DEFAULT_BANNER,
 }
 

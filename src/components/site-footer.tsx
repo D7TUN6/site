@@ -38,6 +38,7 @@ const BADGES: Array<{ file: string; alt: string; href?: string; ver?: number; g?
   // 4 — friends, acquaintances, people I respect
   { file: 'exethyl.gif', alt: 'exethyl', href: 'https://exethyl.bandcamp.com', g: 4 },
   { file: 'myslivets.png', alt: 'Daniel Myslivets', href: 'https://myslivets.com', g: 4 },
+  { file: 'emilumiq-88x31.gif', alt: 'emilumiq', href: 'https://emilumiq.github.io', g: 4 },
   { file: 'aphextwin.png', alt: 'Aphex Twin', href: 'https://aphextwin.warp.net/', g: 4 },
   { file: 'ltt.gif', alt: 'LTT', href: 'https://linustechtips.com/', g: 4 },
   { file: 'vhsmaronbutton2.gif', alt: 'maron', g: 4 },
