@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'bun:test'
 import { listenerKey } from '../lib/radio/listener-tracker.js'
-import { shouldEstimateOverride, shouldResetOverrun } from '../lib/radio/now-playing.js'
+import { nearestOccurrence, shouldEstimateOverride, shouldResetOverrun } from '../lib/radio/now-playing.js'
 import type { NowPlayingEntry } from '../lib/radio/stream-generator.js'
 
 function np(partial: Partial<NowPlayingEntry>): NowPlayingEntry {
@@ -122,5 +122,31 @@ describe('now-playing overrun reset', () => {
 
   it('never resets when there is no usable duration', () => {
     expect(shouldResetOverrun(np({ duration: 0 }), 99999)).toBe(false)
+  })
+})
+
+describe('now-playing sequential occurrence pick', () => {
+  it('picks the single occurrence', () => {
+    expect(nearestOccurrence([3], 10, 100)).toBe(3)
+  })
+
+  it('picks the instance nearest the current airplay position', () => {
+    // title airs at slots 2 and 90, round is 100 long, anchor is slot 5 → 2.
+    expect(nearestOccurrence([2, 90], 5, 100)).toBe(2)
+  })
+
+  it('wraps around the round boundary', () => {
+    // anchor near the end (slot 95): slot 90 is the closest occurrence.
+    expect(nearestOccurrence([2, 90], 95, 100)).toBe(90)
+    // anchor one slot from the end: wrapping to the head (slot 2) wins.
+    expect(nearestOccurrence([2, 90], 99, 100)).toBe(2)
+  })
+
+  it('handles ties deterministically (first in list)', () => {
+    expect(nearestOccurrence([5, 5], 5, 100)).toBe(5)
+  })
+
+  it('returns -1 for an empty candidate list', () => {
+    expect(nearestOccurrence([], 0, 100)).toBe(-1)
   })
 })

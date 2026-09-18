@@ -30,27 +30,75 @@ function normalizeTitle(raw: string): string {
     .replace(/\s+/g, ' ')
 }
 
+/**
+ * Circular distance between two slots on a wrapped timeline, so "the next
+ * track after the current one" keeps working across the round boundary.
+ */
+function circularDistance(a: number, b: number, length: number): number {
+  const d = Math.abs(a - b)
+  return Math.min(d, length - d)
+}
+
+/**
+ * Pick the playlist occurrence that best matches the current airplay position.
+ * With sequential airplay the observed title can repeat (e.g. the same title
+ * in several releases); the calendar anchor tells us which instance is on air
+ * right now instead of always picking the first one and announcing a queue
+ * that belongs to a different part of the round.
+ */
+export function nearestOccurrence(indices: number[], anchor: number, length: number): number {
+  if (indices.length === 0) return -1
+  if (length <= 0) return indices[0]
+  let best = indices[0]
+  let bestDist = Infinity
+  for (const index of indices) {
+    const dist = circularDistance(index, anchor, length)
+    if (dist < bestDist) {
+      best = index
+      bestDist = dist
+    }
+  }
+  return best
+}
+
+/** Where the wall clock sits on the current timeline (used as a sniff anchor). */
+function calendarAnchorIndex(): number {
+  const tl = radioState.currentTimeline
+  if (tl.length === 0 || radioState.totalDuration <= 0) return 0
+  const epoch = radioState.regeneratedAtEpoch > 0
+    ? radioState.regeneratedAtEpoch
+    : (radioState.lastRegeneratedAt ? new Date(radioState.lastRegeneratedAt).getTime() : Date.now())
+  const pos = ((Date.now() - epoch) / 1000) % radioState.totalDuration
+  const idx = tl.findIndex((e) => pos >= e.startOffset && pos < e.startOffset + e.duration)
+  return idx < 0 ? 0 : idx
+}
+
 // Liquidsoap tags the stream from the EXTINF playlist as "Artist - Title".
 // The catalog matcher therefore tries "artist - title" first, then the bare
 // title, then a contains-check so subtle punctuation differences still hit.
+// When a title occurs more than once, prefer the instance that matches the
+// current airplay position so "upcoming" follows the real queue.
 function findTimelineEntry(titleHint: string): { entry: TimelineEntry; index: number } | null {
   const tl = radioState.currentTimeline
   if (tl.length === 0) return null
   const raw = normalizeTitle(titleHint)
-  let exact = -1
-  let titleOnly = -1
-  let contains = -1
+  const exact: number[] = []
+  const titleOnly: number[] = []
+  const contains: number[] = []
   for (let i = 0; i < tl.length; i++) {
     const entry = tl[i]
-    if (exact < 0 && normalizeTitle(`${entry.artist} - ${entry.title}`) === raw) exact = i
-    if (titleOnly < 0 && normalizeTitle(entry.title) === raw) titleOnly = i
-    if (contains < 0 && raw.length > 3 && normalizeTitle(entry.title).includes(raw)) contains = i
-    if (exact >= 0 && titleOnly >= 0 && contains >= 0) break
+    if (normalizeTitle(`${entry.artist} - ${entry.title}`) === raw) {
+      exact.push(i)
+    } else if (normalizeTitle(entry.title) === raw) {
+      titleOnly.push(i)
+    } else if (raw.length > 3 && normalizeTitle(entry.title).includes(raw)) {
+      contains.push(i)
+    }
   }
-  if (exact >= 0) return { entry: tl[exact], index: exact }
-  if (titleOnly >= 0) return { entry: tl[titleOnly], index: titleOnly }
-  if (contains >= 0) return { entry: tl[contains], index: contains }
-  return null
+  const pool = exact.length > 0 ? exact : titleOnly.length > 0 ? titleOnly : contains
+  const index = nearestOccurrence(pool, calendarAnchorIndex(), tl.length)
+  if (index < 0) return null
+  return { entry: tl[index], index }
 }
 
 function upcoming(index: number, limit = 10) {
