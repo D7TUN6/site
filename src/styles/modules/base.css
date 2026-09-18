@@ -12,10 +12,10 @@ html {
 }
 
 :root {
-  --cursor-default: url("/media/image/cursor.png?v=20260914-3") 4 4, auto;
-  --cursor-text: url("/media/image/text.png?v=20260914-3") 16 16, text;
-  --cursor-unavailable: url("/media/image/unavailable.png?v=20260914-3") 16 16, not-allowed;
-  --cursor-link-select: url("/media/image/precision.png?v=20260914-3") 16 16, pointer;
+  --cursor-default: url("/media/image/cursors/cursor.png?v=20260914-3") 4 4, auto;
+  --cursor-text: url("/media/image/cursors/text.png?v=20260914-3") 16 16, text;
+  --cursor-unavailable: url("/media/image/cursors/unavailable.png?v=20260914-3") 16 16, not-allowed;
+  --cursor-link-select: url("/media/image/cursors/precision.png?v=20260914-3") 16 16, pointer;
 }
 
 /* Native custom cursors — handled entirely by the browser, no JS involved.
@@ -180,9 +180,11 @@ body::after {
     );
   z-index: 9999;
   pointer-events: none;
-  /* luminance/saturation lift, like a glowing tube (no blur — stays crisp) */
-  -webkit-backdrop-filter: brightness(1.07) saturate(1.06);
-  backdrop-filter: brightness(1.07) saturate(1.06);
+  /* No backdrop-filter here: a full-viewport backdrop filter would be
+     re-rastered on every animation frame of crt-luminance and on every page
+     change, making the whole screen (and the radio module) visibly pulse.
+     The layer keeps only its own static gradients; opacity is animated on a
+     promoted compositor layer, so luminance breathing costs zero repaints. */
   -webkit-transform: translateZ(0);
   transform: translateZ(0);
   animation: crt-luminance 3.4s ease-in-out infinite;

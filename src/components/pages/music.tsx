@@ -9,6 +9,7 @@ import {
   releaseHasTagExact,
 } from '@/lib/music'
 import { getAllReleases, getReleaseBySlug } from '@/lib/releaseManifest'
+import { cssUrl } from '@/lib/media'
 import { renderSimpleMarkdown } from '@/lib/simpleMarkdown'
 import { ReleasePlayer } from '@/components/player'
 import { UiSelect, type UiSelectOption } from '@/components/ui-select'
@@ -140,7 +141,7 @@ export function MusicPage(props: {
                   <For each={group.releases}>
                     {(item) => (
                       <a href={`/${props.lang}/music/${item.slug}`} class="release-card" onClick={(e) => props.navigate(`/${props.lang}/music/${item.slug}`, e)}>
-                        <div class="progressive-cover release-cover" style={{ 'background-image': `url(${item.coverPreviewUrl || item.coverUrl})` }}>
+                        <div class="progressive-cover release-cover" style={{ 'background-image': cssUrl(item.coverPreviewUrl || item.coverUrl) }}>
                           <img src={item.coverPreviewUrl || item.coverUrl} alt={item.albumName} loading="lazy" decoding="async" onLoad={(e) => e.currentTarget.classList.add('loaded')} />
                         </div>
                         <span class="release-title">{item.albumName}</span>
@@ -177,7 +178,7 @@ export function MusicTagPage(props: {
           <For each={items()}>
             {(item) => (
               <a href={`/${props.lang}/music/${item.slug}`} class="release-card" onClick={(e) => props.navigate(`/${props.lang}/music/${item.slug}`, e)}>
-                <div class="progressive-cover release-cover" style={{ 'background-image': `url(${item.coverPreviewUrl || item.coverUrl})` }}>
+                <div class="progressive-cover release-cover" style={{ 'background-image': cssUrl(item.coverPreviewUrl || item.coverUrl) }}>
                   <img src={item.coverPreviewUrl || item.coverUrl} alt={item.albumName} loading="lazy" decoding="async" onLoad={(e) => e.currentTarget.classList.add('loaded')} />
                 </div>
                 <span class="release-title">{item.albumName}</span>

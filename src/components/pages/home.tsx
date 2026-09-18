@@ -449,6 +449,13 @@ const DOTFILES_REPOS: Array<{ name: string; url: string }> = [
   { name: 'site', url: 'https://github.com/D7TUN6/site' },
   { name: 'BoxChat', url: 'https://github.com/D7TUN6/BoxChat' },
   { name: 'Server1-NixOS', url: 'https://github.com/D7TUN6/Server1-NixOS' },
+  { name: 'bot-shakalizator', url: 'https://github.com/D7TUN6/bot-shakalizator' },
+  { name: 'blurt-bot', url: 'https://github.com/D7TUN6/blurt-bot' },
+  { name: 'bot-dvigunchik', url: 'https://github.com/D7TUN6/bot-dvigunchik' },
+  { name: 'blogbot', url: 'https://github.com/D7TUN6/blogbot' },
+  { name: 'pivometr', url: 'https://github.com/D7TUN6/pivometr' },
+  { name: 'oc_mon', url: 'https://github.com/D7TUN6/oc_mon' },
+  { name: 'Detuned', url: 'https://github.com/D7TUN6/Detuned' },
 ]
 
 function DotfilesBlock() {
@@ -611,20 +618,20 @@ export function HomePage(props: { lang: Lang; navigate: HomeNavigate }) {
         <DotfilesBlock />
         <ProductionStatusBlock lang={props.lang} />
         <div class="home-rms-easter">
-          <LazyMedia src="/media/image/richard-stollman-unix-linux.gif" alt="richard stallman — unix / linux" width={320} height={284} unloadDelay={10000} margin={300} />
-          <LazyMedia src="/media/image/tole-tole-mei-mei.gif" alt="tole tole mei mei" width={320} height={320} unloadDelay={10000} margin={300} />
-          <LazyMedia src="/media/image/000185.gif" alt="mem" width={240} height={240} unloadDelay={10000} margin={300} />
-          <LazyMedia src="/media/image/15198198061100390250.gif" alt="boom" width={240} height={302} unloadDelay={10000} margin={300} />
-          <LazyMedia src="/media/image/animation.gif" alt="animation" width={240} height={180} unloadDelay={10000} margin={300} />
-          <LazyMedia src="/media/image/animation-other.gif" alt="animation" width={240} height={196} unloadDelay={10000} margin={300} />
-          <LazyMedia src="/media/image/bunny-fall.gif" alt="bunny fall" width={240} height={240} unloadDelay={10000} margin={300} />
-          <LazyMedia src="/media/image/crazy.gif" alt="crazy" width={240} height={183} unloadDelay={10000} margin={300} />
-          <LazyMedia src="/media/image/doc-2026-09-14.gif" alt="doc" width={240} height={230} unloadDelay={10000} margin={300} />
-          <LazyMedia src="/media/image/gballs.gif" alt="g balls" width={240} height={240} unloadDelay={10000} margin={300} />
-          <LazyMedia src="/media/image/gun-shot.gif" alt="gun shot" width={240} height={237} unloadDelay={10000} margin={300} />
-          <LazyMedia src="/media/image/iekaca-gif.gif" alt="iekaca" width={240} height={120} unloadDelay={10000} margin={300} />
-          <LazyMedia src="/media/image/spamton-plush.gif" alt="spamton plush" width={240} height={156} unloadDelay={10000} margin={300} />
-          <LazyMedia src="/media/image/video.gif" alt="video" width={240} height={135} unloadDelay={10000} margin={300} />
+          <LazyMedia src="/media/image/memes/richard-stollman-unix-linux.gif" alt="richard stallman — unix / linux" width={320} height={284} unloadDelay={10000} margin={300} />
+          <LazyMedia src="/media/image/memes/tole-tole-mei-mei.gif" alt="tole tole mei mei" width={320} height={320} unloadDelay={10000} margin={300} />
+          <LazyMedia src="/media/image/memes/000185.gif" alt="mem" width={240} height={240} unloadDelay={10000} margin={300} />
+          <LazyMedia src="/media/image/memes/15198198061100390250.gif" alt="boom" width={240} height={302} unloadDelay={10000} margin={300} />
+          <LazyMedia src="/media/image/memes/animation.gif" alt="animation" width={240} height={180} unloadDelay={10000} margin={300} />
+          <LazyMedia src="/media/image/memes/animation-other.gif" alt="animation" width={240} height={196} unloadDelay={10000} margin={300} />
+          <LazyMedia src="/media/image/memes/bunny-fall.gif" alt="bunny fall" width={240} height={240} unloadDelay={10000} margin={300} />
+          <LazyMedia src="/media/image/memes/crazy.gif" alt="crazy" width={240} height={183} unloadDelay={10000} margin={300} />
+          <LazyMedia src="/media/image/memes/doc-2026-09-14.gif" alt="doc" width={240} height={230} unloadDelay={10000} margin={300} />
+          <LazyMedia src="/media/image/memes/gballs.gif" alt="g balls" width={240} height={240} unloadDelay={10000} margin={300} />
+          <LazyMedia src="/media/image/memes/gun-shot.gif" alt="gun shot" width={240} height={237} unloadDelay={10000} margin={300} />
+          <LazyMedia src="/media/image/memes/iekaca-gif.gif" alt="iekaca" width={240} height={120} unloadDelay={10000} margin={300} />
+          <LazyMedia src="/media/image/memes/spamton-plush.gif" alt="spamton plush" width={240} height={156} unloadDelay={10000} margin={300} />
+          <LazyMedia src="/media/image/memes/video.gif" alt="video" width={240} height={135} unloadDelay={10000} margin={300} />
         </div>
       </div>
     </div>

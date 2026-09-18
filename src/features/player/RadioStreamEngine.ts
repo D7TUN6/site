@@ -2,7 +2,8 @@ import type { AudioEngineManager } from './AudioEngineManager.js'
 
 export const RADIO_STREAM_URL = '/api/radio/stream'
 
-const RECONNECT_EVENTS = ['error', 'stalled', 'ended'] as const
+// How long after an internal reload transient `pause` events are ignored.
+const RELOAD_GUARD_MS = 2_000
 const BACKOFF_BASE_MS = 500
 const BACKOFF_MAX_MS = 10_000
 // ~9 minutes of exponential backoff before giving up on a dead stream; a
@@ -25,6 +26,7 @@ export class RadioStreamEngine {
   readonly #aem: AudioEngineManager
   readonly #resumeCheck?: () => boolean
   #reconnectTimer: number | null = null
+  #reloadGuardTimer: number | null = null
   #backoffMs = BACKOFF_BASE_MS
   #attempts = 0
   #disposed = false
@@ -50,6 +52,7 @@ export class RadioStreamEngine {
     this.#backoffMs = BACKOFF_BASE_MS
     this.#aem.pendingAutoplay = true
     if (this.#audio.src !== RADIO_STREAM_URL) {
+      this.#armReloadGuard()
       this.#audio.src = RADIO_STREAM_URL
       this.#audio.load()
     }
@@ -66,8 +69,21 @@ export class RadioStreamEngine {
     this.#attempts += 1
     this.#aem.pendingAutoplay = true
     if (this.#audio.src !== RADIO_STREAM_URL) this.#audio.src = RADIO_STREAM_URL
+    this.#armReloadGuard()
     this.#audio.load()
     void this.#aem.requestImmediatePlayback()
+  }
+
+  // An internal reload can make the media element emit a spurious `pause`
+  // before the new stream starts. Flag the window so the global bridge keeps
+  // the UI in the "playing" state instead of flickering listen/stop.
+  #armReloadGuard() {
+    this.#aem.internalReload = true
+    if (this.#reloadGuardTimer !== null) clearTimeout(this.#reloadGuardTimer)
+    this.#reloadGuardTimer = window.setTimeout(() => {
+      this.#reloadGuardTimer = null
+      this.#aem.internalReload = false
+    }, RELOAD_GUARD_MS)
   }
 
   #scheduleReconnect() {
@@ -86,6 +102,16 @@ export class RadioStreamEngine {
     this.#scheduleReconnect()
   }
 
+  // A live stream can report `stalled` while the element still has playable
+  // data buffered (the browser briefly stops fetching). Reloading in that case
+  // causes a needless reconnect loop, so only react when the buffer is dry.
+  #onStalled = () => {
+    if (this.#disposed) return
+    if (this.#audio.paused && this.#resumeCheck) return
+    if (this.#audio.readyState >= 2 /* HAVE_CURRENT_DATA */) return
+    this.#scheduleReconnect()
+  }
+
   #onPlaying = () => {
     // The stream came back / started cleanly — shrink the backoff and reset the
     // attempt counter so a future outage gets a full fresh reconnect budget.
@@ -95,10 +121,12 @@ export class RadioStreamEngine {
 
   #bindListeners() {
     this.#unbindListeners()
-    for (const ev of RECONNECT_EVENTS) {
+    for (const ev of ['error', 'ended'] as const) {
       this.#audio.addEventListener(ev, this.#onMediaEvent)
       this.#listeners.push([ev, this.#onMediaEvent])
     }
+    this.#audio.addEventListener('stalled', this.#onStalled)
+    this.#listeners.push(['stalled', this.#onStalled])
     this.#audio.addEventListener('playing', this.#onPlaying)
     this.#listeners.push(['playing', this.#onPlaying])
   }
@@ -114,6 +142,11 @@ export class RadioStreamEngine {
       clearTimeout(this.#reconnectTimer)
       this.#reconnectTimer = null
     }
+    if (this.#reloadGuardTimer !== null) {
+      clearTimeout(this.#reloadGuardTimer)
+      this.#reloadGuardTimer = null
+    }
+    this.#aem.internalReload = false
     this.#unbindListeners()
   }
 }

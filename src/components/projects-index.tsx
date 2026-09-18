@@ -1,5 +1,6 @@
 import { For } from 'solid-js'
 import type { Lang } from '@/types/content'
+import { cssUrl } from '@/lib/media'
 
 type Project = {
   id: string
@@ -19,8 +20,8 @@ const projects: Project[] = [
       ru: 'Интерактивный помощник для перехода с проприетарного ПО на свободное',
       en: 'Interactive assistant for migrating from proprietary to open-source software'
     },
-    icon: '/media/image/oss-migrator.webp',
-    iconPreview: '/media/image/oss-migrator-preview.webp',
+    icon: '/media/image/projects/oss-migrator.webp',
+    iconPreview: '/media/image/projects/oss-migrator-preview.webp',
     color: '#4caf50',
     link: '/oss-migrator'
   }
@@ -35,7 +36,7 @@ export function ProjectsIndex(props: { lang: Lang; navigate: (href: string, even
           {(project) => (
             <a href={`/${props.lang}/projects${project.link}`} class="release-card"
                onClick={(e) => props.navigate(`/${props.lang}/projects${project.link}`, e)}>
-              <div class="progressive-cover release-cover" style={{ 'background-image': `url(${project.iconPreview || project.icon})` }}>
+              <div class="progressive-cover release-cover" style={{ 'background-image': cssUrl(project.iconPreview || project.icon) }}>
                 <img src={project.icon} alt={project.title[props.lang === 'ru' ? 'ru' : 'en']} loading="lazy" decoding="async" onLoad={(e) => e.currentTarget.classList.add('loaded')} />
               </div>
               <span class="release-title">{project.title[props.lang === 'ru' ? 'ru' : 'en'].toLowerCase()}</span>

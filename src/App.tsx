@@ -35,6 +35,7 @@ const RadioPage = lazy(() => import('./components/pages/radio').then((m) => ({ d
 const ProjectsIndex = lazy(() => import('./components/projects-index').then((m) => ({ default: m.ProjectsIndex })))
 const OssMigrationWizard = lazy(() => import('./components/oss-migrator').then((m) => ({ default: m.OssMigrationWizard })))
 const NotFoundPage = lazy(() => import('./components/pages/not-found').then((m) => ({ default: m.NotFoundPage })))
+const SpecialPage = lazy(() => import('./components/pages/special').then((m) => ({ default: m.SpecialPage })))
 
 function safeDecodeTag(raw: string): string {
   try {
@@ -103,6 +104,13 @@ const CART_STORAGE_KEY = `${SITE_TITLE}.cart.v1`
 function parsePathname(pathname: string): RouteState {
   const parts = pathname.split('/').filter(Boolean)
   const lang: Lang = parts[0] === 'ru' ? 'ru' : 'en'
+  if (parts.length === 0) return { lang, route: 'main' }
+  // Only `/en` and `/ru` are valid locale prefixes. Anything else (e.g.
+  // `/donate`, `/foo/ru`, `/garbage/en`) is not a routed node and must fall
+  // through to the 404 view instead of being mistaken for a locale-less page.
+  if (parts[0] !== 'en' && parts[0] !== 'ru') {
+    return { lang, route: parts.join('/') }
+  }
   const route = parts.length <= 1 ? 'main' : parts.slice(1).join('/')
   return { lang, route }
 }
@@ -120,6 +128,7 @@ const SECTION_TITLES: Record<string, { en: string; ru: string }> = {
   gallery: { en: 'Gallery', ru: 'Галерея' },
   radio: { en: 'Radio', ru: 'Радио' },
   donate: { en: 'Donate', ru: 'Донат' },
+  special: { en: 'Special', ru: 'Особое' },
   projects: { en: 'Projects', ru: 'Проекты' },
   video: { en: 'Video', ru: 'Видео' },
   cart: { en: 'Cart', ru: 'Корзина' },
@@ -489,7 +498,7 @@ function App() {
           </Show>
 
           <header class="site-header">
-            <h1><a class="site-title-link" href={`/${lang()}`} onClick={(e) => navigate(`/${lang()}`, e)}><img class="site-title-img" src="/media/image/site-pixel.png?v=3" alt={mainTitle()} width="64" height="24" /></a></h1>
+            <h1><a class="site-title-link" href={`/${lang()}`} onClick={(e) => navigate(`/${lang()}`, e)}><img class="site-title-img" src="/media/image/logos/site-pixel.png?v=3" alt={mainTitle()} width="64" height="24" /></a></h1>
           </header>
 
           <nav class="main-nav" aria-label="Primary">
@@ -522,6 +531,7 @@ function App() {
               <Show when={publicConfig()?.features?.shop !== false}>
                 <li><a class={isShopRoute() ? 'nav-active' : ''} href={`/${lang()}/shop`} onClick={(e) => navigate(`/${lang()}/shop`, e)}>{d().nav.shop}</a></li>
               </Show>
+              <li><a class={route() === 'special' ? 'nav-active' : ''} href={`/${lang()}/special`} onClick={(e) => navigate(`/${lang()}/special`, e)}>{d().nav.special}</a></li>
             </ul>
           </nav>
 
@@ -538,6 +548,10 @@ function App() {
 
               <Match when={route() === 'bio' || route() === 'legal' || route() === 'contact' || route() === 'git' || route() === 'donate'}>
                 <article class="markdown-content" innerHTML={pageHtml()} />
+              </Match>
+
+              <Match when={route() === 'special'}>
+                <SpecialPage lang={lang()} />
               </Match>
 
               <Match when={route() === 'projects'}>

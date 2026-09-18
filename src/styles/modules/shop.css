@@ -30,8 +30,8 @@
 }
 
 .music-filter-wide {
-  flex: 1 1 200px;
-  max-width: none;
+  flex: 0 1 320px;
+  max-width: 320px;
   min-width: 180px;
 }
 

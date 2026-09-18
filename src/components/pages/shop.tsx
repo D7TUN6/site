@@ -3,6 +3,7 @@ import { Portal } from 'solid-js/web'
 import { getPageMarkdown } from '@/lib/pages'
 import { renderSimpleMarkdown } from '@/lib/simpleMarkdown'
 import { getAllShopProducts, getShopProductDetails } from '@/lib/shop'
+import { cssUrl } from '@/lib/media'
 import { formatShopMoney } from '@/lib/ruble'
 import { UiSelect, type UiSelectOption } from '@/components/ui-select'
 import { ArtistFilterSwitcher } from '@/components/artist-filter-switcher'
@@ -125,7 +126,7 @@ export function ShopPage(props: {
               <a class="shop-card-link" href={`/${props.lang}/shop/${product.slug}`} onClick={(e) => props.navigate(`/${props.lang}/shop/${product.slug}`, e)}>
                 <div class="shop-cover-wrap">
                   <Show when={product.coverPreviewUrl || product.coverUrl} fallback={<div class="shop-cover shop-cover-empty" />}>
-                    <div class="progressive-cover shop-cover" style={{ 'background-image': `url(${product.coverPreviewUrl || product.coverUrl})` }}>
+                    <div class="progressive-cover shop-cover" style={{ 'background-image': cssUrl(product.coverPreviewUrl || product.coverUrl) }}>
                       <img class="shop-cover-img" src={product.coverUrl || product.coverPreviewUrl || ''} alt={product.title} loading="lazy" decoding="async" onLoad={(e) => e.currentTarget.classList.add('loaded')} />
                     </div>
                   </Show>
@@ -226,7 +227,7 @@ export function ShopProductPage(props: {
                 onKeyDown={(e) => { if (e.key === 'Enter') openProductLightbox(galleryIndex()) }}
               >
                 <Show when={shopProductImages().length > 0} fallback={<div class="shop-gallery-img shop-gallery-empty" />}>
-                  <div class="progressive-cover shop-gallery-img" style={{ 'background-image': `url(${shopProductImages()[galleryIndex()]})` }}>
+                  <div class="progressive-cover shop-gallery-img" style={{ 'background-image': cssUrl(shopProductImages()[galleryIndex()]) }}>
                     <img class="shop-gallery-img-inner" src={shopProductImages()[galleryIndex()]} alt={item().title} loading="eager" decoding="async" onLoad={(e) => e.currentTarget.classList.add('loaded')} />
                   </div>
                 </Show>
@@ -242,7 +243,7 @@ export function ShopProductPage(props: {
                   <For each={shopProductImages()}>
                     {(img, index) => (
                       <button type="button" class={`shop-gallery-thumb-btn ${index() === galleryIndex() ? 'is-active' : ''}`} aria-label={`${item().title} ${index() + 1}`} onClick={() => setGalleryIndex(index())}>
-                        <div class="progressive-cover shop-gallery-thumb" style={{ 'background-image': `url(${img})` }}>
+                        <div class="progressive-cover shop-gallery-thumb" style={{ 'background-image': cssUrl(img) }}>
                           <img class="shop-gallery-thumb-inner" src={img} alt={`${item().title} ${index() + 1}`} loading="lazy" decoding="async" onLoad={(e) => e.currentTarget.classList.add('loaded')} />
                         </div>
                       </button>

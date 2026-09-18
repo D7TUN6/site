@@ -5,7 +5,9 @@ import {
   SkipBack, SkipForward, Volume2, VolumeX, X,
 } from 'lucide-solid'
 import { usePlayer } from '@/features/player/usePlayer'
+import { cssUrl } from '@/lib/media'
 import { AudioSettingsPanel } from '@/components/audio-settings-panel'
+import { PlayheadShip } from '@/components/player/playhead-ship'
 
 function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value))
@@ -189,7 +191,7 @@ export function NowPlayingBar(props: { isMusicRoute: boolean; lang?: string }) {
                   {(item) => (
                     <li>
                       <button type="button" disabled>
-                        <div class="progressive-cover" style={{ 'background-image': `url(${item.coverUrl})`, width: '22px', height: '22px', 'flex-shrink': '0' }}>
+                        <div class="progressive-cover" style={{ 'background-image': cssUrl(item.coverUrl), width: '22px', height: '22px', 'flex-shrink': '0' }}>
                           <img src={item.coverUrl} alt="" width="36" height="36" onLoad={(e) => e.currentTarget.classList.add('loaded')} />
                         </div>
                         <div>
@@ -211,7 +213,7 @@ export function NowPlayingBar(props: { isMusicRoute: boolean; lang?: string }) {
                   {(item) => (
                     <li>
                       <button type="button" onClick={() => player.playTrack(item.index)}>
-                        <div class="progressive-cover" style={{ 'background-image': `url(${player.state.queue!.coverUrl})`, width: '29px', height: '29px', 'flex-shrink': '0' }}>
+                        <div class="progressive-cover" style={{ 'background-image': cssUrl(player.state.queue!.coverUrl), width: '29px', height: '29px', 'flex-shrink': '0' }}>
                           <img src={player.state.queue!.coverUrl} alt="" width="36" height="36" onLoad={(e) => e.currentTarget.classList.add('loaded')} />
                         </div>
                         <div>
@@ -362,7 +364,7 @@ export function NowPlayingBar(props: { isMusicRoute: boolean; lang?: string }) {
             </button>
           </div>
           <div class="now-playing-info">
-            <div class="progressive-cover now-playing-cover" style={{ 'background-image': `url(${coverUrl()})`, cursor: coverUrl() ? 'pointer' : undefined }} data-no-fullscreen onClick={(e) => { e.stopPropagation(); if (coverUrl()) setCoverLightboxOpen(true) }}>
+            <div class="progressive-cover now-playing-cover" style={{ 'background-image': cssUrl(coverUrl()), cursor: coverUrl() ? 'pointer' : undefined }} data-no-fullscreen onClick={(e) => { e.stopPropagation(); if (coverUrl()) setCoverLightboxOpen(true) }}>
               <Show when={coverUrl()} fallback={<span class="now-playing-cover-fallback" />}>
                 <img src={coverUrl()} alt="" width="28" height="28" onLoad={(e) => e.currentTarget.classList.add('loaded')} />
               </Show>
@@ -388,10 +390,12 @@ export function NowPlayingBar(props: { isMusicRoute: boolean; lang?: string }) {
                 <span class="now-playing-progress-buffer" style={{ width: `${buffered()}%` }} />
                 <span class="now-playing-progress-fill" style={{ width: `${displayProgress()}%` }} />
                 <span class="now-playing-progress-knob" style={{ left: `${displayProgress()}%` }} />
+                <PlayheadShip progress={displayProgress} active={() => player.state.playing} />
               </div>
             }>
               <div class="now-playing-seek-bar is-static" role="progressbar" aria-valuemin={0} aria-valuemax={Math.max(radioDuration(), 1)} aria-valuenow={radioElapsed()} aria-label="Radio position">
                 <span class="now-playing-progress-fill" style={{ width: `${radioProgressPct()}%` }} />
+                <PlayheadShip progress={radioProgressPct} active={() => player.state.playing} />
               </div>
             </Show>
             <div class="now-playing-seek-time">

@@ -19,6 +19,7 @@ import { createAdminCommentsRouter } from './comments.js'
 import { createAdminSubmissionsRouter } from './submissions.js'
 import { createAdminSupportRouter } from './support.js'
 import { createAdminArtistsRouter } from './artists.js'
+import { createAdminSpecialRouter } from './special.js'
 
 export function createAdminRouter({ db, manifestPath, releaseService, contentRoot }: { db: DatabaseSync; manifestPath: string; releaseService: ReleaseDownloadService; contentRoot: string }) {
   return new Elysia()
@@ -38,6 +39,7 @@ export function createAdminRouter({ db, manifestPath, releaseService, contentRoo
     .use(createAdminSubmissionsRouter({ db }))
     .use(createAdminSupportRouter({ db }))
     .use(createAdminArtistsRouter({ db }))
+    .use(createAdminSpecialRouter({ db }))
     .get('/api/admin/config', () => {
       const features = getFeatureFlags(db)
       return {

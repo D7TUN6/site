@@ -12,6 +12,7 @@
   <links>links</links>
   <donate>donate</donate>
   <shop>shop</shop>
+  <special>special</special>
   <projects>projects</projects>
   <gallery>gallery</gallery>
   <video>video</video>
@@ -75,7 +76,7 @@
     <gallery>gallery</gallery>
     <releases>releases</releases>
     <videos>videos</videos>
-    <shop>shop</shop>
+  <shop>shop</shop>
     <submissions>submissions</submissions>
     <pages>pages</pages>
     <create>create</create>

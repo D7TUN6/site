@@ -11,7 +11,7 @@ import {
 } from '../lib/radio/stream-generator.js'
 import { ensureTimelineFresh, loadTimeline, maybeRegenerateIfStale, startPeriodicRegeneration } from '../lib/radio/timeline.js'
 import { getNowPlayingInfo, startNowPlayingTracker } from '../lib/radio/now-playing.js'
-import { activeListeners, getClientIp } from '../lib/radio/listener-tracker.js'
+import { activeListeners, getClientIp, listenerKey } from '../lib/radio/listener-tracker.js'
 
 const ICECAST_URL = (process.env.RADIO_ICECAST_URL || 'http://127.0.0.1:8000').replace(/\/+$/, '')
 export const RADIO_MOUNT = process.env.RADIO_MOUNT || '/stream.ogg'
@@ -120,16 +120,20 @@ export function createRadioRouter({ manifestPath }: { manifestPath: string }) {
       const b = (body || {}) as Record<string, unknown>
       const delta = typeof b.delta === 'number' ? b.delta : 0
       const ip = getClientIp({ request, server })
+      // Prefer the client's stable per-tab id: a single listener can appear
+      // under several addresses and an IP-keyed map then counts it more than
+      // once. Fall back to IP for older clients.
+      const key = listenerKey(b.id, ip)
       if (delta >= 0) {
         // Refresh TTL on every heartbeat (delta=0) and on start (delta>0)
-        activeListeners.set(ip, Date.now())
+        activeListeners.set(key, Date.now())
         if (delta > 0) {
           // Lazy timeline refresh: if the manifest changed since the last
           // catalog write, re-shuffle in the background.
           void maybeRegenerateIfStale(manifestPath).catch((err) => console.error('lazy radio regeneration failed', err))
         }
       } else {
-        activeListeners.delete(ip)
+        activeListeners.delete(key)
       }
 
       return { ok: true, listeners: activeListeners.size }

@@ -114,6 +114,31 @@ function fallbackEntry(entry: TimelineEntry, index: number): NowPlayingEntry {
   return buildLiveEntry(entry, index)
 }
 
+/**
+ * The timeline heuristic may seed a cold-start entry but must never displace a
+ * live-confirmed one: the estimate is anchored to the server's own shuffled
+ * timeline (regeneratedAtEpoch), which is unrelated to Liquidsoap's playout
+ * order, so an estimate here is almost always the wrong track at the wrong
+ * position. Only fill a gap — never replace confirmed on-air metadata.
+ */
+export function shouldEstimateOverride(current: NowPlayingEntry | null): boolean {
+  return !current || current.source !== 'live'
+}
+
+/**
+ * A live track is allowed to run well past its catalog duration (files are
+ * longer than the manifest value, gapless metadata lag, ...), so only a
+ * pathological overrun — the source restarted and re-aired the same title
+ * after a gap — should reset the position. Judged on the *unclamped* wall
+ * clock (elapsed is otherwise capped at duration by refreshElapsed) against a
+ * tolerance of roughly 3x the catalog duration, and only for live entries.
+ */
+export function shouldResetOverrun(entry: NowPlayingEntry | null, wallElapsed: number): boolean {
+  if (!entry || entry.source !== 'live' || entry.duration <= 0) return false
+  const margin = Math.max(entry.duration * 2, entry.duration + 60)
+  return wallElapsed > entry.duration + margin
+}
+
 async function pollIcecast(): Promise<void> {
   let ok = false
   try {
@@ -127,12 +152,15 @@ async function pollIcecast(): Promise<void> {
       lastIcecastOkAt = Date.now()
 
       // A track counts as "changed" when the on-air title differs from the last
-      // observed one, or when a catalog track simply overran its known duration
-      // (the source may have restarted and re-aired the same title).
+      // observed one, or when the source clearly overran its known duration
+      // (e.g. it restarted and re-aired the same title after a gap). Refresh the
+      // live entry's elapsed on the wall clock first so the overrun decision is
+      // made on real time — never on the duration-clamped display value.
       const changedByTitle = lastObservedTitle !== title
       let overran = false
-      if (radioState.nowPlaying && radioState.nowPlaying.duration > 0) {
-        overran = radioState.nowPlaying.elapsed >= radioState.nowPlaying.duration + 10
+      if (!changedByTitle && radioState.nowPlaying) {
+        refreshElapsed(radioState.nowPlaying)
+        overran = shouldResetOverrun(radioState.nowPlaying, (Date.now() - radioState.nowPlaying.startTimestamp) / 1000)
       }
       if (changedByTitle || overran) {
         lastObservedTitle = title
@@ -154,20 +182,20 @@ async function pollIcecast(): Promise<void> {
             source: 'live',
           }
         }
-      } else {
-        // Keep the current entry live but refresh its elapsed on stall-less
-        // polls when a title overran already closed (source == catalog).
-        if (radioState.nowPlaying) {
-          refreshElapsed(radioState.nowPlaying)
-        }
       }
     }
   } catch {
     // icecast unreachable — nothing to do, estimate path kicks in below
   }
   if (!ok && Date.now() - lastIcecastOkAt >= ESTIMATE_GRACE_MS) {
-    const est = estimateNowPlaying()
-    if (est) radioState.nowPlaying = est
+    // A status-endpoint outage must not displace the live-confirmed entry with
+    // the shuffled-timeline heuristic: the estimate belongs to a different
+    // playout order and would make the UI jump to a wrong track mid-song. Only
+    // seed it when there is nothing live to show.
+    if (shouldEstimateOverride(radioState.nowPlaying)) {
+      const est = estimateNowPlaying()
+      if (est) radioState.nowPlaying = est
+    }
   }
 }
 

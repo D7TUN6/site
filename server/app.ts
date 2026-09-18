@@ -24,6 +24,7 @@ import { createStreamRouter } from './routes/stream.js'
 import { createEqRouter } from './routes/eq.js'
 import { createSocialRouter } from './routes/social.js'
 import { createContentRouter } from './routes/content.js'
+import { createSpecialRouter } from './routes/special.js'
 import { createHomeRouter } from './routes/home.js'
 import { createArtistRouter } from './routes/artists.js'
 import { createSubmissionsRouter } from './routes/submissions.js'
@@ -144,6 +145,7 @@ const STATIC_PAGE_TITLES: Record<string, { title: string; description: string }>
   gallery: { title: 'Gallery', description: 'Photo gallery — D7TUN6 live and studio.' },
   radio:   { title: 'Radio', description: 'Listen to D7TUN6 radio stream.' },
   donate:  { title: 'Donate', description: 'Support D7TUN6.' },
+  special: { title: 'Special', description: 'Special thanks, webring and the 88x31 banner of D7TUN6.' },
   projects:{ title: 'Projects', description: 'Open source and side projects.' },
   video:   { title: 'Video', description: 'Music videos and live performances.' },
 }
@@ -355,6 +357,7 @@ export function createApp(services: AppServices) {
     .use(createEqRouter(path.join(ROOT, 'tmp')))
     .use(createSocialRouter({ db }))
     .use(createContentRouter({ contentRoot }))
+    .use(createSpecialRouter({ db }))
     .use(createHomeRouter())
     .use(createArtistRouter({ db }))
     .use(createSubmissionsRouter({ db }))

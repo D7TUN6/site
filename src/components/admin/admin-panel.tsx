@@ -19,6 +19,7 @@ import { AdminAnalyticsPanel } from './admin-analytics-panel'
 import { AdminCommentsPanel } from './admin-comments-panel'
 import { AdminArticleManager } from './admin-article-manager'
 import { AdminPageEditor } from './admin-page-editor'
+import { AdminSpecialEditor } from './admin-special-editor'
 import { AdminShopEditorFields } from './admin-shop-editor-fields'
 
 const TABS = [
@@ -44,6 +45,7 @@ const TABS = [
   { key: 'home', label: { en: 'Home', ru: 'Главная' } },
   { key: 'donate', label: { en: 'Donate', ru: 'Донат' } },
   { key: 'bio', label: { en: 'Bio', ru: 'Биография' } },
+  { key: 'special', label: { en: 'special', ru: 'особое' } },
 ] as const
 
 export function AdminPanel(props: AdminPanelProps) {
@@ -231,6 +233,9 @@ export function AdminPanel(props: AdminPanelProps) {
           </Match>
           <Match when={props.adminTab() === 'bio'}>
             <AdminPageEditor lang={props.lang} pageKey="bio" pageLabel={__l(props.lang, 'Bio', 'Биография')} />
+          </Match>
+          <Match when={props.adminTab() === 'special'}>
+            <AdminSpecialEditor lang={props.lang} />
           </Match>
         </Switch>
       </Show>

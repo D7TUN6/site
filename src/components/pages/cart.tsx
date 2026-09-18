@@ -3,6 +3,7 @@ import { getAllShopProducts } from '@/lib/shop'
 import { formatShopMoney } from '@/lib/ruble'
 import { createOrder, getMyOrders } from '@/lib/api/orders'
 import { createYookassaPayment } from '@/lib/api/payments'
+import { cssUrl } from '@/lib/media'
 import { getPublicConfig } from '@/lib/api/config'
 import { PickupPointPicker, YooKassaWidget, UiSelect } from '@/components'
 import type { UiCopy } from '@/lib/uiText'
@@ -88,7 +89,7 @@ export function CartPage(props: {
                 <div class="cart-line">
                   <a class="cart-line-cover-link" href={line.product ? `/${props.lang}/shop/${line.product.slug}` : '#'} onClick={(e) => line.product && props.navigate(`/${props.lang}/shop/${line.product.slug}`, e)}>
                     <Show when={line.product?.coverPreviewUrl || line.product?.coverUrl} fallback={<div class="cart-line-cover" />}>
-                      <div class="progressive-cover cart-line-cover" style={{ 'background-image': `url(${line.product?.coverPreviewUrl || line.product?.coverUrl || ''})` }}>
+                      <div class="progressive-cover cart-line-cover" style={{ 'background-image': cssUrl(line.product?.coverPreviewUrl || line.product?.coverUrl || '') }}>
                         <img class="cart-line-cover-inner" src={line.product?.coverUrl || line.product?.coverPreviewUrl || ''} alt={line.product?.title || line.slug} onLoad={(e) => e.currentTarget.classList.add('loaded')} />
                       </div>
                     </Show>

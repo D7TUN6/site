@@ -11,6 +11,7 @@
   <links>ссылки</links>
   <donate>донат</donate>
   <shop>магазин</shop>
+  <special>особое</special>
   <projects>проекты</projects>
   <gallery>галерея</gallery>
   <video>видео</video>
@@ -74,7 +75,7 @@
     <gallery>галерея</gallery>
     <releases>релизы</releases>
     <videos>видео</videos>
-    <shop>магазин</shop>
+  <shop>магазин</shop>
     <submissions>заявки</submissions>
     <pages>страницы</pages>
     <create>создать</create>

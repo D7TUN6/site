@@ -7,6 +7,7 @@ import { downloadReleaseWithProgress, downloadTrackWithProgress, type DownloadFo
 import { usePlayer } from '@/features/player/usePlayer'
 import { UiSelect, type UiSelectOption } from '@/components/ui-select'
 import { isPreOrder, isTrackLocked, parseReleaseDate } from '@/lib/releasePreorder'
+import { cssUrl } from '@/lib/media'
 import type { LikesData, MetricsData } from '@/lib/api/social'
 import { fetchSocialData } from '@/components/player/PlayerSocial'
 
@@ -545,7 +546,7 @@ export function ReleasePlayer(props: { lang: Lang; release: ReleaseEntry; naviga
       </Portal>
 
       <div class="release-player-top">
-        <div class="progressive-cover release-player-cover-large" style={{ 'background-image': `url(${props.release.coverPreviewUrl || props.release.coverUrl})` }}>
+        <div class="progressive-cover release-player-cover-large" style={{ 'background-image': cssUrl(props.release.coverPreviewUrl || props.release.coverUrl) }}>
           <img
             src={props.release.coverUrl || props.release.coverPreviewUrl || ''}
             alt={`${props.release.albumName} cover`}
@@ -652,7 +653,7 @@ export function ReleasePlayer(props: { lang: Lang; release: ReleaseEntry; naviga
                         aria-label={locked() ? `Locked: ${track.title}` : `Play ${track.title}`}
                       >
                         <span class="release-player-thumb-wrap">
-                          <div class="progressive-cover" style={{ 'background-image': `url(${props.release.coverPreviewUrl || props.release.coverUrl})` }}>
+                          <div class="progressive-cover" style={{ 'background-image': cssUrl(props.release.coverPreviewUrl || props.release.coverUrl) }}>
                             <img
                               src={props.release.coverUrl || props.release.coverPreviewUrl || ''}
                               alt=""

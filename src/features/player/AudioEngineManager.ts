@@ -9,6 +9,7 @@ export class AudioEngineManager {
   #pendingAutoplay = false
   #listenersAttached = false
   #streamOffset = 0
+  #internalReload = false
 
   get playRequestInFlight() { return this.#playRequestInFlight }
   set playRequestInFlight(v: boolean) { this.#playRequestInFlight = v }
@@ -18,6 +19,11 @@ export class AudioEngineManager {
   set listenersAttached(v: boolean) { this.#listenersAttached = v }
   get streamOffset() { return this.#streamOffset }
   set streamOffset(v: number) { this.#streamOffset = v }
+  // True while a radio stream is being re-loaded internally (stall/error
+  // recovery). The <audio> element may emit a transient `pause` during
+  // load(); the bridge must not let that flip the UI's play/pause state.
+  get internalReload() { return this.#internalReload }
+  set internalReload(v: boolean) { this.#internalReload = v }
   get supportsOggOpus() { return this.#supportsOggOpus }
   get supportsNativeHls() { return this.#supportsNativeHls }
 

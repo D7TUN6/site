@@ -582,7 +582,10 @@
   font-family: var(--font-ui);
   font-size: 0.76rem;
   letter-spacing: 0.06em;
-  margin-top: auto;
+  /* A fixed gap above the rule keeps the divider clear of the page content.
+     `.content` flex-grows to hold the bottom edge, so the footer still sits at
+     the bottom of short pages — the auto margin never produced space here. */
+  margin-top: 28px;
   padding: 14px 0 20px;
 }
 

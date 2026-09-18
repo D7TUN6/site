@@ -53,6 +53,21 @@ let
     RemoveIPC = true;
     UMask = "0077";
 
+    # ── background priority ──
+    # The 24/7 streamer is continuously CPU/IO-hungry (Ogg Vorbis encoding while
+    # writing to icecast). Keep it from making the interactive desktop or the
+    # site's Bun server micro-freeze: low CPU/IO weight, idle IO scheduling, a
+    # hard CPU cap and a memory ceiling. Nice (rather than an idle CPU policy)
+    # is used deliberately so live encoding still gets scheduled in time and the
+    # stream does not underrun.
+    Nice = cfg.niceLevel;
+    CPUWeight = cfg.cpuWeight;
+    IOWeight = cfg.ioWeight;
+    IOSchedulingClass = "idle";
+    IOSchedulingPriority = 7;
+    CPUQuota = cfg.cpuQuota;
+    MemoryMax = cfg.memoryMax;
+
     ProtectSystem = "strict";
     ProtectHome = true;
     PrivateTmp = true;
@@ -117,6 +132,31 @@ in {
     domain = lib.mkOption {
       type = lib.types.str;
       default = "radio.d7tun6.site";
+    };
+    niceLevel = lib.mkOption {
+      type = lib.types.int;
+      default = 15;
+      description = "CPU nice level for the radio daemons (higher = lower priority).";
+    };
+    cpuWeight = lib.mkOption {
+      type = lib.types.int;
+      default = 20;
+      description = "systemd CPUWeight (1-10000, lower = less CPU under contention).";
+    };
+    ioWeight = lib.mkOption {
+      type = lib.types.int;
+      default = 20;
+      description = "systemd IOWeight (1-10000, lower = less IO under contention).";
+    };
+    cpuQuota = lib.mkOption {
+      type = lib.types.str;
+      default = "50%";
+      description = "systemd CPUQuota hard cap for the radio daemons.";
+    };
+    memoryMax = lib.mkOption {
+      type = lib.types.str;
+      default = "512M";
+      description = "systemd MemoryMax hard cap for the radio daemons.";
     };
   };
 

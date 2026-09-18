@@ -70,7 +70,7 @@ const BADGES_ORDERED = [...BADGES].sort((a, b) => (a.g ?? 6) - (b.g ?? 6))
 
 export function SiteFooter() {
   const badgeSrc = (badge: (typeof BADGES)[number]) =>
-    badge.ver ? `/media/image/${badge.file}?v=${badge.ver}` : `/media/image/${badge.file}`
+    badge.ver ? `/media/image/badges/${badge.file}?v=${badge.ver}` : `/media/image/badges/${badge.file}`
 
   return (
     <footer class="site-footer">

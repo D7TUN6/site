@@ -13,6 +13,7 @@ export type LocaleDictionary = {
     links: string;
     donate: string;
     shop: string;
+    special: string;
     projects: string;
     gallery: string;
     video: string;

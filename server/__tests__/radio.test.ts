@@ -1,4 +1,16 @@
 import { describe, it, expect } from 'bun:test'
+import { listenerKey } from '../lib/radio/listener-tracker.js'
+import { shouldEstimateOverride, shouldResetOverrun } from '../lib/radio/now-playing.js'
+import type { NowPlayingEntry } from '../lib/radio/stream-generator.js'
+
+function np(partial: Partial<NowPlayingEntry>): NowPlayingEntry {
+  return {
+    title: 't', album: 'a', artist: 'd7tun6', coverUrl: null,
+    startTimestamp: Date.now(), duration: 120, elapsed: 0,
+    upcoming: [], source: 'live',
+    ...partial,
+  }
+}
 
 // simplified listener counter logic from server/routes/radio.ts
 function createListenerCounter() {
@@ -51,5 +63,64 @@ describe('radio listener counter', () => {
     const counter = createListenerCounter()
     const result = counter.update(1)
     expect(result).toEqual({ ok: true, listeners: 1 })
+  })
+})
+
+describe('listener key', () => {
+  it('uses a stable client id when present, ignoring the address', () => {
+    expect(listenerKey('tab-123', '1.1.1.1')).toBe('id:tab-123')
+    expect(listenerKey('tab-123', '2.2.2.2')).toBe('id:tab-123')
+  })
+
+  it('trims whitespace around the id', () => {
+    expect(listenerKey('  tab-123  ', '1.1.1.1')).toBe('id:tab-123')
+  })
+
+  it('falls back to the address for blank, missing or non-string ids', () => {
+    expect(listenerKey(undefined, '1.1.1.1')).toBe('ip:1.1.1.1')
+    expect(listenerKey('', '1.1.1.1')).toBe('ip:1.1.1.1')
+    expect(listenerKey('   ', '1.1.1.1')).toBe('ip:1.1.1.1')
+    expect(listenerKey(42, '1.1.1.1')).toBe('ip:1.1.1.1')
+  })
+
+  it('falls back to the address for absurdly long ids', () => {
+    expect(listenerKey('x'.repeat(129), '1.1.1.1')).toBe('ip:1.1.1.1')
+    expect(listenerKey('x'.repeat(128), '1.1.1.1')).toBe(`id:${'x'.repeat(128)}`)
+  })
+})
+
+describe('now-playing estimate override', () => {
+  it('seeds the estimate when there is no entry yet', () => {
+    expect(shouldEstimateOverride(null)).toBe(true)
+  })
+
+  it('allows refreshing an existing estimate', () => {
+    expect(shouldEstimateOverride(np({ source: 'estimated' }))).toBe(true)
+  })
+
+  it('never displaces a live-confirmed entry', () => {
+    expect(shouldEstimateOverride(np({ source: 'live' }))).toBe(false)
+  })
+})
+
+describe('now-playing overrun reset', () => {
+  it('tolerates a track running well past its catalog duration', () => {
+    const entry = np({ duration: 120 })
+    // 200s = 80s over a 120s catalog duration — still fine.
+    expect(shouldResetOverrun(entry, 200)).toBe(false)
+  })
+
+  it('resets only on a pathological overrun (~3x the catalog duration)', () => {
+    const entry = np({ duration: 120 })
+    expect(shouldResetOverrun(entry, 360)).toBe(false)
+    expect(shouldResetOverrun(entry, 361)).toBe(true)
+  })
+
+  it('never resets an estimated entry', () => {
+    expect(shouldResetOverrun(np({ source: 'estimated' }), 99999)).toBe(false)
+  })
+
+  it('never resets when there is no usable duration', () => {
+    expect(shouldResetOverrun(np({ duration: 0 }), 99999)).toBe(false)
   })
 })

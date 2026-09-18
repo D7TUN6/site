@@ -57,6 +57,8 @@
 
 .release-player-cover-large {
   background: var(--ui-surface-2);
+  background-position: center;
+  background-size: cover;
   border: 1px solid var(--ui-border);
   display: block;
   height: 123px;

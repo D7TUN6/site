@@ -88,6 +88,7 @@ async function main() {
     { path: '/donate', priority: 0.6 },
     { path: '/projects', priority: 0.6 },
     { path: '/video', priority: 0.7 },
+    { path: '/special', priority: 0.6 },
   ]
 
   for (const { path: pagePath, priority } of staticPages) {

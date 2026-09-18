@@ -1,8 +1,8 @@
-import { mkdir, rm } from 'node:fs/promises'
+import { mkdir } from 'node:fs/promises'
 import path from 'node:path'
 import { runFfmpeg } from './ffmpeg-pool.js'
 
-export async function convertVideoToHls(src: string, destDir: string, filename: string): Promise<{ playlist: string; thumbnail: string }> {
+export async function convertVideoToHls(src: string, destDir: string, filename: string): Promise<{ playlist: string; thumbnail: string; master: string }> {
   const stem = path.basename(filename, path.extname(filename))
   const hlsDir = path.join(destDir, 'hls')
   await mkdir(hlsDir, { recursive: true })
@@ -27,7 +27,8 @@ export async function convertVideoToHls(src: string, destDir: string, filename: 
     thumbnailPath,
   ])
 
-  await rm(src, { force: true })
-
-  return { playlist: `hls/index.m3u8`, thumbnail: `${stem}-thumb.webp` }
+  // Keep the master file on disk: it is the only playable/editable copy and
+  // feeds the "download video" button on the entry page once it is recorded
+  // as a non-HLS source. Removing it (as before) silently killed the download.
+  return { playlist: `hls/index.m3u8`, thumbnail: `${stem}-thumb.webp`, master: filename }
 }

@@ -76,6 +76,7 @@ function parseLocale(lang: Lang): LocaleDictionary | null {
           links: a("nav > links"),
           donate: a("nav > donate"),
           shop: a("nav > shop"),
+          special: a("nav > special"),
           projects: a("nav > projects"),
           gallery: a("nav > gallery"),
           video: a("nav > video"),

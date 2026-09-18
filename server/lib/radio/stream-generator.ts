@@ -81,13 +81,18 @@ export const radioState = {
   nowPlaying: null as NowPlayingEntry | null,
 }
 
+let scheduleMissingLogged = false
+
 export async function loadSchedule() {
   try {
     const raw = await readFile(path.join(RADIO_DIR, 'schedule.json'), 'utf-8')
     radioState.schedule = JSON.parse(raw) as RadioScheduleSlot[]
   } catch (err) {
     const missing = (err as NodeJS.ErrnoException)?.code === 'ENOENT'
-    console.warn(missing ? 'radio schedule.json not found (optional), using empty schedule' : 'failed to load radio schedule', missing ? '' : err)
+    // /api/radio/state polls this on every request; only warn once so a
+    // missing optional file does not flood the logs.
+    if (!missing) console.warn('failed to load radio schedule', err)
+    else if (!scheduleMissingLogged) { scheduleMissingLogged = true; console.warn('radio schedule.json not found (optional), using empty schedule') }
     radioState.schedule = []
   }
 }

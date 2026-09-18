@@ -14,6 +14,19 @@ import { getOrder, setOrder, applyOrder } from './order-utils.js'
 const VIDEO_ROOT = path.join(ROOT, 'public', 'media', 'video')
 const VIDEO_EXT = new Set(['.mp4', '.mov', '.avi', '.mkv', '.webm', '.m4v'])
 
+// The master file is kept on disk and recorded as a non-HLS source so the
+// entry page gets its "download" button; the MIME just needs to be truthful
+// enough for the frontend's source classifier (non-HLS → downloadable).
+function masterSourceUrl(filename: string, slug: string): { url: string; type: string } {
+  const ext = path.extname(filename).toLowerCase()
+  const type = ext === '.webm' ? 'video/webm'
+    : ext === '.mov' ? 'video/quicktime'
+    : ext === '.mkv' ? 'video/x-matroska'
+    : ext === '.avi' ? 'video/x-msvideo'
+    : 'video/mp4'
+  return { url: `/media/video/${slug}/videos/${filename}`, type }
+}
+
 async function writeMdx(slug: string, data: { title: string; date: string; thumbnail: string; description?: string; sources: Array<{ url: string; type: string; resolution?: string }> }) {
   const dir = path.join(VIDEO_ROOT, slug)
   await mkdir(dir, { recursive: true })
@@ -155,7 +168,7 @@ export function createAdminVideoRouter() {
           }
 
           const srcPath = path.join(videoDir, savedFile)
-          const { playlist, thumbnail } = await convertVideoToHls(srcPath, videoDir, savedFile)
+          const { playlist, thumbnail, master } = await convertVideoToHls(srcPath, videoDir, savedFile)
 
           const mdx = { title: slug, date: '', thumbnail: '', description: '', sources: [] as Array<{ url: string; type: string; resolution?: string }> }
           try {
@@ -172,6 +185,7 @@ export function createAdminVideoRouter() {
           mdx.thumbnail = fullThumbnail
           mdx.sources = [
             { url: `/media/video/${slug}/videos/${playlist}`, type: 'application/vnd.apple.mpegurl', resolution: '720p' },
+            masterSourceUrl(master, slug),
           ]
 
           await writeMdx(slug, mdx)

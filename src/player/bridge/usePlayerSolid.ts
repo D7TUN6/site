@@ -165,6 +165,10 @@ export function usePlayerSolid() {
       ['canplay', () => aem.flushPendingAutoplay()],
       ['play', () => { state.setPlaying(true); state.updateField('hasStartedPlayback', true); audioEngine.resumeContext() }],
       ['pause', () => {
+        // Radio reconnects re-load the same <audio> element; some browsers emit
+        // a transient `pause` during load(). Ignore it so the listen/stop UI
+        // does not flicker while the stream recovers.
+        if (state.state.radioActive && aem.internalReload) return
         state.setPlaying(false)
         // Stop the DSP graph from rendering while paused — the reverb/delay/
         // bitcrusher chain (incl. an AudioWorklet fallback on the main thread)
